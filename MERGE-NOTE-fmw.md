@@ -2,13 +2,49 @@
 
 `src/shims/fmw.ts` was written and verified against `test/stub-fmw.ts`, an
 in-memory implementation of the frozen `Ch3Core`/`Context`/`Ch3App` contract
-from DESIGN.md §7. When `devin/core-v0` lands, the shim switches to the real
-core by editing ONE file:
+from DESIGN.md §7. All core access goes through ONE seam file,
+`src/shims/fmw-core-bind.ts`; nothing else in the shim imports the stub.
 
-- `src/shims/fmw-core-bind.ts` — change the two `../../test/stub-fmw.ts`
-  specifiers to `../index.ts` (or wherever the real core exports
-  `createCore` + the contract types). Nothing else in the shim imports the
-  stub.
+## Reality check (2026-10-11): `devin/core-v0` shipped with a DIFFERENT API
+
+The branch landed after this shim was written, and it does not export the
+§7 contract. Actual surface (see `src/index.ts` on `devin/core-v0`):
+
+- `App` class + `createRouter(): App`; `Ctx<P>`/`ReqView<P>` classes;
+  `Handler = (c: Ctx) => void` (single arg — no `next`); `Middleware =
+  (c, next) => void`; `ParamKey<P>` template-literal param typing.
+- NO `Ch3Core`, `createCore`, `RouteEntry`, `MatchResult`,
+  `RouteConstraints`, `Context`, `Ch3App` exports.
+- Route trie internals (`RouteNode`, `matchNode`, `findEntry`, `addRoute`)
+  are module-private — there is no `find(method, path)` API.
+- `App._add(method, path, handler)` registers with a snapshot of `use()`d
+  middleware; `app.handler()` / `app.serve({port,host})` dispatch;
+  `app.route(prefix, sub)` mounts.
+
+## Adapter recipe for the integrator (in `fmw-core-bind.ts`, ~120 lines)
+
+- `createCore()` → `CoreAdapter implements Ch3Core` wrapping `new App()`:
+  - `add(m, path, h, mw, cons)` → `app._add(m, path, c => h(ctxShim(c), noop))`.
+    `mw` is `[]` in every shim call site; `cons` is stored-ignored anyway.
+  - `find(m, path)` → return `null`. The shim's own `_scan` performs all
+    matching (`core.find` is only a fast-path bonus), so this is CORRECT,
+    just less shared-trie parity.
+  - `allowedMethods` → `[]` (shim's own `allowedMethods` scans `this.routes`).
+  - `dispatch` → `app.handler()(req, res)` if needed (shim never calls it).
+  - `all`/`mount` → iterate `app._fns`/`app.route(prefix, subApp)`.
+- `ctxShim(c: Ctx)` → a `Context`-shaped wrapper: `c.req.raw`,
+  `c.req.param(n)`, `c.req.queryAll()`, `c.req.header(n)`, `c.res` all
+  exist on the real `Ctx`/`ReqView`, so the wrapper is thin.
+- Caveat: versioned routes registered into `App`'s trie dispatch by
+  method+path only — `app.handler()` would serve the wrong version.
+  Consumers needing version semantics must dispatch via `router.lookup`
+  (the shim), not `app.handler()`.
+- Alternative (simpler): keep the shim's matching fully self-contained and
+  drop the `core.find` fast path entirely; bind `add` to `app._add` only so
+  `app.handler()`/`serve` also expose the routes.
+
+Original plan (if a §7-conformant core ever lands instead): flip the two
+`../../test/stub-fmw.ts` specifiers in `fmw-core-bind.ts` to `../index.ts`.
 
 ## What the stub provides (real behaviors the shim depends on)
 
