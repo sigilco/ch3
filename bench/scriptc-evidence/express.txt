@@ -1,0 +1,11 @@
+scriptc coverage /home/ubuntu/repos/ch3/bench/apps/express.mjs
+
+  not analyzable: 1 TypeScript error — fix type errors first (scriptc only analyzes programs that typecheck)
+
+/home/ubuntu/repos/ch3/bench/apps/express.mjs:2:21 - error SC0001: Could not find a declaration file for module 'express'. '/home/ubuntu/repos/ch3/bench/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+
+  1 | // express canonical app. Runs under both `node` and `bun` — same file.
+  2 | import express from 'express'
+    |                     ^~~~~~~~~
+  3 | import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from './common.mjs'

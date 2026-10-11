@@ -19,26 +19,47 @@
 
 import * as http from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
+import { GenDispatch } from './gen.ts'
+import type { DispatchFn } from './gen.ts'
+
+export { GenDispatch }
+export type { DispatchFn }
 
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
 
+// Shared immutable defaults for ReqView's unbound param tables — read
+// only, never mutated (nothing writes _pn/_pi after construction).
+const EMPTY_S: string[] = []
+const EMPTY_N: number[] = []
+
 export class ReqView<P extends string = string> {
   raw: IncomingMessage
   method: string
   path: string
-  _pm: string[]
   _qs: string
   _qp: string[] | null
+  // Lazy param materialization: _pm stays null until the first param()/
+  // splat read, then fills once from the matched entry's declared
+  // (name, seg-index) positions — dispatch does zero param work for
+  // handlers that never read params. _pn/_pi/_sp come from registration
+  // metadata (see pathMeta); generated dispatch seeds _pm directly.
+  _pm: string[] | null
+  _pn: string[]
+  _pi: number[]
+  _sp: number
   _body: string
 
-  constructor(raw: IncomingMessage, pm: string[], qs: string, path: string) {
+  constructor(raw: IncomingMessage, qs: string, path: string) {
     this.raw = raw
     this.method = String(raw.method || '')
-    this._pm = pm
     this._qs = String(qs)
     this._qp = null
+    this._pm = null
+    this._pn = EMPTY_S
+    this._pi = EMPTY_N
+    this._sp = -1
     this._body = ''
     this.path = String(path)
   }
@@ -49,13 +70,54 @@ export class ReqView<P extends string = string> {
   // future lazy-instantiation surface; P is still carried on Ctx.
   param(name: string): string | null {
     const n = String(name)
-    const pm = this._pm
+    const pm = this._pmNow()
     for (let i = 0; i < pm.length; i += 2) {
       if (pm[i] === n) {
         return String(pm[i + 1])
       }
     }
     return null
+  }
+
+  // Generated dispatch (docs/route-contract.md) installs pre-materialized
+  // decoded pairs — flat [name, value, ...] including '*' for a splat.
+  _seedPm(pm: string[]): void {
+    this._pm = pm
+  }
+
+  _pmNow(): string[] {
+    const pm = this._pm
+    if (pm !== null) {
+      return pm
+    }
+    const out: string[] = []
+    const pn = this._pn
+    const sp = this._sp
+    if (pn.length > 0 || sp >= 0) {
+      const segs = String(this.path).split('/')
+      for (let i = 0; i < pn.length; i++) {
+        const idx = this._pi[i]
+        let v = ''
+        if (idx < segs.length) {
+          v = String(segs[idx])
+        }
+        out.push(pn[i])
+        out.push(dec(v))
+      }
+      if (sp >= 0) {
+        let tail = ''
+        for (let j = sp; j < segs.length; j++) {
+          if (j > sp) {
+            tail = tail + '/'
+          }
+          tail = tail + String(segs[j])
+        }
+        out.push('*')
+        out.push(dec(tail))
+      }
+    }
+    this._pm = out
+    return out
   }
 
   query(name: string): string | null {
@@ -82,18 +144,14 @@ export class ReqView<P extends string = string> {
   header(name: string): string | null {
     const key = String(name).toLowerCase()
     const v = this.raw.headers[key]
-    if (v === undefined || v === null) {
-      return null
-    }
     if (typeof v === 'string') {
       return String(v)
     }
-    // v is `string[]` here, but scriptc's union narrowing resolves the
-    // remaining branch to `never` (SC0001 under program-code builds) —
-    // re-type via an explicit cast instead of relying on narrowing.
-    const arr = (v as unknown) as string[]
-    if (arr.length > 0) {
-      return String(arr[0])
+    // Narrow string[] | undefined to the single string[] arm — neither
+    // else-branch narrowing (SC0001: resolves to never) nor an
+    // unknown-cast (SC2003: union layout mismatch) compiles here.
+    if (v !== undefined && v !== null && v.length > 0) {
+      return String(v[0])
     }
     return null
   }
@@ -214,6 +272,23 @@ export type Handler = (c: Ctx) => void
 export type Next = () => void
 export type Middleware = (c: Ctx, next: Next) => void
 
+// Route registration options. `body: true` declares body use — the
+// deterministic opt-in that lets dispatch buffer the request body only
+// for routes that asked for it (docs/route-contract.md).
+export interface RouteOpts {
+  body?: boolean
+}
+
+function bodyFlag(opts: RouteOpts | undefined): number {
+  if (opts === undefined || opts === null) {
+    return 0
+  }
+  if (opts.body === true) {
+    return 1
+  }
+  return 0
+}
+
 // ---------------------------------------------------------------------------
 // Route table: a trie of plain records. kinds: 0 static, 1 :param, 2 * wildcard.
 // Handlers are stored as indices into App._fns (never function values in
@@ -238,10 +313,9 @@ interface RouteNode {
 
 interface Frame {
   node: RouteNode
-  i: number
-  pmlen: number
-  pname: string | null
-  pval: string | null
+  // pos is the start index (in path) of the next segment to try;
+  // pos > len is the leaf-check state (all segments consumed).
+  pos: number
 }
 
 function newNode(nodes: RouteNode[], seg: string, kind: number): number {
@@ -297,24 +371,57 @@ function addRoute(nodes: RouteNode[], method: string, path: string, hIdx: number
   nodes[ni].hf.push(hIdx)
 }
 
-// Depth-first match over an explicit frame stack (no recursion — recursive
-// calls monomorphize an unknown instantiation). Children are pushed
-// wildcard → param → static so static pops first; pm unwinds on backtrack
-// by truncating to the frame's recorded length.
-function matchNode(nodes: RouteNode[], segs: string[], pm: string[]): RouteNode | null {
+// Segment bounds inside `path` without materializing a string[] — the
+// old matcher split every request's path up front.
+function segEndAt(path: string, pos: number, len: number): number {
+  for (let i = pos; i < len; i++) {
+    if (path.charCodeAt(i) === 47) {
+      return i
+    }
+  }
+  return len
+}
+
+function segEq(path: string, pos: number, end: number, seg: string): boolean {
+  const s = String(seg)
+  if (end - pos !== s.length) {
+    return false
+  }
+  for (let i = 0; i < s.length; i++) {
+    if (path.charCodeAt(pos + i) !== s.charCodeAt(i)) {
+      return false
+    }
+  }
+  return true
+}
+
+// Zero-allocation match over the raw path. Depth-first over an explicit
+// frame stack (no recursion — recursive calls monomorphize an unknown
+// instantiation). Children are pushed wildcard → param → static so static
+// pops first, matching the previous matcher's priority. Params are NOT
+// extracted here — values are materialized lazily by ReqView from the
+// matched entry's declared positions.
+function matchPath(nodes: RouteNode[], path: string): RouteNode | null {
+  const p = String(path)
+  const len = p.length
   let node = nodes[0]
-  let i = 1
-  let dive = i < segs.length
+  let pos = 1
+  // Zero-alloc static descent: advance only while every level resolves to
+  // an exact static child; a param/wildcard sibling or a miss hands off
+  // to the DFS below.
+  let dive = pos <= len
   while (dive) {
-    const seg = String(segs[i])
+    const end = segEndAt(p, pos, len)
     const ch = node.children
     let next = -1
     let alt = false
     for (let k = 0; k < ch.length; k++) {
       const c = nodes[ch[k]]
-      if (c.kind === 0 && c.seg === seg) {
-        next = ch[k]
-      } else if (c.kind !== 0) {
+      if (c.kind === 0) {
+        if (segEq(p, pos, end, c.seg)) {
+          next = ch[k]
+        }
+      } else {
         alt = true
       }
     }
@@ -322,63 +429,44 @@ function matchNode(nodes: RouteNode[], segs: string[], pm: string[]): RouteNode 
       dive = false
     } else {
       node = nodes[next]
-      i = i + 1
-      dive = i < segs.length
+      pos = end + 1
+      dive = pos <= len
     }
   }
-  if (i >= segs.length && node.hf.length > 0) {
+  if (pos > len && node.hf.length > 0) {
     return node
   }
   const stack: Frame[] = []
-  stack.push({ node: node, i: i, pmlen: pm.length, pname: null, pval: null })
+  stack.push({ node: node, pos: pos })
   while (stack.length > 0) {
     const f = stack[stack.length - 1]
     stack.pop()
-    while (pm.length > f.pmlen) {
-      pm.pop()
-    }
-    const pn = f.pname
-    if (pn !== null && f.pval !== null) {
-      pm.push(pn)
-      pm.push(f.pval)
-    }
-    const node = f.node
-    const i = Number(f.i)
-    if (i >= segs.length) {
-      if (node.hf.length > 0) {
-        return node
+    const fnode = f.node
+    const fpos = f.pos
+    if (fpos > len) {
+      if (fnode.hf.length > 0) {
+        return fnode
       }
       continue
     }
-    const seg = String(segs[i])
-    const ch = node.children
-    const base = pm.length
-    let tail: string | null = null
+    const end = segEndAt(p, fpos, len)
+    const ch = fnode.children
     for (let k = ch.length - 1; k >= 0; k--) {
       const c = nodes[ch[k]]
       if (c.kind === 2) {
-        if (tail === null) {
-          tail = ''
-          for (let j = i; j < segs.length; j++) {
-            if (j > i) {
-              tail = tail + '/'
-            }
-            tail = tail + String(segs[j])
-          }
-        }
-        stack.push({ node: c, i: segs.length, pmlen: base, pname: '*', pval: dec(tail) })
+        stack.push({ node: c, pos: len + 1 })
       }
     }
     for (let k = ch.length - 1; k >= 0; k--) {
       const c = nodes[ch[k]]
       if (c.kind === 1) {
-        stack.push({ node: c, i: i + 1, pmlen: base, pname: String(c.seg), pval: dec(seg) })
+        stack.push({ node: c, pos: end + 1 })
       }
     }
     for (let k = ch.length - 1; k >= 0; k--) {
       const c = nodes[ch[k]]
-      if (c.kind === 0 && c.seg === seg) {
-        stack.push({ node: c, i: i + 1, pmlen: base, pname: null, pval: null })
+      if (c.kind === 0 && segEq(p, fpos, end, c.seg)) {
+        stack.push({ node: c, pos: end + 1 })
       }
     }
   }
@@ -417,6 +505,36 @@ function findEntry(node: RouteNode, method: string): number {
 function defaultNotFound(c: Ctx): void {
   c.status(404)
   c.text('Not Found')
+}
+
+// Contract helpers for generated dispatch modules (docs/route-contract.md):
+// _guard runs a synchronous handler body under the standard 500 path;
+// _buffer attaches data/end listeners, buffers the body, then runs k under
+// the same guard. The internal dispatch inlines the equivalent flow so the
+// hot path never pays a closure it doesn't need.
+export function _guard(res: ServerResponse, k: () => void): void {
+  try {
+    k()
+  } catch (e) {
+    send500(res)
+  }
+}
+
+export function _buffer(
+  req: IncomingMessage,
+  res: ServerResponse,
+  c: Ctx,
+  k: () => void,
+): void {
+  const rv = c.req
+  let buf = ''
+  req.on('data', function (chunk: Buffer): void {
+    buf = buf + chunk.toString()
+  })
+  req.on('end', function (): void {
+    rv._setBody(buf)
+    _guard(res, k)
+  })
 }
 
 function send500(res: ServerResponse): void {
@@ -462,7 +580,7 @@ function utf8len(s: string): number {
   return n
 }
 
-function dec(s: string): string {
+export function dec(s: string): string {
   const t = String(s).split('+').join(' ')
   try {
     return decodeURIComponent(t)
@@ -479,6 +597,25 @@ function copyMw(mw: Middleware[]): Middleware[] {
   return out
 }
 
+// Middleware flattened per route at registration: mw[..] + handler compose
+// into ONE Handler, so dispatch makes a single call with zero per-request
+// closures (the previous `_chain` cursor allocated one closure per mw per
+// request). Linear semantics are identical: next() resumes the tail, and a
+// mw calling next() twice re-runs the tail twice — same as the cursor.
+function compose(mw: Middleware[], h: Handler): Handler {
+  let chain: Handler = h
+  for (let i = mw.length - 1; i >= 0; i--) {
+    const fn = mw[i]
+    const inner = chain
+    chain = function (c: Ctx): void {
+      fn(c, function (): void {
+        inner(c)
+      })
+    }
+  }
+  return chain
+}
+
 function mergeMw(a: Middleware[], b: Middleware[]): Middleware[] {
   const out: Middleware[] = []
   for (let i = 0; i < a.length; i++) {
@@ -488,6 +625,32 @@ function mergeMw(a: Middleware[], b: Middleware[]): Middleware[] {
     out.push(b[i])
   }
   return out
+}
+
+// Registration-time route metadata: declared param positions in the
+// pattern. Dispatch binds these to ReqView so params materialize lazily
+// (never touched for routes whose handlers don't read params).
+interface PathMeta {
+  names: string[]
+  idxs: number[]
+  splat: number
+}
+
+function pathMeta(path: string): PathMeta {
+  const names: string[] = []
+  const idxs: number[] = []
+  let splat = -1
+  const segs = String(path).split('/')
+  for (let i = 1; i < segs.length; i++) {
+    const seg = String(segs[i])
+    if (seg === '*') {
+      splat = i
+    } else if (seg.charAt(0) === ':') {
+      names.push(String(seg.slice(1)))
+      idxs.push(i)
+    }
+  }
+  return { names: names, idxs: idxs, splat: splat }
 }
 
 interface MountFrame {
@@ -511,7 +674,12 @@ function mountRoutes(sub: App, app: App, prefix: string, pre: Middleware[]): voi
       }
       for (let i = 0; i < hs.length; i++) {
         const subMw = sub._mws[hs[i]]
-        const idx = app._regFn(sub._fns[hs[i]], mergeMw(pre, subMw))
+        const idx = app._regFn(
+          sub._fns[hs[i]],
+          mergeMw(pre, subMw),
+          pathMeta(path),
+          sub._bodyF[hs[i]],
+        )
         addRoute(app._nodes, n.hm[i], path, idx)
       }
     }
@@ -537,6 +705,21 @@ export class App {
   _mws: Middleware[][]
   _nf: Handler
   _nfmw: Middleware[]
+  // _chains[i] is _mws[i] + _fns[i] flattened into one Handler — dispatch
+  // calls it directly; there is no runtime chain walker.
+  _chains: Handler[]
+  _nfchain: Handler
+  // Per-entry route metadata (parallel to _fns): declared param positions
+  // for lazy materialization and the `body: true` declaration flag.
+  _pn: string[][]
+  _pi: number[][]
+  _sp: number[]
+  _bodyF: number[]
+  // Generated-dispatch seam (docs/route-contract.md): a plain function
+  // field, not an interface-typed field — an interface with a method member
+  // would fence eager program-code instantiation the same way a function
+  // inside a record does. Default returns false (never registered).
+  _gen: DispatchFn
 
   constructor() {
     this._nodes = []
@@ -546,42 +729,57 @@ export class App {
     this._mws = []
     this._nf = defaultNotFound
     this._nfmw = []
+    this._chains = []
+    this._nfchain = defaultNotFound
+    this._pn = []
+    this._pi = []
+    this._sp = []
+    this._bodyF = []
+    this._gen = function (_r: IncomingMessage, _s: ServerResponse): boolean {
+      return false
+    }
   }
 
-  get<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('GET', path, (h as unknown) as Handler)
+  // Verb methods take `path: string` + `Ctx`, not `<P extends string>`:
+  // a value parameter typed by a type parameter cannot compile under
+  // eager program-code instantiation (SC2001). The generic rode along
+  // for literal-param inference, but param() is string-typed regardless
+  // — no type-safety is lost. `opts.body` declares body use; without it
+  // c.req.body() returns '' (docs/route-contract.md).
+  get(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('GET', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  post<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('POST', path, (h as unknown) as Handler)
+  post(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('POST', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  put<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('PUT', path, (h as unknown) as Handler)
+  put(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('PUT', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  delete<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('DELETE', path, (h as unknown) as Handler)
+  delete(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('DELETE', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  patch<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('PATCH', path, (h as unknown) as Handler)
+  patch(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('PATCH', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  head<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('HEAD', path, (h as unknown) as Handler)
+  head(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('HEAD', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  options<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('OPTIONS', path, (h as unknown) as Handler)
+  options(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('OPTIONS', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  all<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('*', path, (h as unknown) as Handler)
+  all(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add('*', path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
-  on<P extends string>(method: string, path: P, h: (c: Ctx<P>) => void): App {
-    return this._add(String(method).toUpperCase(), path, (h as unknown) as Handler)
+  on(method: string, path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
+    return this._add(String(method).toUpperCase(), path, (h as unknown) as Handler, bodyFlag(opts))
   }
 
   use(fn: Middleware): App {
@@ -592,6 +790,7 @@ export class App {
   notFound(h: (c: Ctx) => void): App {
     this._nf = (h as unknown) as Handler
     this._nfmw = copyMw(this._mw)
+    this._nfchain = compose(this._nfmw, this._nf)
     return this
   }
 
@@ -601,6 +800,18 @@ export class App {
       p = String(p.slice(0, p.length - 1))
     }
     mountRoutes(sub, this, p, copyMw(this._mw))
+    return this
+  }
+
+  // Registers a generated dispatch module (docs/route-contract.md). The
+  // stored field is a closure so `d` only has to satisfy the GenDispatch
+  // class shape at the call site — subclasses, duck-typed objects, and the
+  // emitted `class X extends GenDispatch` all work.
+  withDispatch(d: GenDispatch): App {
+    const g = d
+    this._gen = function (rq: IncomingMessage, rs: ServerResponse): boolean {
+      return g.dispatch(rq, rs)
+    }
     return this
   }
 
@@ -623,19 +834,27 @@ export class App {
     return s
   }
 
-  _regFn(h: Handler, mw: Middleware[]): number {
+  _regFn(h: Handler, mw: Middleware[], m: PathMeta, body: number): number {
     this._fns.push(h)
     this._mws.push(mw)
+    this._chains.push(compose(mw, h))
+    this._pn.push(m.names)
+    this._pi.push(m.idxs)
+    this._sp.push(m.splat)
+    this._bodyF.push(body)
     return this._fns.length - 1
   }
 
-  _add(method: string, path: string, h: Handler): App {
-    const idx = this._regFn(h, copyMw(this._mw))
+  _add(method: string, path: string, h: Handler, body: number): App {
+    const idx = this._regFn(h, copyMw(this._mw), pathMeta(path), body)
     addRoute(this._nodes, method, path, idx)
     return this
   }
 
   _dispatch(req: IncomingMessage, res: ServerResponse): void {
+    if (this._gen(req, res)) {
+      return
+    }
     const method: string = String(req.method || '')
     const url: string = String(req.url || '/')
     let path = url
@@ -645,23 +864,29 @@ export class App {
       path = String(url.slice(0, qi))
       qs = String(url.slice(qi + 1))
     }
-    const pm: string[] = []
-    const segs = path.split('/')
-    const node = matchNode(this._nodes, segs, pm)
-    let h = this._nf
-    let mw = this._nfmw
+    const node = matchPath(this._nodes, path)
+    let chain = this._nfchain
+    let body = 0
+    let idx = -1
     if (node !== null) {
       const j = findEntry(node, method)
       if (j >= 0) {
-        const idx = node.hf[j]
-        h = this._fns[idx]
-        mw = (this._mws[idx] as Middleware[])
+        idx = node.hf[j]
+        chain = this._chains[idx]
+        body = this._bodyF[idx]
       }
     }
-    const rv = new ReqView(req, pm, qs, path)
+    const rv = new ReqView(req, qs, path)
+    if (idx >= 0) {
+      rv._pn = this._pn[idx]
+      rv._pi = this._pi[idx]
+      rv._sp = this._sp[idx]
+    }
     const c = new Ctx(rv, res)
-    const self = this
-    if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+    if (
+      body === 1 &&
+      (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')
+    ) {
       let buf = ''
       req.on('data', function (chunk: Buffer): void {
         buf = buf + chunk.toString()
@@ -669,69 +894,17 @@ export class App {
       req.on('end', function (): void {
         rv._setBody(buf)
         try {
-          self._chain(c, mw, h, 0)
+          chain(c)
         } catch (e) {
           send500(res)
         }
       })
     } else {
       try {
-        this._chain(c, mw, h, 0)
+        chain(c)
       } catch (e) {
         send500(res)
       }
-    }
-  }
-
-  // Entry point for generated dispatches (unplugin-ch3): the caller already
-  // matched the route, so only the Ctx/chain execution happens here.
-  // Body buffering is decided by the request method — identical to the
-  // runtime _dispatch path.
-  _run(
-    idx: number,
-    req: IncomingMessage,
-    res: ServerResponse,
-    pm: string[],
-    qs: string,
-    path: string,
-    m: string
-  ): void {
-    const rv = new ReqView(req, pm, qs, path)
-    const c = new Ctx(rv, res)
-    const mw = this._mws[idx]
-    const h = this._fns[idx]
-    const self = this
-    if (m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE') {
-      let buf = ''
-      req.on('data', function (chunk: Buffer): void {
-        buf = buf + chunk.toString()
-      })
-      req.on('end', function (): void {
-        rv._setBody(buf)
-        try {
-          self._chain(c, mw, h, 0)
-        } catch (e) {
-          send500(res)
-        }
-      })
-    } else {
-      try {
-        this._chain(c, mw, h, 0)
-      } catch (e) {
-        send500(res)
-      }
-    }
-  }
-
-  _chain(c: Ctx, mw: Middleware[], h: Handler, i: number): void {
-    if (i < mw.length) {
-      const fn = mw[i]
-      const self = this
-      fn(c, function (): void {
-        self._chain(c, mw, h, i + 1)
-      })
-    } else {
-      h(c)
     }
   }
 }

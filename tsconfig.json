@@ -9,6 +9,7 @@
     "sourceMap": false,
     "outDir": "dist/esm",
     "rootDir": "src",
+    "rewriteRelativeImportExtensions": true,
     "skipLibCheck": false,
     "forceConsistentCasingInFileNames": true
   },

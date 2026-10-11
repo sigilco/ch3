@@ -2,17 +2,17 @@
 //
 // A routes module (default: any file matching `**\/*.ch3.{ts,js}`) is
 // analyzed at build start; the plugin writes
-// `<dir>/.ch3/<name>.gen.ts` exporting
-//   - `routeTable` — the literal route table,
-//   - `bindApp(app)` — hands the router instance to the generated
-//     module (a dependency module cannot import an app binding rooted
-//     at a package instantiation under `scriptc build`),
-//   - `dispatch(req, res)` — the specialized per-route dispatch; wire
-//     it as `dispatch(req,res) || app._dispatch(req,res)` so bailed and
-//     dynamic routes keep their runtime path.
+// `<dir>/.ch3/<name>.gen.ts` satisfying docs/route-contract.md:
+//   - `export class CompiledRoutes extends GenDispatch` — registered
+//     once via `app.withDispatch(new CompiledRoutes(app))` in the
+//     app-owning entry, tried first on every request,
+//   - `routeTable` — the literal route table.
+// The app reaches the class through its constructor: a dependency
+// module cannot import an app binding rooted at a package
+// instantiation under `scriptc build` (SC1090).
 //
-// The generated module reaches handlers through the App._fns/_mws index
-// arrays — the same tables the runtime router fills — so it stays
+// The generated module reaches handlers through the App._chains index
+// array — the same table the internal dispatch calls — so it stays
 // scriptc-subset-clean and never copies handler source.
 
 import * as fs from 'node:fs'

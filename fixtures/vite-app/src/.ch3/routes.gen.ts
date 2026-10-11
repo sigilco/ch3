@@ -5,13 +5,8 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http"
 
+import { GenDispatch, ReqView, Ctx, _guard, _buffer, dec } from "../ch3.ts"
 import type { App } from "../ch3.ts"
-
-const _box: App[] = []
-
-export function bindApp(a: App): void {
-  _box.push(a)
-}
 
 export interface Ch3RouteEntry {
   method: string
@@ -31,7 +26,7 @@ export const routeTable: Ch3RouteEntry[] = [
   { method: "GET", path: "/api/deep/:id", kind: "param", handlerIdx: 6, needsBody: false },
   { method: "GET", path: "/api/health", kind: "static", handlerIdx: 7, needsBody: false },
   { method: "GET", path: "/mwd", kind: "static", handlerIdx: 8, needsBody: false },
-  { method: "*", path: "/any", kind: "static", handlerIdx: 9, needsBody: true },
+  { method: "*", path: "/any", kind: "static", handlerIdx: 9, needsBody: false },
 ]
 
 function __ch3Send500(res: ServerResponse): void {
@@ -53,15 +48,6 @@ function __ch3Send500(res: ServerResponse): void {
   }
 }
 
-function dec(s: string): string {
-  const t = String(s).split("+").join(" ")
-  try {
-    return decodeURIComponent(t)
-  } catch (e) {
-    return t
-  }
-}
-
 function run0(req: IncomingMessage, res: ServerResponse): void {
   try {
     res.statusCode = 200
@@ -73,20 +59,32 @@ function run0(req: IncomingMessage, res: ServerResponse): void {
   }
 }
 
-function run1(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(1, req, res, pm, qs, path, m)
+function run1(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _guard(res, function (): void { a._chains[1](c) })
 }
 
-function run2(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(2, req, res, pm, qs, path, m)
+function run2(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _guard(res, function (): void { a._chains[2](c) })
 }
 
-function run3(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(3, req, res, pm, qs, path, m)
+function run3(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _guard(res, function (): void { a._chains[3](c) })
 }
 
-function run4(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(4, req, res, pm, qs, path, m)
+function run4(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _buffer(req, res, c, function (): void { a._chains[4](c) })
 }
 
 function run5(req: IncomingMessage, res: ServerResponse): void {
@@ -99,8 +97,11 @@ function run5(req: IncomingMessage, res: ServerResponse): void {
   }
 }
 
-function run6(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(6, req, res, pm, qs, path, m)
+function run6(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _guard(res, function (): void { a._chains[6](c) })
 }
 
 function run7(req: IncomingMessage, res: ServerResponse): void {
@@ -114,131 +115,145 @@ function run7(req: IncomingMessage, res: ServerResponse): void {
   }
 }
 
-function run8(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(8, req, res, pm, qs, path, m)
+function run8(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _guard(res, function (): void { a._chains[8](c) })
 }
 
-function run9(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
-  _box[0]._run(9, req, res, pm, qs, path, m)
+function run9(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
+  const rv = new ReqView(req, qs, path)
+  rv._seedPm(pm)
+  const c = new Ctx(rv, res)
+  _guard(res, function (): void { a._chains[9](c) })
 }
 
-export function dispatch(req: IncomingMessage, res: ServerResponse): boolean {
-  const m = String(req.method || "")
-  const url = String(req.url || "/")
-  let path = url
-  let qs = ""
-  const qi = url.indexOf("?")
-  if (qi >= 0) {
-    path = String(url.slice(0, qi))
-    qs = String(url.slice(qi + 1))
+export class CompiledRoutes extends GenDispatch {
+  private _a: App
+  constructor(a: App) {
+    super()
+    this._a = a
   }
-  const segs = path.split("/")
-  if (m === "GET") {
-    if (segs.length === 2 && segs[1] === "json") {
-      run0(req, res)
-      return true
+  dispatch(req: IncomingMessage, res: ServerResponse): boolean {
+
+    const m = String(req.method || "")
+    const url = String(req.url || "/")
+    let path = url
+    let qs = ""
+    const qi = url.indexOf("?")
+    if (qi >= 0) {
+      path = String(url.slice(0, qi))
+      qs = String(url.slice(qi + 1))
     }
-    if (segs.length === 3 && segs[1] === "user") {
-      run1(req, res, ["id", dec(segs[2])], qs, path, m)
-      return true
-    }
-    if (segs.length >= 3 && segs[1] === "files") {
-      let t = ""
-      for (let j = 2; j < segs.length; j += 1) {
-        if (j > 2) {
-          t = t + "/"
-        }
-          t = t + segs[j]
+    const segs = path.split("/")
+    if (m === "GET") {
+      if (segs.length === 2 && segs[1] === "json") {
+        run0(req, res)
+        return true
       }
-      run2(req, res, ["*", dec(t)], qs, path, m)
-      return true
-    }
-    if (segs.length === 2 && segs[1] === "q") {
-      run3(req, res, [], qs, path, m)
-      return true
-    }
-    if (segs.length === 2 && segs[1] === "redir") {
-      run5(req, res)
-      return true
-    }
-    if (segs.length === 4 && segs[1] === "api" && segs[2] === "deep") {
-      run6(req, res, ["id", dec(segs[3])], qs, path, m)
-      return true
-    }
-    if (segs.length === 3 && segs[1] === "api" && segs[2] === "health") {
-      run7(req, res)
-      return true
-    }
-    if (segs.length === 2 && segs[1] === "mwd") {
-      run8(req, res, [], qs, path, m)
-      return true
-    }
-    if (segs.length === 2 && segs[1] === "any") {
-      run9(req, res, [], qs, path, m)
-      return true
-    }
-    return false
-  }
-  if (m === "HEAD") {
-    if (segs.length === 2 && segs[1] === "json") {
-      run0(req, res)
-      return true
-    }
-    if (segs.length === 3 && segs[1] === "user") {
-      run1(req, res, ["id", dec(segs[2])], qs, path, m)
-      return true
-    }
-    if (segs.length >= 3 && segs[1] === "files") {
-      let t = ""
-      for (let j = 2; j < segs.length; j += 1) {
-        if (j > 2) {
-          t = t + "/"
-        }
-          t = t + segs[j]
+      if (segs.length === 3 && segs[1] === "user") {
+        run1(this._a, req, res, ["id", dec(segs[2])], qs, path, m)
+        return true
       }
-      run2(req, res, ["*", dec(t)], qs, path, m)
-      return true
+      if (segs.length >= 3 && segs[1] === "files") {
+        let t = ""
+        for (let j = 2; j < segs.length; j += 1) {
+          if (j > 2) {
+            t = t + "/"
+          }
+            t = t + segs[j]
+        }
+        run2(this._a, req, res, ["*", dec(t)], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "q") {
+        run3(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "redir") {
+        run5(req, res)
+        return true
+      }
+      if (segs.length === 4 && segs[1] === "api" && segs[2] === "deep") {
+        run6(this._a, req, res, ["id", dec(segs[3])], qs, path, m)
+        return true
+      }
+      if (segs.length === 3 && segs[1] === "api" && segs[2] === "health") {
+        run7(req, res)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "mwd") {
+        run8(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "any") {
+        run9(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      return false
     }
-    if (segs.length === 2 && segs[1] === "q") {
-      run3(req, res, [], qs, path, m)
-      return true
+    if (m === "HEAD") {
+      if (segs.length === 2 && segs[1] === "json") {
+        run0(req, res)
+        return true
+      }
+      if (segs.length === 3 && segs[1] === "user") {
+        run1(this._a, req, res, ["id", dec(segs[2])], qs, path, m)
+        return true
+      }
+      if (segs.length >= 3 && segs[1] === "files") {
+        let t = ""
+        for (let j = 2; j < segs.length; j += 1) {
+          if (j > 2) {
+            t = t + "/"
+          }
+            t = t + segs[j]
+        }
+        run2(this._a, req, res, ["*", dec(t)], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "q") {
+        run3(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "redir") {
+        run5(req, res)
+        return true
+      }
+      if (segs.length === 4 && segs[1] === "api" && segs[2] === "deep") {
+        run6(this._a, req, res, ["id", dec(segs[3])], qs, path, m)
+        return true
+      }
+      if (segs.length === 3 && segs[1] === "api" && segs[2] === "health") {
+        run7(req, res)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "mwd") {
+        run8(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "any") {
+        run9(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      return false
     }
-    if (segs.length === 2 && segs[1] === "redir") {
-      run5(req, res)
-      return true
-    }
-    if (segs.length === 4 && segs[1] === "api" && segs[2] === "deep") {
-      run6(req, res, ["id", dec(segs[3])], qs, path, m)
-      return true
-    }
-    if (segs.length === 3 && segs[1] === "api" && segs[2] === "health") {
-      run7(req, res)
-      return true
-    }
-    if (segs.length === 2 && segs[1] === "mwd") {
-      run8(req, res, [], qs, path, m)
-      return true
+    if (m === "POST") {
+      if (segs.length === 2 && segs[1] === "echo") {
+        run4(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      if (segs.length === 2 && segs[1] === "any") {
+        run9(this._a, req, res, [], qs, path, m)
+        return true
+      }
+      return false
     }
     if (segs.length === 2 && segs[1] === "any") {
-      run9(req, res, [], qs, path, m)
+      run9(this._a, req, res, [], qs, path, m)
       return true
     }
     return false
   }
-  if (m === "POST") {
-    if (segs.length === 2 && segs[1] === "echo") {
-      run4(req, res, [], qs, path, m)
-      return true
-    }
-    if (segs.length === 2 && segs[1] === "any") {
-      run9(req, res, [], qs, path, m)
-      return true
-    }
-    return false
-  }
-  if (segs.length === 2 && segs[1] === "any") {
-    run9(req, res, [], qs, path, m)
-    return true
-  }
-  return false
 }

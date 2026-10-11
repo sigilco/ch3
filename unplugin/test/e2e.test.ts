@@ -7,9 +7,10 @@ import { extractModule } from '../src/extract.ts'
 import { emitGenModule, genFileName } from '../src/emit.ts'
 
 // End-to-end: write a routes module + the generated .ch3/routes.gen.ts to a
-// temp dir, import the gen file for real, and drive dispatch() with fake
-// req/res objects. The routes module imports the real ch3 source, so this
-// exercises actual Ctx/ReqView/App behavior — not mocks of them.
+// temp dir, import CompiledRoutes for real, wire it via app.withDispatch,
+// and drive dispatch with fake req/res objects. The routes module imports
+// the real ch3 source, so this exercises actual Ctx/ReqView/App behavior —
+// not mocks of them.
 
 const CH3_SRC = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
@@ -85,7 +86,7 @@ export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
 app.get('/files/*', (c) => c.text(c.req.param('*') || ''))
-app.post('/echo', (c) => c.text(c.req.body()))
+app.post('/echo', (c) => c.text(c.req.body()), { body: true })
 app.get('/redir', (c) => c.redirect('/json'))
 
 const api = createRouter()
@@ -101,13 +102,19 @@ app.get(dyn, (c) => c.text('dynamic'))
 app.notFound((c) => { c.status(404); c.text('nope') })
 `
 
+interface GenInstance {
+  dispatch: (req: FakeReq, res: FakeRes) => boolean
+}
+
+interface Ch3App {
+  withDispatch: (d: GenInstance) => Ch3App
+  _dispatch: (req: FakeReq, res: FakeRes) => void
+}
+
 describe('e2e: generated dispatch executes against the real App', () => {
   let dir = ''
-  let mod: {
-    dispatch: (req: FakeReq, res: FakeRes) => boolean
-    bindApp: (a: unknown) => void
-  } | null = null
-  let routesMod: { app: { handler: () => (req: FakeReq, res: FakeRes) => void } } | null = null
+  let gen: GenInstance | null = null
+  let app: Ch3App | null = null
 
   before(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'unplugin-ch3-e2e-'))
@@ -120,18 +127,20 @@ describe('e2e: generated dispatch executes against the real App', () => {
     const genDir = path.join(dir, '.ch3')
     const relCh3FromGen =
       './' + path.relative(genDir, CH3_SRC).split(path.sep).join('/')
-    const gen = emitGenModule(model, {
+    const genSrc = emitGenModule(model, {
       importFrom: relCh3FromGen,
       modulePath: modPath,
     })
     fs.mkdirSync(genDir, { recursive: true })
     const genPath = path.join(genDir, genFileName(modPath))
-    fs.writeFileSync(genPath, gen)
-    mod = (await import(genPath)) as typeof mod
-    routesMod = (await import(modPath)) as typeof routesMod
-    ;(mod as NonNullable<typeof mod>).bindApp(
-      (routesMod as NonNullable<typeof routesMod>).app
-    )
+    fs.writeFileSync(genPath, genSrc)
+    const mod = (await import(genPath)) as {
+      CompiledRoutes: new (a: Ch3App) => GenInstance
+    }
+    const routesMod = (await import(modPath)) as { app: Ch3App }
+    app = routesMod.app
+    gen = new mod.CompiledRoutes(routesMod.app)
+    routesMod.app.withDispatch(gen)
   })
 
   after(() => {
@@ -143,20 +152,17 @@ describe('e2e: generated dispatch executes against the real App', () => {
   const hit = (method: string, url: string, body: string | null = null): { res: FakeRes; handled: boolean } => {
     const req = fakeReq(method, url, body)
     const res = fakeRes()
-    const handled = (mod as NonNullable<typeof mod>).dispatch(req, res)
+    const handled = (gen as NonNullable<typeof gen>).dispatch(req, res)
     req.fire()
     return { res: res, handled: handled }
   }
 
-  // full wiring: generated dispatch first, runtime fallback second
+  // full wiring: app._dispatch tries the generated dispatch first, then
+  // the internal specialized dispatch (the withDispatch contract).
   const serve = (method: string, url: string, body: string | null = null): FakeRes => {
-    const app = (routesMod as NonNullable<typeof routesMod>).app
     const req = fakeReq(method, url, body)
     const res = fakeRes()
-    const dispatch = (mod as NonNullable<typeof mod>).dispatch
-    if (!dispatch(req, res)) {
-      app.handler()(req, res)
-    }
+    ;(app as NonNullable<typeof app>)._dispatch(req, res)
     req.fire()
     return res
   }

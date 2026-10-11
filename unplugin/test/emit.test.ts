@@ -15,22 +15,22 @@ export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
 app.get('/files/*', (c) => c.text(c.req.param('*') || ''))
-app.post('/echo', (c) => c.text(c.req.body()))
+app.post('/echo', (c) => c.text(c.req.body()), { body: true })
 `
 
 describe('emitGenModule', () => {
-  it('emits a full-shape route table and dispatch entry', () => {
+  it('emits the contract class, a full-shape route table, and dispatch', () => {
     const g = gen(SRC)
+    assert.match(g, /export class CompiledRoutes extends GenDispatch/)
+    assert.match(g, /constructor\(a: App\)/)
+    assert.match(g, /dispatch\(req: IncomingMessage, res: ServerResponse\): boolean/)
     assert.match(g, /export const routeTable: Ch3RouteEntry\[\] = \[/)
     assert.match(g, /\{ method: "GET", path: "\/json", kind: "static", handlerIdx: 0, needsBody: false \}/)
     assert.match(g, /\{ method: "GET", path: "\/user\/:id", kind: "param", handlerIdx: 1, needsBody: false \}/)
     assert.match(g, /\{ method: "GET", path: "\/files\/\*", kind: "wildcard", handlerIdx: 2, needsBody: false \}/)
     assert.match(g, /\{ method: "POST", path: "\/echo", kind: "static", handlerIdx: 3, needsBody: true \}/)
-    assert.match(g, /export function dispatch\(req: IncomingMessage, res: ServerResponse\): boolean/)
-    assert.match(g, /export function bindApp\(a: App\): void/)
+    assert.match(g, /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "@sigilco\/ch3"/)
     assert.match(g, /import type \{ App \} from "@sigilco\/ch3"/)
-    // no value imports — the module must stay lowerable under scriptc
-    assert.doesNotMatch(g, /import \{ Ctx, ReqView \}/)
   })
 
   it('emits a no-Ctx static runner for literal sends', () => {
@@ -47,13 +47,14 @@ describe('emitGenModule', () => {
     assert.match(g, /\["\*", dec\(t\)\]/)
   })
 
-  it('delegates ctx routes to App._run with their fns index', () => {
+  it('runs ctx routes through the contract surface with their chains index', () => {
     const g = gen(SRC)
-    // run3 = POST /echo ctx runner — body buffering lives inside App._run
+    // run3 = POST /echo declared-body ctx runner
     const run3 = g.slice(g.indexOf('function run3'))
-    assert.match(run3, /_box\[0\]\._run\(3, req, res, pm, qs, path, m\)/)
+    assert.match(run3, /new ReqView\(req, qs, path\)/)
+    assert.match(run3, /_buffer\(req, res, c, function \(\): void \{ a\._chains\[3\]\(c\) \}\)/)
     const run1 = g.slice(g.indexOf('function run1'), g.indexOf('function run2'))
-    assert.match(run1, /_box\[0\]\._run\(1, req, res, pm, qs, path, m\)/)
+    assert.match(run1, /_guard\(res, function \(\): void \{ a\._chains\[1\]\(c\) \}\)/)
     assert.doesNotMatch(g, /req\.on\("data"/)
   })
 
@@ -86,21 +87,34 @@ export const app = createRouter()
 app.all('/any', (c) => c.text('any'))
 app.get('/g', (c) => c.text('g'))
 `)
-    const sect = g.slice(g.indexOf('if (m === "GET")'), g.indexOf('export function') === -1 ? g.length : undefined)
     assert.ok(g.indexOf('if (m === "GET")') < g.lastIndexOf('segs[1] === "any"'))
-    // fallthrough check outside the section
     const tail = g.slice(g.lastIndexOf('segs[1] === "any"'))
     assert.match(tail, /run\d\(req, res\)/)
   })
 
-  it('emits a stub when the router is not exported', () => {
+  it('keeps a runtime method check only for declared-body * routes', () => {
+    const g = gen(`
+import { createRouter } from '@sigilco/ch3'
+export const app = createRouter()
+app.all('/u', (c) => c.text(c.req.body()), { body: true })
+`)
+    assert.match(g, /if \(m === "POST" \|\| m === "PUT" \|\| m === "PATCH" \|\| m === "DELETE"\)/)
+    const g2 = gen(SRC)
+    // GET routes never buffer even when declared — the flag is ignored
+    assert.doesNotMatch(
+      g2.slice(g2.indexOf('function run1'), g2.indexOf('function run2')),
+      /_buffer/
+    )
+  })
+
+  it('emits a stub class when the router is not exported', () => {
     const g = gen(`
 import { createRouter } from '@sigilco/ch3'
 const app = createRouter()
 app.get('/a', (c) => c.text('a'))
 `)
+    assert.match(g, /export class CompiledRoutes extends GenDispatch/)
     assert.match(g, /export const routeTable: Ch3RouteEntry\[\] = \[\]/)
     assert.match(g, /return false/)
-    assert.doesNotMatch(g, /import app/)
   })
 })

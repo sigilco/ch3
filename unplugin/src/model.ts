@@ -27,7 +27,8 @@ export interface RouteSpec {
   handlerNode?: ts.Expression // inline handler AST (for specialization)
   hasMw: boolean // middleware snapshot may be non-empty
   mwUnsafe: boolean // a nested use() makes the snapshot uncertain — no specialization
-  needsBody: boolean // runner must buffer the request body before dispatch
+  declaredBody: boolean // `{ body: true }` at registration (declared-body rule)
+  needsBody: boolean // declaredBody && not static-specialized → runner uses _buffer
   staticSend: StaticSend | null
   registered: number // emission ordinal == App._fns order (sort tiebreak)
   emit: boolean // a dispatch check is generated for this route

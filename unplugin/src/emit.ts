@@ -1,10 +1,18 @@
 // Codegen: ModuleModel -> routes.gen.ts source text.
 //
-// The emitted module is itself authored inside the scriptc subset — it is
-// what `scriptc build` sees on the app graph — so the same rules apply as
-// to src/index.ts: full-shape record literals, handlers reached through
-// the numeric App._fns/App._mws index arrays (never function values in
-// records), indexed loops, `| null`-free concrete types, no spread calls.
+// The emitted module satisfies docs/route-contract.md: a `CompiledRoutes`
+// class extending GenDispatch, registered via `app.withDispatch(...)`.
+// It is what `scriptc build` sees on the app graph — so the same subset
+// rules apply as to src/index.ts: full-shape record literals, handlers
+// reached through the numeric App._chains index array (never function
+// values in records), indexed loops, concrete types, no spread calls.
+//
+// The app instance arrives through the constructor, never an import:
+// under `scriptc build` a dependency module loses lowering for every
+// binding rooted at a package instantiation (`app = createRouter()`),
+// and importing `app` here would poison the whole module (SC1090 —
+// verified). `new CompiledRoutes(app)` inside the app-owning entry
+// module keeps every emitted edge inside pure program code.
 
 import * as path from 'node:path'
 import type { ModuleModel, RouteSpec, StaticSend } from './model.ts'
@@ -58,6 +66,7 @@ function methodRank(r: RouteSpec, m: string): number {
   return 2 // GET acting as HEAD fallback
 }
 
+// Literal send-chains compile to straight res writes — no Ctx, no chain.
 function emitStaticRunner(name: string, s: StaticSend): string {
   const lines: string[] = []
   lines.push('function ' + name + '(req: IncomingMessage, res: ServerResponse): void {')
@@ -82,20 +91,40 @@ function emitStaticRunner(name: string, s: StaticSend): string {
   return lines.join('\n')
 }
 
-// Ctx routes delegate to App._run — the app buffers the body (per the
-// request method), builds ReqView/Ctx and walks the middleware chain.
-// Emitting that here instead would pull Ctx/ReqView imports into this
-// module; a dependency module cannot import package values without losing
-// lowering under `scriptc build` (SC1090).
+// Ctx routes build ReqView/Ctx through the contract surface and run the
+// composed middleware+handler at App._chains[idx]. Body buffering only
+// happens for routes that declared `body: true` at registration AND run
+// on a body-carrying method — `app.all` routes keep a runtime method
+// check, concrete methods specialize at emit time.
 function emitCtxRunner(name: string, r: RouteSpec): string {
   const idx = String(r.handlerIdx)
   const lines: string[] = []
   lines.push(
     'function ' +
       name +
-      '(req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {'
+      '(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {'
   )
-  lines.push('  _box[0]._run(' + idx + ', req, res, pm, qs, path, m)')
+  lines.push('  const rv = new ReqView(req, qs, path)')
+  lines.push('  rv._seedPm(pm)')
+  lines.push('  const c = new Ctx(rv, res)')
+  const chain = 'a._chains[' + idx + '](c)'
+  const guarded = '_guard(res, function (): void { ' + chain + ' })'
+  const buffered = '_buffer(req, res, c, function (): void { ' + chain + ' })'
+  if (r.needsBody) {
+    if (r.method === '*') {
+      lines.push('  if (m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE") {')
+      lines.push('    ' + buffered)
+      lines.push('  } else {')
+      lines.push('    ' + guarded)
+      lines.push('  }')
+    } else if (WRITE_METHODS[r.method] === true) {
+      lines.push('  ' + buffered)
+    } else {
+      lines.push('  ' + guarded)
+    }
+  } else {
+    lines.push('  ' + guarded)
+  }
   lines.push('}')
   return lines.join('\n')
 }
@@ -154,14 +183,14 @@ function emitCheck(r: RouteSpec, runner: string, ind: string): string {
     out.push(ind + '  }')
   }
   const pm = pmParts.length === 0 ? '[]' : '[' + pmParts.join(', ') + ']'
-  out.push(ind + '  ' + runner + '(req, res, ' + pm + ', qs, path, m)')
+  out.push(ind + '  ' + runner + '(this._a, req, res, ' + pm + ', qs, path, m)')
   out.push(ind + '  return true')
   out.push(ind + '}')
   return out.join('\n')
 }
 
 export interface EmitOptions {
-  importFrom: string // package specifier for Ctx/ReqView inside the gen file
+  importFrom: string // specifier for the ch3 contract surface in the gen file
   modulePath: string // absolute path of the routes module
 }
 
@@ -185,8 +214,20 @@ export function emitGenModule(model: ModuleModel, opts: EmitOptions): string {
   out.push('import type { IncomingMessage, ServerResponse } from "node:http"')
   out.push('')
 
+  const header =
+    'export class CompiledRoutes extends GenDispatch {\n' +
+    '  private _a: App\n' +
+    '  constructor(a: App) {\n' +
+    '    super()\n' +
+    '    this._a = a\n' +
+    '  }\n' +
+    '  dispatch(req: IncomingMessage, res: ServerResponse): boolean {\n'
+
   if (model.app === null || model.fatal !== '') {
-    // stub: compiles everywhere, falls everything back to the runtime path
+    // stub: compiles everywhere, declines every request to the runtime path
+    out.push('import { GenDispatch } from ' + J(opts.importFrom))
+    out.push('import type { App } from ' + J(opts.importFrom))
+    out.push('')
     out.push('export interface Ch3RouteEntry {')
     out.push('  method: string')
     out.push('  path: string')
@@ -197,30 +238,38 @@ export function emitGenModule(model: ModuleModel, opts: EmitOptions): string {
     out.push('')
     out.push('export const routeTable: Ch3RouteEntry[] = []')
     out.push('')
-    out.push(
-      'export function dispatch(req: IncomingMessage, res: ServerResponse): boolean {'
-    )
-    out.push('  return false')
+    out.push(header)
+    out.push('    return false')
+    out.push('  }')
     out.push('}')
     out.push('')
     return out.join('\n')
   }
 
-  // The app reaches this module through bindApp(), not an import, and
-  // App only as a type: a dependency module cannot import a binding
-  // rooted at a package instantiation (`app = createRouter()`) or package
-  // class values (Ctx/ReqView) — under `scriptc build` those imports
-  // leave every binding here with no lowering (SC1090). Erased type
-  // imports keep this module pure program code.
-  // The box is a one-element array: a `let` narrowed to App rejects the
-  // null placeholder scriptc writes at module init; object arrays don't.
+  // Which contract members the emitted code actually touches. Value
+  // imports stay inside program code when the routes graph uses source
+  // paths (see PLUGIN.md) — under an npm-installed graph the same module
+  // still builds under node/vite but cannot lower under scriptc.
+  const ctxEmitted = emitted.filter((r) => r.staticSend === null)
+  const needCtx = ctxEmitted.length > 0
+  const needBuffer = ctxEmitted.some(
+    (r) => r.needsBody && (r.method === '*' || WRITE_METHODS[r.method] === true)
+  )
+  const needDec = ctxEmitted.some((r) => r.segs.some((s) => s.kind !== 0))
+  const members: string[] = ['GenDispatch']
+  if (needCtx) {
+    members.push('ReqView')
+    members.push('Ctx')
+    members.push('_guard')
+  }
+  if (needBuffer) {
+    members.push('_buffer')
+  }
+  if (needDec) {
+    members.push('dec')
+  }
+  out.push('import { ' + members.join(', ') + ' } from ' + J(opts.importFrom))
   out.push('import type { App } from ' + J(opts.importFrom))
-  out.push('')
-  out.push('const _box: App[] = []')
-  out.push('')
-  out.push('export function bindApp(a: App): void {')
-  out.push('  _box.push(a)')
-  out.push('}')
   out.push('')
 
   // route table — full-shape literals only
@@ -271,18 +320,6 @@ export function emitGenModule(model: ModuleModel, opts: EmitOptions): string {
   out.push('  }')
   out.push('}')
   out.push('')
-  const needDec = emitted.some((r) => r.staticSend === null && r.segs.some((s) => s.kind !== 0))
-  if (needDec) {
-    out.push('function dec(s: string): string {')
-    out.push('  const t = String(s).split("+").join(" ")')
-    out.push('  try {')
-    out.push('    return decodeURIComponent(t)')
-    out.push('  } catch (e) {')
-    out.push('    return t')
-    out.push('  }')
-    out.push('}')
-    out.push('')
-  }
 
   // per-route runners, named by table position
   const runnerNames = new Map<RouteSpec, string>()
@@ -318,17 +355,17 @@ export function emitGenModule(model: ModuleModel, opts: EmitOptions): string {
     return a < b ? -1 : a > b ? 1 : 0
   })
 
-  out.push('export function dispatch(req: IncomingMessage, res: ServerResponse): boolean {')
-  out.push('  const m = String(req.method || "")')
-  out.push('  const url = String(req.url || "/")')
-  out.push('  let path = url')
-  out.push('  let qs = ""')
-  out.push('  const qi = url.indexOf("?")')
-  out.push('  if (qi >= 0) {')
-  out.push('    path = String(url.slice(0, qi))')
-  out.push('    qs = String(url.slice(qi + 1))')
-  out.push('  }')
-  out.push('  const segs = path.split("/")')
+  out.push(header)
+  out.push('    const m = String(req.method || "")')
+  out.push('    const url = String(req.url || "/")')
+  out.push('    let path = url')
+  out.push('    let qs = ""')
+  out.push('    const qi = url.indexOf("?")')
+  out.push('    if (qi >= 0) {')
+  out.push('      path = String(url.slice(0, qi))')
+  out.push('      qs = String(url.slice(qi + 1))')
+  out.push('    }')
+  out.push('    const segs = path.split("/")')
   for (const m of methods) {
     const list = emitted
       .filter(
@@ -348,19 +385,20 @@ export function emitGenModule(model: ModuleModel, opts: EmitOptions): string {
     if (list.length === 0) {
       continue
     }
-    out.push('  if (m === ' + J(m) + ') {')
+    out.push('    if (m === ' + J(m) + ') {')
     for (const r of list) {
-      out.push(emitCheck(r, runnerNames.get(r) as string, '    '))
+      out.push(emitCheck(r, runnerNames.get(r) as string, '      '))
     }
-    out.push('    return false')
-    out.push('  }')
+    out.push('      return false')
+    out.push('    }')
   }
   // fallthrough: methods with no section only see '*' routes
   const star = emitted.filter((r) => r.method === '*').sort(segCmp)
   for (const r of star) {
-    out.push(emitCheck(r, runnerNames.get(r) as string, '  '))
+    out.push(emitCheck(r, runnerNames.get(r) as string, '    '))
   }
-  out.push('  return false')
+  out.push('    return false')
+  out.push('  }')
   out.push('}')
   out.push('')
   return out.join('\n')

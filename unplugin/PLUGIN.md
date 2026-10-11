@@ -37,40 +37,40 @@ export const app = createRouter()
 
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
-app.post('/echo', (c) => c.text(c.req.body()))
+app.post('/echo', (c) => c.text(c.req.body()), { body: true })
 app.get('/files/*', (c) => c.text(c.req.param('*')))
 ```
 
-At `buildStart` (and on each transform/watch event for the file) the plugin writes `src/.ch3/routes.gen.ts` containing:
+At `buildStart` (and on each transform/watch event for the file) the plugin writes `src/.ch3/routes.gen.ts` satisfying `docs/route-contract.md`:
 
+- `export class CompiledRoutes extends GenDispatch` whose `dispatch(req, res)` runs per-method sections with route checks ordered by the same precedence as the runtime trie (static before param before wildcard, then registration order).
 - `routeTable`: full-shape literals `{ method, path, kind, handlerIdx, needsBody }[]`.
-- Per-route runners: literal send-chains (like `(c) => c.json({...})` with literal args and no middleware) compile down to straight `res` writes with no `Ctx` allocation; everything else delegates to `app._run(idx, ...)`, which buffers the body when needed and walks the middleware chain.
-- `dispatch(req, res): boolean`: per-method sections with route checks ordered by the same precedence as the runtime trie (static before param before wildcard, then registration order).
-- `bindApp(app)`: hands the router instance to the module (see the scriptc note below).
+- Per-route runners: literal send-chains (like `(c) => c.json({...})` with literal args and no middleware) compile down to straight `res` writes with no `Ctx` allocation; ctx routes build `ReqView`/`Ctx` through the contract surface (`rv._seedPm`, `_guard`, `_buffer`, `dec`) and call the composed middleware+handler at `app._chains[idx]`.
+- `constructor(a: App)` injects the router instance (see the scriptc note below).
 
 ## Wiring dispatch into your server
 
 ```ts
 // src/main.ts
-import * as http from 'node:http'
 import { app } from './routes.ch3.ts'
-import { bindApp, dispatch } from './.ch3/routes.gen.ts'
+import { CompiledRoutes } from './.ch3/routes.gen.ts'
 
-bindApp(app)
-
-http.createServer((req, res) => {
-  if (!dispatch(req, res)) {
-    app._dispatch(req, res) // runtime fallback: bailed + dynamic routes
-  }
-}).listen(3000)
+app.withDispatch(new CompiledRoutes(app))
+app.serve({ port: 3000 })
 ```
 
-`dispatch` returns `false` for any route it does not know (non-literal registrations, notFound, or no match), and the runtime path handles it.
-Routes registered while the app is running also keep working through the fallback.
+`app.serve()`/`app.handler()` call the generated dispatch FIRST on every request; `false` declines to the internal dispatch, which covers non-literal registrations, notFound, and misses.
+Routes registered while the app is running also keep working through the internal path.
+
+## Declared body buffering
+
+Body buffering is opt-in per the contract's declared-body rule: a handler that reads `c.req.body()` must register with `{ body: true }` or it receives `''`.
+The emitted runner calls `_buffer` only for declared routes on body-carrying methods (POST/PUT/PATCH/DELETE); `app.all` keeps a runtime method check.
+This is identical to what the internal dispatch does, so generated and runtime paths agree on body semantics.
 
 ## What is lowered, what is bailed
 
-Extracted and specialized: `app.<method>(literalPath, handler)`, `app.all`, `app.on`, `app.use` snapshot semantics, same-file `app.route(prefix, sub)` mounts (replayed in the runtime's trie-DFS order so handler indices line up), literal send-chains (`c.json`, `c.text`, `c.html`, `c.redirect`, `c.status`, `c.header`).
+Extracted and specialized: `app.<method>(literalPath, handler[, opts])` including `{ body: true }`, `app.all`, `app.on`, `app.use` snapshot semantics, same-file `app.route(prefix, sub)` mounts (replayed in the runtime's trie-DFS order so handler indices line up), literal send-chains (`c.json`, `c.text`, `c.html`, `c.redirect`, `c.status`, `c.header`).
 
 Bailed to runtime registration (still correct through the fallback, listed in a build warning):
 
@@ -94,13 +94,14 @@ The plugin never silently produces wrong routes: uncertainty means bail, not gue
 
 ## Compiling with scriptc
 
-The generated module only lowers when it stays pure program code:
+The generated module only lowers when the whole app graph is program code.
+Under `scriptc build`, a dependency module that imports a binding rooted at a package instantiation (`app = createRouter()` in another file, or any package class) loses lowering for ALL its exports (SC1090): the poisoning applies to value imports AND `import type` edges, and a module that imports `app` cannot call other imported functions either.
+Method calls on an npm-rooted binding lower (`app.serve(...)`); field reads and passing it as an argument do not.
+`--dynamic` is not an escape hatch either: `IncomingMessage`/`ServerResponse` cannot cross the dynamic boundary.
 
-- The app reaches it through `bindApp(app)`, never through an import: a dependency module that imports a binding rooted at a package instantiation (`app = createRouter()` in another file, or any package class like `Ctx`) loses lowering under `scriptc build` (SC1090), and a module that imports `app` cannot call other imported functions either.
-- It touches `App` only through `import type`, which is erased.
-
-Because of the same boundary, every file in the compiled graph should reach the router through source paths rather than the built package.
+The emitted shape sidesteps all of it: `CompiledRoutes` is instantiated inside the app-owning entry (`app.withDispatch(new CompiledRoutes(app))`, a method call), the app arrives through the constructor rather than an import, and the contract surface (`GenDispatch`, `ReqView`, `Ctx`, `_buffer`, `_guard`, `dec`) is imported normally when every file reaches the router through SOURCE paths.
 Inside this repo the fixture uses a barrel (`fixtures/vite-app/src/ch3.ts`) that re-exports `../../../src/index.ts`; consumers can do the same with an installed source layout or a path alias.
+This is also the fast path: `--npm-static` linkage runs measurably slower than program-code linkage.
 
 ```sh
 cd fixtures/vite-app

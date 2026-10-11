@@ -13,7 +13,7 @@ import type {
   SegSpec,
   StaticSend,
 } from './model.ts'
-import { ROUTE_METHODS, WRITE_METHODS } from './model.ts'
+import { ROUTE_METHODS } from './model.ts'
 
 export interface ExtractOptions {
   // Extra module specifiers to treat as ch3 imports (default
@@ -30,6 +30,7 @@ interface PendingRoute {
   segs: SegSpec[]
   hasMw: boolean
   mwUnsafe: boolean
+  declaredBody: boolean // opts.body === true at registration (contract)
   handlerNode: ts.Expression | null
   node: ts.Node
 }
@@ -596,6 +597,7 @@ export function extractModule(
       handlerNode: pr.handlerNode === null ? undefined : pr.handlerNode,
       hasMw: mergedHasMw,
       mwUnsafe: mergedMwUnsafe,
+      declaredBody: pr.declaredBody,
       needsBody: false,
       staticSend: null,
       registered: model.routes.length,
@@ -604,13 +606,32 @@ export function extractModule(
     }
   }
 
+  // Third-arg options on verb/on registrations: { body: true } declares
+  // body use (docs/route-contract.md). Non-literal opts bail the route.
+  const optsBody = (
+    optArg: ts.Expression | undefined,
+    node: ts.Node
+  ): { ok: boolean; body: boolean } => {
+    if (optArg === undefined) {
+      return { ok: true, body: false }
+    }
+    const v = evalLiteral(optArg)
+    if (!v.ok || typeof v.v !== 'object' || v.v === null || Array.isArray(v.v)) {
+      warn(node, 'non-literal options object — this route stays runtime-only')
+      return { ok: false, body: false }
+    }
+    const o = v.v as { [k: string]: unknown }
+    return { ok: true, body: o.body === true }
+  }
+
   const pushRoute = (
     v: VarState,
     isApp: boolean,
     method: string,
     path: string,
     node: ts.Node,
-    handlerNode: ts.Expression | null
+    handlerNode: ts.Expression | null,
+    declaredBody: boolean
   ): void => {
     const parsed = parsePath(path)
     if (parsed.segs === null) {
@@ -626,6 +647,7 @@ export function extractModule(
       segs: parsed.segs,
       hasMw: v.mwDepth > 0,
       mwUnsafe: v.mwUnsafe,
+      declaredBody: declaredBody,
       handlerNode: handlerNode,
       node: node,
     }
@@ -727,23 +749,28 @@ export function extractModule(
     if (name === 'on') {
       const m = args.length >= 1 ? evalString(args[0]) : { ok: false, v: '' }
       const p = args.length >= 2 ? evalString(args[1]) : { ok: false, v: '' }
-      if (args.length !== 3 || !m.ok || !p.ok) {
+      if ((args.length !== 3 && args.length !== 4) || !m.ok || !p.ok) {
         warn(
           call.node,
-          'on() expects (method: literal, path: literal, handler) — left to runtime'
+          'on() expects (method: literal, path: literal, handler[, opts]) — left to runtime'
         )
         consumeFnsSlot(v)
         return
       }
-      pushRoute(v, isApp, m.v.toUpperCase(), p.v, call.node, args[2])
+      const ob = optsBody(args[3], call.node)
+      if (!ob.ok) {
+        consumeFnsSlot(v)
+        return
+      }
+      pushRoute(v, isApp, m.v.toUpperCase(), p.v, call.node, args[2], ob.body)
       return
     }
     if (Object.prototype.hasOwnProperty.call(ROUTE_METHODS, name)) {
       const p = args.length >= 1 ? evalString(args[0]) : { ok: false, v: '' }
-      if (args.length !== 2) {
+      if (args.length !== 2 && args.length !== 3) {
         warn(
           call.node,
-          name + '() expects exactly (path, handler) — this route stays runtime-only'
+          name + '() expects (path, handler[, opts]) — this route stays runtime-only'
         )
         consumeFnsSlot(v)
         return
@@ -756,7 +783,12 @@ export function extractModule(
         consumeFnsSlot(v)
         return
       }
-      pushRoute(v, isApp, ROUTE_METHODS[name], p.v, call.node, args[1])
+      const ob = optsBody(args[2], call.node)
+      if (!ob.ok) {
+        consumeFnsSlot(v)
+        return
+      }
+      pushRoute(v, isApp, ROUTE_METHODS[name], p.v, call.node, args[1], ob.body)
       return
     }
     // notFound/serve/handler/request — runtime surface, nothing to extract
@@ -832,8 +864,9 @@ export function extractModule(
         r.staticSend = s
       }
     }
-    r.needsBody =
-      r.staticSend === null && (r.method === '*' || WRITE_METHODS[r.method] === true)
+    // needsBody drives _buffer in the emitted runner: only routes that
+    // declared `body: true` at registration (contract), never speculative.
+    r.needsBody = r.staticSend === null && r.declaredBody
     if (r.handlerIdx < 0 && r.staticSend === null) {
       r.emit = false
       r.bailReason = 'registration order is uncertain past this point'

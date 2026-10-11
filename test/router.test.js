@@ -158,19 +158,34 @@ test('default 404 and custom notFound', () => {
 test('method dispatch is strict per method', () => {
   const app = createRouter()
   app.get('/r', (c) => c.text('get'))
-  app.post('/r', (c) => c.text('post:' + c.req.body()))
+  app.post('/r', (c) => c.text('post:' + c.req.body()), { body: true })
   assert.equal(call(app, { method: 'GET', url: '/r' }).body, 'get')
   const res = call(app, { method: 'POST', url: '/r' }, 'hi')
   assert.equal(res.body, 'post:hi')
   assert.equal(call(app, { method: 'DELETE', url: '/r' }).statusCode, 404)
 })
 
-test('post/put/patch/delete buffers body before handler runs', () => {
+test('body buffers before handler only when route declares body: true', () => {
   const app = createRouter()
-  app.post('/echo', (c) => c.text(c.req.body()))
+  app.post('/echo', (c) => c.text(c.req.body()), { body: true })
   const res = call(app, { method: 'POST', url: '/echo' }, 'hello world')
   assert.equal(res.body, 'hello world')
   assert.equal(res.headers['content-length'], '11')
+
+  // Same handler without the declaration: declared-body contract says
+  // no buffering happens and body() returns ''. Deterministic opt-in —
+  // see docs/route-contract.md.
+  const app2 = createRouter()
+  app2.post('/echo', (c) => c.text('[' + c.req.body() + ']'))
+  const res2 = call(app2, { method: 'POST', url: '/echo' }, 'ignored')
+  assert.equal(res2.body, '[]')
+})
+
+test('body: true on a GET route is a no-op', () => {
+  const app = createRouter()
+  app.get('/g', (c) => c.text('g'), { body: true })
+  const res = call(app, { method: 'GET', url: '/g' }, 'payload')
+  assert.equal(res.body, 'g')
 })
 
 test('HEAD falls back to GET handler', () => {
@@ -308,4 +323,65 @@ test('non-ascii body gets byte-accurate content-length', () => {
   app.get('/u', (c) => c.text('héllo → 👋'))
   const res = call(app, { url: '/u' })
   assert.equal(res.headers['content-length'], String(Buffer.byteLength('héllo → 👋')))
+})
+
+test('withDispatch generated module takes precedence and can decline', () => {
+  return import('../dist/esm/index.js').then(({ GenDispatch, createRouter }) => {
+    class Gen extends GenDispatch {
+      dispatch(req, res) {
+        const url = String(req.url || '/')
+        if (url === '/fast') {
+          res.statusCode = 200
+          res.setHeader('content-type', 'text/plain')
+          res.end('gen-hit')
+          return true
+        }
+        return false
+      }
+    }
+    const app = createRouter()
+    app.withDispatch(new Gen())
+    app.get('/fast', (c) => c.text('internal'))
+    app.get('/other', (c) => c.text('internal-other'))
+    // gen claims /fast → its response wins over the registered route
+    assert.equal(call(app, { url: '/fast' }).body, 'gen-hit')
+    // gen declines /other → internal dispatch serves it
+    assert.equal(call(app, { url: '/other' }).body, 'internal-other')
+  })
+})
+
+test('generated dispatch can spawn ctx + seed params + buffer via helpers', () => {
+  return import('../dist/esm/index.js').then((m) => {
+    const app = m.createRouter()
+    class Gen extends m.GenDispatch {
+      dispatch(req, res) {
+        const url = String(req.url || '/')
+        if (url.indexOf('/u/') === 0) {
+          const rv = new m.ReqView(req, '', url)
+          const c = new m.Ctx(rv, res)
+          rv._seedPm(['id', m.dec(url.slice(3))])
+          m._guard(res, function () {
+            c.json({ id: c.req.param('id') })
+          })
+          return true
+        }
+        if (url === '/b') {
+          const rv = new m.ReqView(req, '', url)
+          const c = new m.Ctx(rv, res)
+          m._buffer(req, res, c, function () {
+            c.text('b:' + c.req.body())
+          })
+          return true
+        }
+        return false
+      }
+    }
+    app.withDispatch(new Gen())
+    const res = call(app, { url: '/u/7' })
+    assert.equal(JSON.parse(res.body).id, '7')
+    const res2 = call(app, { method: 'POST', url: '/b' }, 'hey')
+    assert.equal(res2.body, 'b:hey')
+    // unknown → internal → 404
+    assert.equal(call(app, { url: '/zzz' }).statusCode, 404)
+  })
 })

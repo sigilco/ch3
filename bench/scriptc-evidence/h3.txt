@@ -1,0 +1,20 @@
+scriptc coverage /home/ubuntu/repos/ch3/bench/apps/h3.mjs
+
+  not analyzable: 17 TypeScript errors — fix type errors first (scriptc only analyzes programs that typecheck)
+  note: 9 of them come from scriptc's type world, not necessarily from the project's own tsc configuration — see each hint
+
+/home/ubuntu/repos/ch3/bench/node_modules/h3/dist/h3.d.mts:1:1 - error SC0001: 'Crypto' refers to a value, but is being used as a type here. Did you mean 'typeof Crypto'?
+
+/home/ubuntu/repos/ch3/bench/node_modules/h3/dist/h3.d.mts:1:1 - error SC0001: Cannot find name 'MimeType'. Did you mean 'MimeType$1'?
+
+/home/ubuntu/repos/ch3/bench/node_modules/h3/dist/h3.d.mts:1:1 - error SC0001: Cannot find name 'HeadersInit'.
+
+  hint: 'HeadersInit' comes from the DOM library, which scriptc's type world does not include (it checks with the ES2025 library and Node types regardless of the project's "lib") — declare the shape you need locally, or move browser-only code out of the program
+
+/home/ubuntu/repos/ch3/bench/node_modules/h3/dist/h3.d.mts:1:1 - error SC0001: This member cannot have an 'override' modifier because it is not declared in the base class 'Error'.
+
+/home/ubuntu/repos/ch3/bench/node_modules/h3/dist/h3.d.mts:1:1 - error SC0001: Cannot find name 'BodyInit'.
+
+  hint: 'BodyInit' comes from the DOM library, which scriptc's type world does not include (it checks with the ES2025 library and Node types regardless of the project's "lib") — declare the shape you need locally, or move browser-only code out of the program
+
+/home/ubuntu/repos/ch3/bench/node_modules/h3/dist/h3.d.mts:1:1 - error SC0001: Cannot find name 'BodyInit'.
