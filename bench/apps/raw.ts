@@ -27,6 +27,8 @@ function send(res: http.ServerResponse, status: number, ctype: string, body: str
 
 function route(url: string, method: string, body: string, res: http.ServerResponse): void {
   if (method === 'GET') {
+    if (url === '/') { send(res, 200, 'text/plain', ''); return }
+    if (url === '/hello') { send(res, 200, 'text/plain', 'Hello World!'); return }
     if (url === '/json') { send(res, 200, 'application/json', JSON_BODY); return }
     if (url === '/deep/a/b/c/d/e') { send(res, 200, 'application/json', OK_BODY); return }
     if (url.length > 6 && url.slice(0, 6) === '/user/') {
@@ -61,6 +63,7 @@ function route(url: string, method: string, body: string, res: http.ServerRespon
     }
   } else if (method === 'POST') {
     if (url === '/echo') { send(res, 200, 'text/plain', body); return }
+    if (url === '/user') { send(res, 200, 'text/plain', ''); return }
   }
   send(res, 404, 'text/plain', 'Not Found')
 }

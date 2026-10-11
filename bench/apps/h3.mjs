@@ -5,9 +5,12 @@ import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from './common.mjs'
 
 const app = new H3()
 
+app.get('/', () => '')
+app.get('/hello', () => 'Hello World!')
 app.get('/json', () => ({ hello: 'world' }))
 app.get('/user/:id', (e) => ({ id: getRouterParam(e, 'id') }))
 app.post('/echo', async (e) => new Response(await readRawBody(e), { headers: { 'content-type': 'text/plain' } }))
+app.post('/user', () => '')
 app.get('/deep/a/b/c/d/e', () => ({ ok: true }))
 app.get('/files/**', (e) => String(getRouterParam(e, '_') ?? ''))
 

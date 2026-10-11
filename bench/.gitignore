@@ -1,5 +1,6 @@
 node_modules/
 results/
+results-wrk2/
 logs/
 bin/
 ceilings/bin/

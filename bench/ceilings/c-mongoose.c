@@ -16,6 +16,14 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
   const char *uri = hm->uri.buf;
   size_t ulen = hm->uri.len;
   if (mg_strcmp(hm->method, mg_str("GET")) == 0) {
+    if (ulen == 1 && uri[0] == '/') {
+      reply(c, 200, "text/plain", "", 0);
+      return;
+    }
+    if (ulen == 6 && memcmp(uri, "/hello", 6) == 0) {
+      reply(c, 200, "text/plain", "Hello World!", 12);
+      return;
+    }
     if (ulen == 5 && memcmp(uri, "/json", 5) == 0) {
       reply(c, 200, "application/json", "{\"hello\":\"world\"}", 17);
       return;
@@ -29,6 +37,10 @@ static void fn(struct mg_connection *c, int ev, void *ev_data) {
   } else if (mg_strcmp(hm->method, mg_str("POST")) == 0) {
     if (ulen == 5 && memcmp(uri, "/echo", 5) == 0) {
       reply(c, 200, "text/plain", hm->body.buf, hm->body.len);
+      return;
+    }
+    if (ulen == 5 && memcmp(uri, "/user", 5) == 0) {
+      reply(c, 200, "text/plain", "", 0);
       return;
     }
   }

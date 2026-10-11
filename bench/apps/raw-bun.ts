@@ -12,6 +12,8 @@ const TEXT_H = { 'content-type': 'text/plain' }
 
 function route(url: string, method: string, req: Request): Response {
   if (method === 'GET') {
+    if (url === '/') return new Response('', { headers: TEXT_H })
+    if (url === '/hello') return new Response('Hello World!', { headers: TEXT_H })
     if (url === '/json') return new Response(JSON_BODY, { headers: JSON_H })
     if (url === '/deep/a/b/c/d/e') return new Response(OK_BODY, { headers: JSON_H })
     if (url.startsWith('/user/')) {
@@ -33,8 +35,9 @@ function route(url: string, method: string, req: Request): Response {
         }
       }
     }
-  } else if (method === 'POST' && url === '/echo') {
-    return new Response(req.body, { headers: TEXT_H })
+  } else if (method === 'POST') {
+    if (url === '/echo') return new Response(req.body, { headers: TEXT_H })
+    if (url === '/user') return new Response('', { headers: TEXT_H })
   }
   return new Response('Not Found', { status: 404, headers: TEXT_H })
 }

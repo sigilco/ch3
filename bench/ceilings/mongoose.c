@@ -2509,18 +2509,32 @@ static void http_cb(struct mg_connection *c, int ev, void *ev_data) {
           // contain a Content-length header. Other requests can also contain a
           // body, but their content has no defined semantics (RFC 7231)
           require_content_len = true;
-          ofs += (size_t) n;  // this request has been processed
+          // ch3 bench patch: for requests (not responses) treat a missing
+          // Content-Length as an EMPTY body — the web-frameworks POST /user
+          // route is an empty-body POST which autocannon sends without
+          // Content-Length. Stock mongoose answers 411 and closes before the
+          // handler runs; instead deliver the message with body.len = 0 and
+          // let the normal `ofs += n + hm.body.len` path consume it.
+          if (!is_response) {
+            hm.body.len = 0;
+            require_content_len = false;
+          }
         } else if (is_response) {
           // HTTP spec 7.2 Entity body: All other responses must include a body
           // or Content-Length header field defined with a value of 0.
           int status = mg_http_status(&hm);
           require_content_len = status >= 200 && status != 204 && status != 304;
         }
-        if (require_content_len) {
+        if (require_content_len && is_response) {
           if (!c->is_client) mg_http_reply(c, 411, "", "");
           MG_ERROR(("Content length missing from %s",
                     is_response ? "response" : "request"));
         }
+        // ch3 bench patch: for REQUESTS (POST/PUT with no Content-Length),
+        // skip the stock 411 + MG_ERROR close entirely — the web-frameworks
+        // POST /user route is an empty-body POST which autocannon sends
+        // without a Content-Length header. The message is still delivered
+        // with an empty body.
       }
 
       if (is_chunked) {

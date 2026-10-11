@@ -6,9 +6,12 @@ import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from './common.mjs'
 
 const app = createRouter()
 
+app.get('/', (c) => c.text(''))
+app.get('/hello', (c) => c.text('Hello World!'))
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
-app.post('/echo', (c) => c.text(c.req.body()))
+app.post('/echo', (c) => c.text(c.req.body()), { body: true })
+app.post('/user', (c) => c.text(''))
 app.get('/deep/a/b/c/d/e', (c) => c.json({ ok: true }))
 app.get('/files/*', (c) => c.text(c.req.param('*') || ''))
 

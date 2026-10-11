@@ -11,6 +11,9 @@ use serde_json::json;
 #[tokio::main]
 async fn main() {
     let app = Router::new()
+        .route("/", get(|| async { "" }))
+        .route("/hello", get(|| async { "Hello World!" }))
+        .route("/user", post(|| async { "" }))
         .route("/json", get(|| async { Json(json!({"hello": "world"})) }))
         .route("/user/{id}", get(|Path(id): Path<String>| async move {
             Json(json!({"id": id}))
