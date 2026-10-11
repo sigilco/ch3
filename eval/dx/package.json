@@ -1,0 +1,20 @@
+{
+  "name": "@sigilco/ch3-dx-eval",
+  "private": true,
+  "type": "module",
+  "description": "DX evaluation harness: ch3 vs hono vs express vs h3",
+  "scripts": {
+    "judge": "tsx judge.ts",
+    "scorecard": "tsx judge.ts --json"
+  },
+  "devDependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^24.0.0",
+    "express": "^4.21.2",
+    "h3": "^1.15.3",
+    "hono": "^4.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0"
+  }
+}

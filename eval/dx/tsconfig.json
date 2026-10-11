@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@sigilco/ch3": ["../../src/index.ts"]
+    }
+  },
+  "include": ["subjects/**/*.ts", "judge.ts", "surface/**/*.ts", "lib/**/*.ts"],
+  "exclude": ["probes"]
+}

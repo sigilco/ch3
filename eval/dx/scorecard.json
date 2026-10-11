@@ -1,0 +1,6195 @@
+{
+  "generated": "2026-10-11T18:26:43.887Z",
+  "subjects": [
+    "ch3",
+    "hono",
+    "express",
+    "h3"
+  ],
+  "weights": {
+    "typeSafety": 0.5,
+    "determinism": 0.3,
+    "ergonomics": 0.2
+  },
+  "scores": {
+    "ch3": {
+      "typeSafety": 0.41666666666666663,
+      "determinism": 0.7651515151515151,
+      "ergonomics": 0.5599999999999998,
+      "total": 0.5498787878787879,
+      "compileRate": 1,
+      "probeRate": 0.16666666666666666,
+      "conformRate": 0.8636363636363636,
+      "singleWayRate": 0.6666666666666666,
+      "locAvg": 21.857142857142858,
+      "importAvg": 3
+    },
+    "hono": {
+      "typeSafety": 0.5333333333333333,
+      "determinism": 0.5119047619047619,
+      "ergonomics": 0.875,
+      "total": 0.5952380952380952,
+      "compileRate": 1,
+      "probeRate": 0.3333333333333333,
+      "conformRate": 0.8571428571428571,
+      "singleWayRate": 0.16666666666666666,
+      "locAvg": 18.714285714285715,
+      "importAvg": 4.142857142857143
+    },
+    "express": {
+      "typeSafety": 0.7666666666666666,
+      "determinism": 0.6363636363636364,
+      "ergonomics": 0.7,
+      "total": 0.7142424242424242,
+      "compileRate": 1,
+      "probeRate": 0.6666666666666666,
+      "conformRate": 0.7727272727272727,
+      "singleWayRate": 0.5,
+      "locAvg": 20.857142857142858,
+      "importAvg": 3
+    },
+    "h3": {
+      "typeSafety": 0.5333333333333333,
+      "determinism": 0.6428571428571428,
+      "ergonomics": 0,
+      "total": 0.4595238095238095,
+      "compileRate": 1,
+      "probeRate": 0.3333333333333333,
+      "conformRate": 0.9523809523809523,
+      "singleWayRate": 0.3333333333333333,
+      "locAvg": 22.285714285714285,
+      "importAvg": 7.571428571428571
+    }
+  },
+  "results": {
+    "ch3": {
+      "tasks": {
+        "01-crud": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 47,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /users",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "[]",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /users/42",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"42\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "POST /users valid",
+              "pass": true,
+              "observed": {
+                "status": 201,
+                "body": "{\"name\":\"ada\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "POST /users invalid",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"name required\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "PUT /users/7",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"7\",\"name\":\"b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "DELETE /users/9",
+              "pass": true,
+              "observed": {
+                "status": 204,
+                "body": "",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 6,
+            "total": 6
+          }
+        },
+        "02-mounting": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 25,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /health unguarded",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"ok\":true}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data no token",
+              "pass": true,
+              "observed": {
+                "status": 401,
+                "body": "{\"error\":\"unauthorized\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"secret\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/more token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"more\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 4,
+            "total": 4
+          }
+        },
+        "03-versioned-405": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 16,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /v1/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":1,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /v2/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":2,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "POST /v1/items (want 405+Allow)",
+              "pass": false,
+              "observed": {
+                "status": 404,
+                "body": "Not Found",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=utf-8"
+                }
+              },
+              "detail": "status 404 (want 405)"
+            },
+            {
+              "desc": "OPTIONS /v1/items (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 404,
+                "body": "Not Found",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 2,
+            "total": 3
+          }
+        },
+        "04-errors": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 12,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /handled (want 400 json)",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"bad input\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /boom (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 500,
+                "body": "Internal Server Error",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 1
+          }
+        },
+        "05-query": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 24,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "?tag=a&tag=b&limit=5",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\",\"b\"],\"limit\":5,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "?tag=a",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\"],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "/search bare",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 3,
+            "total": 3
+          }
+        },
+        "06-precedence": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 15,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /assets/logo.png (want static)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"static\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets/x (want param)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"param\",\"name\":\"x\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets/a/b (want wild)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"a/b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 404,
+                "body": "Not Found",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 3,
+            "total": 3
+          }
+        },
+        "07-traps": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 14,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /async (want loud error, not hang)",
+              "pass": false,
+              "observed": {
+                "status": "unreachable",
+                "body": "TimeoutError: The operation was aborted due to timeout",
+                "headers": {}
+              },
+              "detail": "request failed: TimeoutError: The operation was aborted due to timeout"
+            },
+            {
+              "desc": "GET /double (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 200,
+                "body": "{\"a\":1}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "unhandledRejection observed",
+              "pass": false,
+              "observed": {
+                "status": "process-level",
+                "body": "async boom",
+                "headers": {}
+              },
+              "detail": "a handler rejection escaped the framework dispatch path"
+            }
+          ],
+          "conform": {
+            "pass": 0,
+            "total": 2
+          }
+        }
+      },
+      "probes": [
+        {
+          "file": "probes/ch3/traps.probe.ts",
+          "expectations": [
+            {
+              "id": "param-name",
+              "line": 8,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "param-on-unmatched-route",
+              "line": 13,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "bad-path",
+              "line": 17,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "async-handler",
+              "line": 21,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "query-not-param",
+              "line": 26,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "handler-arity",
+              "line": 30,
+              "caught": true,
+              "message": "Argument of type '(a: any, b: any, d: any, e: any) => void' is not assignable to parameter of type '(c: Ctx<\"/arity\">) => void'.   Target signature provides too few arguments. Expected 4 or more, but got 1. | Parameter 'a' implicitly has an 'any' type. | Parameter 'b' implicitly has an 'any' type. | Parameter 'd' implicitly has an 'any' type. | Parameter 'e' implicitly has an 'any' type."
+            }
+          ],
+          "strayDiags": []
+        }
+      ],
+      "probeScore": {
+        "caught": 1,
+        "total": 6
+      },
+      "surface": {
+        "app": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.get": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.post": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.put": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.delete": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.patch": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.head": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.options": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.all": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.on": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.use": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.notFound": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.route": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.handler": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.serve": {
+          "exists": true,
+          "signatures": 2
+        },
+        "sub": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.get": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.post": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.put": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.delete": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.patch": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.head": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.options": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.all": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.on": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.use": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.notFound": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.route": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.handler": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.serve": {
+          "exists": true,
+          "signatures": 2
+        },
+        "Router": {
+          "exists": false,
+          "signatures": 0
+        },
+        "c": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.raw": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.path": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.param": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.query": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.queryAll": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.header": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.body": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.strictContentLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.assignSocket": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.detachSocket": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writeContinue": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writeEarlyHints": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writeHead": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.writeInformation": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.writeProcessing": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.aborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.httpVersion": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.httpVersionMajor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.httpVersionMinor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.complete": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.headersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.rawHeaders": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.trailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.trailersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.rawTrailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.signal": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.readableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableDidRead": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableFlowing": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.read": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.setEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.pause": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.resume": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.isPaused": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.unpipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.unshift": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.wrap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.push": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.iterator": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.map": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.filter": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.forEach": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.toArray": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.some": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.find": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.req.every": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.flatMap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.drop": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.take": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.asIndexedPairs": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.reduce": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.req.addListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.emit": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.on": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.once": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.prependListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.prependOnceListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.removeListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.chunkedEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.shouldKeepAlive": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.useChunkedEncodingByDefault": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.sendDate": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.finished": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.headersSent": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.setHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.setHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.appendHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getHeaderNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.hasHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.removeHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.addTrailers": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.flushHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableFinished": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableCorked": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableNeedDrain": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.write": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.setDefaultEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.end": {
+          "exists": true,
+          "signatures": 3
+        },
+        "c.res.cork": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.uncork": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.addListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.emit": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.on": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.once": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.prependListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.prependOnceListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.removeListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.status": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.header": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.json": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.text": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.html": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.redirect": {
+          "exists": true,
+          "signatures": 2
+        }
+      },
+      "ways": {
+        "01-crud": [
+          {
+            "desc": "app.get(path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.get"
+          },
+          {
+            "desc": "app.on('GET', path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.on"
+          },
+          {
+            "desc": "app.all(path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.all"
+          }
+        ],
+        "02-mounting": [
+          {
+            "desc": "app.route(prefix, sub)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.route"
+          }
+        ],
+        "03-versioned-405": [
+          {
+            "desc": "app.route(prefix, sub)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.route"
+          }
+        ],
+        "04-errors": [
+          {
+            "desc": "early return c.status().json() (no error hook exists)",
+            "verified": true,
+            "partial": false,
+            "via": "member:c.status"
+          }
+        ],
+        "05-query": [
+          {
+            "desc": "c.req.query(name) single value only — cannot read repeats",
+            "verified": false,
+            "partial": true,
+            "via": "member:c.req.query"
+          },
+          {
+            "desc": "c.req.queryAll() last-wins map — cannot read repeats",
+            "verified": false,
+            "partial": true,
+            "via": "member:c.req.queryAll"
+          }
+        ],
+        "06-precedence": [
+          {
+            "desc": "'*' tail splat",
+            "verified": true,
+            "partial": false,
+            "via": "syntax"
+          }
+        ],
+        "07-traps": []
+      },
+      "waysFlagged": [
+        "01-crud"
+      ]
+    },
+    "hono": {
+      "tasks": {
+        "01-crud": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 24,
+          "imports": {
+            "statements": 3,
+            "names": 4
+          },
+          "checks": [
+            {
+              "desc": "GET /users",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "[]",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /users/42",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"42\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "POST /users valid",
+              "pass": true,
+              "observed": {
+                "status": 201,
+                "body": "{\"name\":\"ada\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "POST /users invalid",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"name required\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "PUT /users/7",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"7\",\"name\":\"b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "DELETE /users/9",
+              "pass": true,
+              "observed": {
+                "status": 204,
+                "body": "",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=UTF-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 6,
+            "total": 6
+          }
+        },
+        "02-mounting": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 19,
+          "imports": {
+            "statements": 3,
+            "names": 4
+          },
+          "checks": [
+            {
+              "desc": "GET /health unguarded",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"ok\":true}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data no token",
+              "pass": true,
+              "observed": {
+                "status": 401,
+                "body": "{\"error\":\"unauthorized\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"secret\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/more token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"more\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 4,
+            "total": 4
+          }
+        },
+        "03-versioned-405": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 13,
+          "imports": {
+            "statements": 3,
+            "names": 4
+          },
+          "checks": [
+            {
+              "desc": "GET /v1/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":1,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /v2/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":2,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "POST /v1/items (want 405+Allow)",
+              "pass": false,
+              "observed": {
+                "status": 404,
+                "body": "404 Not Found",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=UTF-8"
+                }
+              },
+              "detail": "status 404 (want 405)"
+            },
+            {
+              "desc": "OPTIONS /v1/items (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 404,
+                "body": "404 Not Found",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=UTF-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 2,
+            "total": 3
+          }
+        },
+        "04-errors": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 20,
+          "imports": {
+            "statements": 4,
+            "names": 5
+          },
+          "checks": [
+            {
+              "desc": "GET /handled (want 400 json)",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"bad input\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /boom (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 500,
+                "body": "{\"error\":\"boom\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 1
+          }
+        },
+        "05-query": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 24,
+          "imports": {
+            "statements": 3,
+            "names": 4
+          },
+          "checks": [
+            {
+              "desc": "?tag=a&tag=b&limit=5",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\",\"b\"],\"limit\":5,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "?tag=a",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\"],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "/search bare",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 3,
+            "total": 3
+          }
+        },
+        "06-precedence": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 16,
+          "imports": {
+            "statements": 3,
+            "names": 4
+          },
+          "checks": [
+            {
+              "desc": "GET /assets/logo.png (want static)",
+              "pass": false,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"logo.png\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              },
+              "detail": "kind: want \"static\", got \"wild\""
+            },
+            {
+              "desc": "GET /assets/x (want param)",
+              "pass": false,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"x\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              },
+              "detail": "kind: want \"param\", got \"wild\""
+            },
+            {
+              "desc": "GET /assets/a/b (want wild)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"a/b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 3
+          }
+        },
+        "07-traps": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 15,
+          "imports": {
+            "statements": 3,
+            "names": 4
+          },
+          "checks": [
+            {
+              "desc": "GET /async (want loud error, not hang)",
+              "pass": true,
+              "observed": {
+                "status": 500,
+                "body": "Internal Server Error",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=UTF-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /double (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 200,
+                "body": "second",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/plain; charset=UTF-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 1
+          }
+        }
+      },
+      "probes": [
+        {
+          "file": "probes/hono/traps.probe.ts",
+          "expectations": [
+            {
+              "id": "param-name",
+              "line": 7,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "param-on-unmatched-route",
+              "line": 12,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "bad-path",
+              "line": 16,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "missing-await",
+              "line": 22,
+              "caught": true,
+              "message": "Property 'name' does not exist on type 'Promise<any>'."
+            },
+            {
+              "id": "query-not-param",
+              "line": 26,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "handler-arity",
+              "line": 30,
+              "caught": true,
+              "message": "No overload matches this call.   The last overload gave the following error.     Argument of type '(a: any, b: any, d: any, e: any) => any' is not assignable to parameter of type 'H<BlankEnv, \"/arity\", BlankInput, any>'.       Type '(a: any, b: any, d: any, e: any) => any' is not assignable to type 'Handler<BlankEnv, \"/arity\", BlankInput, any>'.         Target signature provides too few arguments. Expected 4 or more, but got 2. | Parameter 'a' implicitly has an 'any' type. | Parameter 'b' implicitly has an 'any' type. | Parameter 'd' implicitly has an 'any' type. | Parameter 'e' implicitly has an 'any' type."
+            }
+          ],
+          "strayDiags": []
+        }
+      ],
+      "probeScore": {
+        "caught": 2,
+        "total": 6
+      },
+      "surface": {
+        "app": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.get": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.post": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.put": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.delete": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.options": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.patch": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.query": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.all": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.on": {
+          "exists": true,
+          "signatures": 23
+        },
+        "app.use": {
+          "exists": true,
+          "signatures": 21
+        },
+        "app.router": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.getPath": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.routes": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.errorHandler": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.route": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.basePath": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.onError": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.notFound": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.mount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.fetch": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.request": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.fire": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.get": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.post": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.put": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.delete": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.options": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.patch": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.query": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.all": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.on": {
+          "exists": true,
+          "signatures": 23
+        },
+        "sub.use": {
+          "exists": true,
+          "signatures": 21
+        },
+        "sub.router": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.getPath": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.routes": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.errorHandler": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.route": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.basePath": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.onError": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.notFound": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.mount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.fetch": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.request": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.fire": {
+          "exists": true,
+          "signatures": 1
+        },
+        "Router": {
+          "exists": false,
+          "signatures": 0
+        },
+        "c": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.env": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.finalized": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.error": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.raw": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.routeIndex": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.path": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.bodyCache": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.param": {
+          "exists": true,
+          "signatures": 4
+        },
+        "c.req.query": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.req.queries": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.req.header": {
+          "exists": true,
+          "signatures": 3
+        },
+        "c.req.parseBody": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.req.json": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.text": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.arrayBuffer": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.bytes": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.blob": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.formData": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.addValidatedData": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.valid": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.matchedRoutes": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.routePath": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.event": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.executionCtx": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.ok": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.status": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.statusText": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.type": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.redirected": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.clone": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.body": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.bodyUsed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.arrayBuffer": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.blob": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.bytes": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.formData": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.json": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.text": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.render": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.setLayout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.getLayout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.setRenderer": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.header": {
+          "exists": true,
+          "signatures": 3
+        },
+        "c.status": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.set": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.get": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.var": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.newResponse": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.body": {
+          "exists": true,
+          "signatures": 4
+        },
+        "c.text": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.json": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.html": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.redirect": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.notFound": {
+          "exists": true,
+          "signatures": 1
+        }
+      },
+      "ways": {
+        "01-crud": [
+          {
+            "desc": "app.get(path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.get"
+          },
+          {
+            "desc": "app.on('GET', path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.on"
+          }
+        ],
+        "02-mounting": [
+          {
+            "desc": "app.route(prefix, sub)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.route"
+          },
+          {
+            "desc": "sub.basePath(prefix)",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.basePath"
+          },
+          {
+            "desc": "app.mount(prefix, sub)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.mount"
+          }
+        ],
+        "03-versioned-405": [
+          {
+            "desc": "sub.basePath(prefix)",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.basePath"
+          },
+          {
+            "desc": "app.route(prefix, sub)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.route"
+          }
+        ],
+        "04-errors": [
+          {
+            "desc": "app.onError + throw HTTPException",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.onError"
+          },
+          {
+            "desc": "return c.json(body, status) early",
+            "verified": true,
+            "partial": false,
+            "via": "member:c.json"
+          }
+        ],
+        "05-query": [
+          {
+            "desc": "c.req.queries(name) -> string[]",
+            "verified": true,
+            "partial": false,
+            "via": "member:c.req.queries"
+          }
+        ],
+        "06-precedence": [
+          {
+            "desc": "'*' wildcard",
+            "verified": true,
+            "partial": false,
+            "via": "syntax"
+          },
+          {
+            "desc": "':seg{regex}' regex param",
+            "verified": true,
+            "partial": false,
+            "via": "syntax"
+          }
+        ],
+        "07-traps": []
+      },
+      "waysFlagged": [
+        "01-crud",
+        "02-mounting",
+        "03-versioned-405",
+        "04-errors",
+        "06-precedence"
+      ]
+    },
+    "express": {
+      "tasks": {
+        "01-crud": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 30,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /users",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "[]",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /users/42",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"42\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "POST /users valid",
+              "pass": true,
+              "observed": {
+                "status": 201,
+                "body": "{\"name\":\"ada\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "POST /users invalid",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"name required\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "PUT /users/7",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"7\",\"name\":\"b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "DELETE /users/9",
+              "pass": true,
+              "observed": {
+                "status": 204,
+                "body": "",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": null
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 6,
+            "total": 6
+          }
+        },
+        "02-mounting": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 25,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /health unguarded",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"ok\":true}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data no token",
+              "pass": true,
+              "observed": {
+                "status": 401,
+                "body": "{\"error\":\"unauthorized\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"secret\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/more token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"more\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 4,
+            "total": 4
+          }
+        },
+        "03-versioned-405": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 16,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /v1/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":1,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /v2/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":2,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "POST /v1/items (want 405+Allow)",
+              "pass": false,
+              "observed": {
+                "status": 404,
+                "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /v1/items</pre>\n</body>\n</html>\n",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/html; charset=utf-8"
+                }
+              },
+              "detail": "status 404 (want 405)"
+            },
+            {
+              "desc": "OPTIONS /v1/items (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 200,
+                "body": "GET,HEAD",
+                "headers": {
+                  "allow": "GET,HEAD",
+                  "x-guard": null,
+                  "content-type": "text/html; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 2,
+            "total": 3
+          }
+        },
+        "04-errors": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 21,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /handled (want 400 json)",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"bad input\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /boom (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 500,
+                "body": "{\"error\":\"boom\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 1
+          }
+        },
+        "05-query": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 24,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "?tag=a&tag=b&limit=5",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\",\"b\"],\"limit\":5,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "?tag=a",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\"],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "/search bare",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 3,
+            "total": 3
+          }
+        },
+        "06-precedence": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 16,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /assets/logo.png (want static)",
+              "pass": false,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"logo.png\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              },
+              "detail": "kind: want \"static\", got \"wild\""
+            },
+            {
+              "desc": "GET /assets/x (want param)",
+              "pass": false,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"x\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              },
+              "detail": "kind: want \"param\", got \"wild\""
+            },
+            {
+              "desc": "GET /assets/a/b (want wild)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"a/b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 404,
+                "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /assets</pre>\n</body>\n</html>\n",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "text/html; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 3
+          }
+        },
+        "07-traps": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 14,
+          "imports": {
+            "statements": 2,
+            "names": 3
+          },
+          "checks": [
+            {
+              "desc": "GET /async (want loud error, not hang)",
+              "pass": false,
+              "observed": {
+                "status": "unreachable",
+                "body": "TimeoutError: The operation was aborted due to timeout",
+                "headers": {}
+              },
+              "detail": "request failed: TimeoutError: The operation was aborted due to timeout"
+            },
+            {
+              "desc": "GET /double (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 200,
+                "body": "{\"a\":1}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "unhandledRejection observed",
+              "pass": false,
+              "observed": {
+                "status": "process-level",
+                "body": "async boom",
+                "headers": {}
+              },
+              "detail": "a handler rejection escaped the framework dispatch path"
+            }
+          ],
+          "conform": {
+            "pass": 0,
+            "total": 2
+          }
+        }
+      },
+      "probes": [
+        {
+          "file": "probes/express/traps.probe.ts",
+          "expectations": [
+            {
+              "id": "param-name",
+              "line": 7,
+              "caught": true,
+              "message": "Property 'nam' does not exist on type '{ id: string; }'."
+            },
+            {
+              "id": "param-on-unmatched-route",
+              "line": 12,
+              "caught": true,
+              "message": "Property 'org' does not exist on type '{ id: string; }'."
+            },
+            {
+              "id": "bad-path",
+              "line": 16,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "async-handler",
+              "line": 20,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "query-not-param",
+              "line": 25,
+              "caught": true,
+              "message": "Property 'limit' does not exist on type '{}'."
+            },
+            {
+              "id": "handler-arity",
+              "line": 29,
+              "caught": true,
+              "message": "Parameter 'a' implicitly has an 'any' type. | Parameter 'b' implicitly has an 'any' type. | Parameter 'd' implicitly has an 'any' type. | Parameter 'e' implicitly has an 'any' type."
+            }
+          ],
+          "strayDiags": []
+        }
+      ],
+      "probeScore": {
+        "caught": 4,
+        "total": 6
+      },
+      "surface": {
+        "app": {
+          "exists": true,
+          "signatures": 2
+        },
+        "app.request": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.response": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.init": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.defaultConfiguration": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.engine": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.set": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.get": {
+          "exists": true,
+          "signatures": 6
+        },
+        "app.param": {
+          "exists": true,
+          "signatures": 2
+        },
+        "app.path": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.enabled": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.disabled": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.enable": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.disable": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.render": {
+          "exists": true,
+          "signatures": 2
+        },
+        "app.listen": {
+          "exists": true,
+          "signatures": 6
+        },
+        "app.router": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.settings": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.resource": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.map": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.locals": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.routes": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.use": {
+          "exists": true,
+          "signatures": 9
+        },
+        "app.on": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.mountpath": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.addListener": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.once": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.removeListener": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.emit": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.prependListener": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.prependOnceListener": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.all": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.post": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.put": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.delete": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.patch": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.options": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.head": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.query": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.checkout": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.connect": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.copy": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.lock": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.merge": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.mkactivity": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.mkcol": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.move": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.m-search": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.notify": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.propfind": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.proppatch": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.purge": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.report": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.search": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.subscribe": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.trace": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.unlock": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.unsubscribe": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.link": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.unlink": {
+          "exists": true,
+          "signatures": 5
+        },
+        "app.route": {
+          "exists": true,
+          "signatures": 2
+        },
+        "app.stack": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.param": {
+          "exists": true,
+          "signatures": 2
+        },
+        "sub.all": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.get": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.post": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.put": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.delete": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.patch": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.options": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.head": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.query": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.checkout": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.connect": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.copy": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.lock": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.merge": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.mkactivity": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.mkcol": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.move": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.m-search": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.notify": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.propfind": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.proppatch": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.purge": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.report": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.search": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.subscribe": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.trace": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.unlock": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.unsubscribe": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.link": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.unlink": {
+          "exists": true,
+          "signatures": 5
+        },
+        "sub.use": {
+          "exists": true,
+          "signatures": 9
+        },
+        "sub.route": {
+          "exists": true,
+          "signatures": 2
+        },
+        "sub.stack": {
+          "exists": true,
+          "signatures": 0
+        },
+        "Router": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.get": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.header": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.accepts": {
+          "exists": true,
+          "signatures": 4
+        },
+        "c.acceptsCharsets": {
+          "exists": true,
+          "signatures": 4
+        },
+        "c.acceptsEncodings": {
+          "exists": true,
+          "signatures": 4
+        },
+        "c.acceptsLanguages": {
+          "exists": true,
+          "signatures": 4
+        },
+        "c.range": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.accepted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.param": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.is": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.protocol": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.secure": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.ip": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.ips": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.subdomains": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.path": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.hostname": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.host": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.fresh": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.stale": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.xhr": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.body": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.cookies": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.params": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.query": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.route": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.signedCookies": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.originalUrl": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.baseUrl": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.app": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.next": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.aborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.httpVersion": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.httpVersionMajor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.httpVersionMinor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.complete": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.headersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.rawHeaders": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.trailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.trailersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.rawTrailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.signal": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.readableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableDidRead": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableFlowing": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.readableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.read": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.setEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.pause": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.resume": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.isPaused": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.unpipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.unshift": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.wrap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.push": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.iterator": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.map": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.filter": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.forEach": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.toArray": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.some": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.find": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.every": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.flatMap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.drop": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.take": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.asIndexedPairs": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.reduce": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.addListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.emit": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.on": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.once": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.prependListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.prependOnceListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.removeListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.eventNames": {
+          "exists": true,
+          "signatures": 1
+        }
+      },
+      "ways": {
+        "01-crud": [
+          {
+            "desc": "app.get(path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.get"
+          },
+          {
+            "desc": "app.route(path).get(h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.route"
+          },
+          {
+            "desc": "express.Router().get(path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.get"
+          }
+        ],
+        "02-mounting": [
+          {
+            "desc": "app.use(prefix, router)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.use"
+          }
+        ],
+        "03-versioned-405": [
+          {
+            "desc": "app.use(prefix, router)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.use"
+          },
+          {
+            "desc": "app.route(path)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.route"
+          }
+        ],
+        "04-errors": [
+          {
+            "desc": "next(err) + 4-arity error middleware",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.use"
+          },
+          {
+            "desc": "res.status().json() early",
+            "verified": false,
+            "partial": false,
+            "via": "member:c.status"
+          }
+        ],
+        "05-query": [
+          {
+            "desc": "req.query auto-parses repeats to arrays",
+            "verified": true,
+            "partial": false,
+            "via": "member:c.query"
+          }
+        ],
+        "06-precedence": [
+          {
+            "desc": "'*' wildcard",
+            "verified": true,
+            "partial": false,
+            "via": "syntax"
+          },
+          {
+            "desc": "'(regex)' in path / RegExp path",
+            "verified": true,
+            "partial": false,
+            "via": "syntax"
+          }
+        ],
+        "07-traps": []
+      },
+      "waysFlagged": [
+        "01-crud",
+        "03-versioned-405",
+        "06-precedence"
+      ]
+    },
+    "h3": {
+      "tasks": {
+        "01-crud": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 35,
+          "imports": {
+            "statements": 2,
+            "names": 9
+          },
+          "checks": [
+            {
+              "desc": "GET /users",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "[]",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /users/42",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"42\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "POST /users valid",
+              "pass": true,
+              "observed": {
+                "status": 201,
+                "body": "{\"name\":\"ada\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "POST /users invalid",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"name required\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "PUT /users/7",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"id\":\"7\",\"name\":\"b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "DELETE /users/9",
+              "pass": true,
+              "observed": {
+                "status": 204,
+                "body": "",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": null
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 6,
+            "total": 6
+          }
+        },
+        "02-mounting": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 25,
+          "imports": {
+            "statements": 2,
+            "names": 10
+          },
+          "checks": [
+            {
+              "desc": "GET /health unguarded",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"ok\":true}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data no token",
+              "pass": true,
+              "observed": {
+                "status": 401,
+                "body": "{\n  \"statusCode\": 401,\n  \"statusMessage\": \"unauthorized\",\n  \"stack\": []\n}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/data token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"secret\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /api/more token",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"data\":\"more\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": "api",
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 4,
+            "total": 4
+          }
+        },
+        "03-versioned-405": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 16,
+          "imports": {
+            "statements": 2,
+            "names": 7
+          },
+          "checks": [
+            {
+              "desc": "GET /v1/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":1,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /v2/items",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"v\":2,\"items\":[]}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "POST /v1/items (want 405+Allow)",
+              "pass": false,
+              "observed": {
+                "status": 404,
+                "body": "{\n  \"statusCode\": 404,\n  \"statusMessage\": \"Cannot find any path matching /items.\",\n  \"stack\": []\n}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              },
+              "detail": "status 404 (want 405)"
+            },
+            {
+              "desc": "OPTIONS /v1/items (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 404,
+                "body": "{\n  \"statusCode\": 404,\n  \"statusMessage\": \"Cannot find any path matching /items.\",\n  \"stack\": []\n}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 2,
+            "total": 3
+          }
+        },
+        "04-errors": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 20,
+          "imports": {
+            "statements": 2,
+            "names": 7
+          },
+          "checks": [
+            {
+              "desc": "GET /handled (want 400 json)",
+              "pass": true,
+              "observed": {
+                "status": 400,
+                "body": "{\"error\":\"bad input\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            },
+            {
+              "desc": "GET /boom (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 500,
+                "body": "{\"error\":\"boom\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json; charset=utf-8"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 1
+          }
+        },
+        "05-query": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 26,
+          "imports": {
+            "statements": 2,
+            "names": 7
+          },
+          "checks": [
+            {
+              "desc": "?tag=a&tag=b&limit=5",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\",\"b\"],\"limit\":5,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "?tag=a",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[\"a\"],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "/search bare",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"tags\":[],\"limit\":20,\"offset\":0,\"q\":null}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 3,
+            "total": 3
+          }
+        },
+        "06-precedence": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 17,
+          "imports": {
+            "statements": 2,
+            "names": 7
+          },
+          "checks": [
+            {
+              "desc": "GET /assets/logo.png (want static)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"static\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets/x (want param)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"param\",\"name\":\"x\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets/a/b (want wild)",
+              "pass": true,
+              "observed": {
+                "status": 200,
+                "body": "{\"kind\":\"wild\",\"path\":\"a/b\"}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /assets (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 404,
+                "body": "{\n  \"statusCode\": 404,\n  \"statusMessage\": \"Cannot find any path matching /assets.\",\n  \"stack\": []\n}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 3,
+            "total": 3
+          }
+        },
+        "07-traps": {
+          "compiles": true,
+          "compileErrors": [],
+          "loc": 17,
+          "imports": {
+            "statements": 2,
+            "names": 6
+          },
+          "checks": [
+            {
+              "desc": "GET /async (want loud error, not hang)",
+              "pass": true,
+              "observed": {
+                "status": 500,
+                "body": "{\n  \"statusCode\": 500,\n  \"stack\": []\n}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            },
+            {
+              "desc": "GET /double (recorded)",
+              "pass": null,
+              "observed": {
+                "status": 200,
+                "body": "{\"a\":1}",
+                "headers": {
+                  "allow": null,
+                  "x-guard": null,
+                  "content-type": "application/json"
+                }
+              }
+            }
+          ],
+          "conform": {
+            "pass": 1,
+            "total": 1
+          }
+        }
+      },
+      "probes": [
+        {
+          "file": "probes/h3/traps.probe.ts",
+          "expectations": [
+            {
+              "id": "param-name",
+              "line": 7,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "param-on-unmatched-route",
+              "line": 12,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "bad-path",
+              "line": 16,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "missing-await",
+              "line": 22,
+              "caught": true,
+              "message": "Property 'name' does not exist on type 'Promise<any>'."
+            },
+            {
+              "id": "query-not-param",
+              "line": 26,
+              "caught": false,
+              "message": ""
+            },
+            {
+              "id": "handler-arity",
+              "line": 30,
+              "caught": true,
+              "message": "No overload matches this call.   Overload 1 of 2, '(handler: EventHandler<EventHandlerRequest, any> | EventHandlerObject<EventHandlerRequest, any>): EventHandler<...>', gave the following error.     Argument of type '(a: any, b: any, d: any, e: any) => any' is not assignable to parameter of type 'EventHandler<EventHandlerRequest, any> | EventHandlerObject<EventHandlerRequest, any>'.       Type '(a: any, b: any, d: any, e: any) => any' is not assignable to type 'EventHandler<EventHandlerRequest, any>'.         Target signature provides too few arguments. Expected 4 or more, but got 1.   Overload 2 of 2, '(handler: EventHandler<any, any>): EventHandler<any, any>', gave the following error.     Argument of type '(a: any, b: any, d: any, e: any) => any' is not assignable to parameter of type 'EventHandler<any, any>'.       Target signature provides too few arguments. Expected 4 or more, but got 1. | Parameter 'a' implicitly has an 'any' type. | Parameter 'b' implicitly has an 'any' type. | Parameter 'd' implicitly has an 'any' type. | Parameter 'e' implicitly has an 'any' type."
+            }
+          ],
+          "strayDiags": []
+        }
+      ],
+      "probeScore": {
+        "caught": 2,
+        "total": 6
+      },
+      "surface": {
+        "app": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.stack": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.handler": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.options": {
+          "exists": true,
+          "signatures": 0
+        },
+        "app.use": {
+          "exists": true,
+          "signatures": 3
+        },
+        "app.resolve": {
+          "exists": true,
+          "signatures": 1
+        },
+        "app.websocket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub": {
+          "exists": true,
+          "signatures": 0
+        },
+        "sub.add": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.use": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.handler": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.get": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.head": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.patch": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.post": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.put": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.delete": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.connect": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.options": {
+          "exists": true,
+          "signatures": 1
+        },
+        "sub.trace": {
+          "exists": true,
+          "signatures": 1
+        },
+        "Router": {
+          "exists": false,
+          "signatures": 0
+        },
+        "c": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.aborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.httpVersion": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.httpVersionMajor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.httpVersionMinor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.complete": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.headersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.rawHeaders": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.trailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.trailersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.rawTrailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.signal": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.readableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableDidRead": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableFlowing": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.readableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.req.read": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.setEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.pause": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.resume": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.isPaused": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.unpipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.unshift": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.wrap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.push": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.iterator": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.map": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.filter": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.forEach": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.toArray": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.some": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.find": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.req.every": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.flatMap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.drop": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.take": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.asIndexedPairs": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.reduce": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.req.addListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.emit": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.on": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.once": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.prependListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.prependOnceListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.removeListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.req.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.req.originalUrl": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.strictContentLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.assignSocket": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.detachSocket": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.writeContinue": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.writeEarlyHints": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.writeHead": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.res.writeInformation": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.res.writeProcessing": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.aborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.httpVersion": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.httpVersionMajor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.httpVersionMinor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.complete": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.headersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.rawHeaders": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.trailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.trailersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.rawTrailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.signal": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.readableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableDidRead": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableFlowing": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.readableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.req.read": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.setEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.pause": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.resume": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.isPaused": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.unpipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.unshift": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.wrap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.push": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.iterator": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.map": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.filter": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.forEach": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.toArray": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.some": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.find": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.res.req.every": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.flatMap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.drop": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.take": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.asIndexedPairs": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.reduce": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.res.req.addListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.emit": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.on": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.once": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.prependListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.prependOnceListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.removeListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.node.res.req.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.req.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.chunkedEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.shouldKeepAlive": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.useChunkedEncodingByDefault": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.sendDate": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.finished": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.headersSent": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.setHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.setHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.appendHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.getHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.getHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.getHeaderNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.hasHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.removeHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.addTrailers": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.flushHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.writable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableFinished": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableCorked": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.writableNeedDrain": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.node.res.write": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.node.res.setDefaultEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.end": {
+          "exists": true,
+          "signatures": 3
+        },
+        "c.node.res.cork": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.uncork": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.addListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.emit": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.on": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.once": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.prependListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.prependOnceListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.removeListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.node.res.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.node.res.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.web": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.context": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.context.params": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.context.matchedRoute": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.context.sessions": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.context.clientAddress": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.path": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.handled": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.respondWith": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.toString": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.toJSON": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.aborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.httpVersion": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.httpVersionMajor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.httpVersionMinor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.complete": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.headersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.rawHeaders": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.trailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.trailersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.rawTrailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.signal": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.readableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableDidRead": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableFlowing": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.readableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.req.read": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.setEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.pause": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.resume": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.isPaused": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.unpipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.unshift": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.wrap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.push": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.iterator": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.map": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.filter": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.forEach": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.toArray": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.some": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.find": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.req.every": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.flatMap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.drop": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.take": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.asIndexedPairs": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.reduce": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.req.addListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.emit": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.on": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.once": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.prependListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.prependOnceListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.removeListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.req.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.req.originalUrl": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.strictContentLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.assignSocket": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.detachSocket": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writeContinue": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writeEarlyHints": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writeHead": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.writeInformation": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.writeProcessing": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.aborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.httpVersion": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.httpVersionMajor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.httpVersionMinor": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.complete": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.headers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.headersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.rawHeaders": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.trailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.trailersDistinct": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.rawTrailers": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.signal": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.method": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.url": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.statusCode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.statusMessage": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.readableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableDidRead": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableFlowing": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.readableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.req.read": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.setEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.pause": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.resume": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.isPaused": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.unpipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.unshift": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.wrap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.push": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.iterator": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.map": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.filter": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.forEach": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.toArray": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.some": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.find": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.req.every": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.flatMap": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.drop": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.take": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.asIndexedPairs": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.reduce": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.req.addListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.emit": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.on": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.once": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.prependListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.prependOnceListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.removeListener": {
+          "exists": true,
+          "signatures": 8
+        },
+        "c.res.req.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.req.eventNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.chunkedEncoding": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.shouldKeepAlive": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.useChunkedEncodingByDefault": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.sendDate": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.finished": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.headersSent": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.connection": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.socket": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.setTimeout": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.setHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.setHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.appendHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getHeaderNames": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.hasHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.removeHeader": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.addTrailers": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.flushHeaders": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.writable": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableAborted": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableEnded": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableFinished": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableHighWaterMark": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableLength": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableObjectMode": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableCorked": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.destroyed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.closed": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.errored": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.writableNeedDrain": {
+          "exists": true,
+          "signatures": 0
+        },
+        "c.res.write": {
+          "exists": true,
+          "signatures": 2
+        },
+        "c.res.setDefaultEncoding": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.end": {
+          "exists": true,
+          "signatures": 3
+        },
+        "c.res.cork": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.uncork": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.destroy": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.addListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.emit": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.on": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.once": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.prependListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.prependOnceListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.removeListener": {
+          "exists": true,
+          "signatures": 7
+        },
+        "c.res.pipe": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.compose": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.off": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.removeAllListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.setMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.getMaxListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.listeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.rawListeners": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.listenerCount": {
+          "exists": true,
+          "signatures": 1
+        },
+        "c.res.eventNames": {
+          "exists": true,
+          "signatures": 1
+        }
+      },
+      "ways": {
+        "01-crud": [
+          {
+            "desc": "router.get(path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.get"
+          },
+          {
+            "desc": "router.add('GET', path, h)",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.add"
+          },
+          {
+            "desc": "app.use(path, handler)",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.use"
+          }
+        ],
+        "02-mounting": [
+          {
+            "desc": "app.use('/p/**', useBase('/p', r.handler))",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.use"
+          },
+          {
+            "desc": "router.use('/p/**', useBase(...))",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.use"
+          }
+        ],
+        "03-versioned-405": [
+          {
+            "desc": "app.use('/p/**', useBase(...))",
+            "verified": true,
+            "partial": false,
+            "via": "member:app.use"
+          },
+          {
+            "desc": "router.use('/p/**', useBase(...))",
+            "verified": true,
+            "partial": false,
+            "via": "member:sub.use"
+          }
+        ],
+        "04-errors": [
+          {
+            "desc": "throw createError({statusCode})",
+            "verified": true,
+            "partial": false,
+            "via": "export:createError"
+          },
+          {
+            "desc": "setResponseStatus + return",
+            "verified": true,
+            "partial": false,
+            "via": "export:setResponseStatus"
+          }
+        ],
+        "05-query": [
+          {
+            "desc": "getQuery(e) -> repeated keys become arrays",
+            "verified": true,
+            "partial": false,
+            "via": "export:getQuery"
+          }
+        ],
+        "06-precedence": [
+          {
+            "desc": "'**' wildcard",
+            "verified": true,
+            "partial": false,
+            "via": "syntax"
+          }
+        ],
+        "07-traps": []
+      },
+      "waysFlagged": [
+        "01-crud",
+        "02-mounting",
+        "03-versioned-405",
+        "04-errors"
+      ]
+    }
+  }
+}
