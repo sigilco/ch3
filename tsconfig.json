@@ -10,7 +10,8 @@
     "outDir": "dist/esm",
     "rootDir": "src",
     "skipLibCheck": false,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*.ts"]
 }

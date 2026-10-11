@@ -9,7 +9,8 @@
     "outDir": "dist/cjs",
     "rootDir": "src",
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*.ts"]
 }
