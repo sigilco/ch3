@@ -1,0 +1,20 @@
+scriptc coverage /home/ubuntu/repos/ch3/bench/apps/hono.mjs
+
+  statements analyzed   1618
+  compile statically    1538  (95%)
+
+  npm packages compiled statically (--npm-static):
+    hono               static
+    @hono/node-server  static
+
+  deferred to runtime   80 sites (JS statements that throw their fence if executed)
+      ×2  SC2009  the union shape is supported, but its arm 'T' does not compile (instantiating 'parseFormData' with <T>)
+          at node_modules/hono/dist/utils/body.js:23:67, node_modules/hono/dist/utils/body.js:29:23
+          hint: the outer shape is supported — the named component is the blocker; restate it inside the compilable set (number, string, boolean, arrays, Maps, Sets, RegExp, functions, classes, records, unions of those, and 'unknown')
+      ×1  SC2011  values of type '(c: any, events: any, options: any) => Promise<…>' have no static representation but run in the embedded dynamic engine, which this build does not include
+          at node_modules/@hono/node-server/dist/index.mjs:1232:48
+          hint: build with --dynamic to run these values in the embedded engine (adds ~620KB to the binary), or restate the type inside the static surface (https://scriptc.dev/limitations describes the boundary)
+      ×7  SC1090  'instanceof' right-hand sides other than classes declared in the program
+          at node_modules/@hono/node-server/dist/index.mjs:64:27, node_modules/@hono/node-server/dist/index.mjs:638:23, node_modules/@hono/node-server/dist/index.mjs:648:109 (+4 more)
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×7  SC2020  'Object.defineProperty' is part of the standard library types but has no scriptc lowering yet
