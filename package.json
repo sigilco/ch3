@@ -1,0 +1,10 @@
+{
+  "name": "@sigilco/ch3",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PROVISIONAL scaffold (shim-fmw branch only): replaced by Agent A T0 scaffold when it lands.",
+  "scripts": {
+    "test": "node --test 'test/*.test.ts'"
+  }
+}
