@@ -8,6 +8,7 @@
     "sourceMap": false,
     "outDir": "dist/cjs",
     "rootDir": "src",
+    "rewriteRelativeImportExtensions": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },

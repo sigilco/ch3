@@ -1,0 +1,20 @@
+scriptc coverage /home/ubuntu/repos/ch3/bench/apps/fmw.mjs
+
+  statements analyzed   58
+  compile statically    56  (96%)
+
+  npm packages compiled statically (--npm-static):
+    find-my-way  island fallback (SC1010: the 'fast-deep-equal' module is not supported yet)
+
+  deferred to runtime   2 sites (JS statements that throw their fence if executed)
+      ×1  SC2013  values from the 'find-my-way' package run in the embedded dynamic engine, which this build does not include
+          at apps/fmw.mjs:7:16
+          hint: build with --dynamic to run npm package code in the embedded engine (adds ~620KB to the binary), or try --npm-static auto to compile eligible packages' JavaScript statically; static builds never include the engine
+      ×1  SC2020  'Buffer.concat of 'unknown' values' is part of the standard library types but has no scriptc lowering yet
+          at apps/fmw.mjs:17:101
+          hint: one Uint8Array[]/Buffer[] value (or literal) is the lowered list shape
+
+  runs with --dynamic   1 site (embeds a JS engine, ~620KB — static stays the default)
+      ×1  SC2013  importing 'find-my-way' requires the embedded dynamic engine, which this build does not include — the package's implementation runs there
+          at apps/fmw.mjs:3:1
+          hint: build with --dynamic to run npm package code in the embedded engine (adds ~620KB to the binary), or try --npm-static auto to compile eligible packages' JavaScript statically; static builds never include the engine

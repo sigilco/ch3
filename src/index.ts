@@ -19,6 +19,11 @@
 
 import * as http from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
+import { GenDispatch } from './gen.ts'
+import type { DispatchFn } from './gen.ts'
+
+export { GenDispatch }
+export type { DispatchFn }
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -419,6 +424,36 @@ function defaultNotFound(c: Ctx): void {
   c.text('Not Found')
 }
 
+// Contract helpers for generated dispatch modules (docs/route-contract.md):
+// _guard runs a synchronous handler body under the standard 500 path;
+// _buffer attaches data/end listeners, buffers the body, then runs k under
+// the same guard. The internal dispatch inlines the equivalent flow so the
+// hot path never pays a closure it doesn't need.
+export function _guard(res: ServerResponse, k: () => void): void {
+  try {
+    k()
+  } catch (e) {
+    send500(res)
+  }
+}
+
+export function _buffer(
+  req: IncomingMessage,
+  res: ServerResponse,
+  c: Ctx,
+  k: () => void,
+): void {
+  const rv = c.req
+  let buf = ''
+  req.on('data', function (chunk: Buffer): void {
+    buf = buf + chunk.toString()
+  })
+  req.on('end', function (): void {
+    rv._setBody(buf)
+    _guard(res, k)
+  })
+}
+
 function send500(res: ServerResponse): void {
   try {
     if (res.headersSent) {
@@ -462,7 +497,7 @@ function utf8len(s: string): number {
   return n
 }
 
-function dec(s: string): string {
+export function dec(s: string): string {
   const t = String(s).split('+').join(' ')
   try {
     return decodeURIComponent(t)
@@ -537,6 +572,11 @@ export class App {
   _mws: Middleware[][]
   _nf: Handler
   _nfmw: Middleware[]
+  // Generated-dispatch seam (docs/route-contract.md): a plain function
+  // field, not an interface-typed field — an interface with a method member
+  // would fence eager program-code instantiation the same way a function
+  // inside a record does. Default returns false (never registered).
+  _gen: DispatchFn
 
   constructor() {
     this._nodes = []
@@ -546,6 +586,9 @@ export class App {
     this._mws = []
     this._nf = defaultNotFound
     this._nfmw = []
+    this._gen = function (_r: IncomingMessage, _s: ServerResponse): boolean {
+      return false
+    }
   }
 
   get<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
@@ -604,6 +647,18 @@ export class App {
     return this
   }
 
+  // Registers a generated dispatch module (docs/route-contract.md). The
+  // stored field is a closure so `d` only has to satisfy the GenDispatch
+  // class shape at the call site — subclasses, duck-typed objects, and the
+  // emitted `class X extends GenDispatch` all work.
+  withDispatch(d: GenDispatch): App {
+    const g = d
+    this._gen = function (rq: IncomingMessage, rs: ServerResponse): boolean {
+      return g.dispatch(rq, rs)
+    }
+    return this
+  }
+
   handler(): (req: IncomingMessage, res: ServerResponse) => void {
     const app = this
     return function (req: IncomingMessage, res: ServerResponse): void {
@@ -636,6 +691,9 @@ export class App {
   }
 
   _dispatch(req: IncomingMessage, res: ServerResponse): void {
+    if (this._gen(req, res)) {
+      return
+    }
     const method: string = String(req.method || '')
     const url: string = String(req.url || '/')
     let path = url
