@@ -683,6 +683,46 @@ export class App {
     }
   }
 
+  // Entry point for generated dispatches (unplugin-ch3): the caller already
+  // matched the route, so only the Ctx/chain execution happens here.
+  // Body buffering is decided by the request method — identical to the
+  // runtime _dispatch path.
+  _run(
+    idx: number,
+    req: IncomingMessage,
+    res: ServerResponse,
+    pm: string[],
+    qs: string,
+    path: string,
+    m: string
+  ): void {
+    const rv = new ReqView(req, pm, qs, path)
+    const c = new Ctx(rv, res)
+    const mw = this._mws[idx]
+    const h = this._fns[idx]
+    const self = this
+    if (m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE') {
+      let buf = ''
+      req.on('data', function (chunk: Buffer): void {
+        buf = buf + chunk.toString()
+      })
+      req.on('end', function (): void {
+        rv._setBody(buf)
+        try {
+          self._chain(c, mw, h, 0)
+        } catch (e) {
+          send500(res)
+        }
+      })
+    } else {
+      try {
+        this._chain(c, mw, h, 0)
+      } catch (e) {
+        send500(res)
+      }
+    }
+  }
+
   _chain(c: Ctx, mw: Middleware[], h: Handler, i: number): void {
     if (i < mw.length) {
       const fn = mw[i]

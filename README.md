@@ -22,12 +22,12 @@ app.serve({ port: 3000 })
 
 - `createRouter()` → `App`
 - Routing: `app.get|post|put|delete|patch|head|options(path, h)`, `app.all(path, h)`,
-  `app.on(method, path, h)` — paths support static segments, `:param`, and a
+  `app.on(method, path, h)`: paths support static segments, `:param`, and a
   tail `*` wildcard (`c.req.param('*')`).
-- `app.use(fn)` — sync middleware `(c, next) => void`; applies to routes
+- `app.use(fn)`: sync middleware `(c, next) => void`; applies to routes
   registered **after** it (snapshot semantics).
-- `app.notFound(h)` — custom 404.
-- `app.route(prefix, subApp)` — mount a sub-router; merges parent + sub
+- `app.notFound(h)`: custom 404.
+- `app.route(prefix, subApp)`: mount a sub-router; merges parent + sub
   middleware.
 - `app.handler()` → `(req, res) => void` node:http listener;
   `app.serve({ port })` / `app.serve({ port, host })` sugar returning `http.Server`.
@@ -56,13 +56,13 @@ app.serve({ port: 3000 })
 - Params are typed from the path literal via `ParamKey<P>`
   (`'/user/:id'` → `param('id')`); param-less paths degrade to `string`.
 - Non-goals for v0: async handlers, streaming/SSE, WebSocket,
-  constraint/versioned routing — no stubs; open seams.
+  constraint/versioned routing: no stubs; open seams.
 
 ## The subset (why this compiles)
 
-The implementation obeys the verified scriptc rules — see the header comment
+The implementation obeys the verified scriptc rules: see the header comment
 in `src/index.ts`: `| null` unions only, plain records for route data (no
-function values inside records — handlers live in `App._fns` and nodes carry
+function values inside records: handlers live in `App._fns` and nodes carry
 indices), indexed loops, `String()`/`Number()` coercion at function entry,
 no recursion for matching (explicit frame stack), no `slice`/`concat`/spread
 on package paths, statement-called `res.end()`.
@@ -83,3 +83,13 @@ scriptc build demo/app.js --npm-static @sigilco/ch3 --optimization=speed -o demo
 ```
 
 Demo routes: `/json`, `/user/:id`, `/q?x=`, `/wild/*`, `POST /echo`, `/redir`.
+
+## Build-time route lowering
+
+`unplugin/` ships `unplugin-ch3`, an unplugin-based transform that lowers literal
+route registrations into a specialized `dispatch(req,res)` module
+(`<dir>/.ch3/*.gen.ts`) at build time: static/param/wildcard matching, literal
+send-chains compiled to plain `res` writes, everything else delegated to the
+runtime path. See `unplugin/PLUGIN.md` for usage and `fixtures/vite-app/` for a
+working vite app whose `vite build` output and `scriptc build` ELF both serve
+the lowered dispatch.

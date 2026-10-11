@@ -1,0 +1,35 @@
+{
+  "name": "unplugin-ch3",
+  "version": "0.1.0",
+  "description": "Build-time route lowering for @sigilco/ch3 — emits a specialized, scriptc-clean dispatch module per routes file",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "PLUGIN.md"
+  ],
+  "scripts": {
+    "test": "node --test 'test/*.test.ts'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "picomatch": "^4.0.7",
+    "unplugin": "^3.4.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/picomatch": "^4.0.3",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "license": "MIT"
+}
