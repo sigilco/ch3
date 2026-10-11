@@ -43,7 +43,11 @@ export class ReqView<P extends string = string> {
     this.path = String(path)
   }
 
-  param(name: ParamKey<P>): string | null {
+  // param() takes `string`, not ParamKey<P>: conditional types never
+  // resolve under eager program-code instantiation (SC2001 — the h3-shim
+  // report). ParamKey<P> stays exported for .d.ts consumers and any
+  // future lazy-instantiation surface; P is still carried on Ctx.
+  param(name: string): string | null {
     const n = String(name)
     const pm = this._pm
     for (let i = 0; i < pm.length; i += 2) {
@@ -84,8 +88,12 @@ export class ReqView<P extends string = string> {
     if (typeof v === 'string') {
       return String(v)
     }
-    if (v.length > 0) {
-      return String(v[0])
+    // v is `string[]` here, but scriptc's union narrowing resolves the
+    // remaining branch to `never` (SC0001 under program-code builds) —
+    // re-type via an explicit cast instead of relying on narrowing.
+    const arr = (v as unknown) as string[]
+    if (arr.length > 0) {
+      return String(arr[0])
     }
     return null
   }
@@ -186,9 +194,15 @@ export class Ctx<P extends string = string> {
 
 // Param names inferred from a path literal: '/user/:id' -> 'id',
 // '/a/:x/b/:y' -> 'x' | 'y', '/w/*' -> '*'. Degrades to `string` when the
-// path has no params so param() never becomes uncallable.
-export type ParamKey<P extends string> =
-  P extends `${infer _Head}:${infer Rest}`
+// path has no params so param() never becomes uncallable. The leading
+// `string extends P` guard must stay first: it short-circuits the
+// template-literal matching when P is unbound (`string`) so eager
+// program-code instantiation resolves a concrete `string` (SC2001
+// otherwise), while literal paths still get full inference under tsc and
+// per-call-site scriptc instantiation.
+export type ParamKey<P extends string> = string extends P
+  ? string
+  : P extends `${infer _Head}:${infer Rest}`
     ? Rest extends `${infer K}/${infer Tail}`
       ? K | ParamKey<`/${Tail}`>
       : Rest | (P extends `${string}/*` ? '*' : never)
@@ -209,9 +223,16 @@ export type Middleware = (c: Ctx, next: Next) => void
 interface RouteNode {
   seg: string
   kind: number
-  children: RouteNode[]
+  // children holds indices into the owning App._nodes table: a
+  // `RouteNode[]` member self-references the record and is rejected under
+  // eager program-code instantiation (SC2009), while boxed `unknown[]`
+  // reads degrade dispatch — integer indices keep every member concrete.
+  children: number[]
   hm: string[]
-  hw: Middleware[][]
+  // hf[i] is the entry index for hm[i]'s method into App._fns/_mws —
+  // function arrays (incl. nested Middleware[][]) cannot live inside
+  // records under eager instantiation, so handlers AND their middleware
+  // snapshots both live in parallel class-side arrays.
   hf: number[]
 }
 
@@ -223,25 +244,25 @@ interface Frame {
   pval: string | null
 }
 
-function newNode(seg: string, kind: number): RouteNode {
-  return {
+function newNode(nodes: RouteNode[], seg: string, kind: number): number {
+  nodes.push({
     seg: String(seg),
     kind: Number(kind),
     children: [],
     hm: [],
-    hw: [],
     hf: [],
-  }
+  })
+  return nodes.length - 1
 }
 
-function addRoute(root: RouteNode, method: string, path: string, hIdx: number, mw: Middleware[]): void {
+function addRoute(nodes: RouteNode[], method: string, path: string, hIdx: number): void {
   const m = String(method)
   const p = String(path)
   if (p === '' || p.charAt(0) !== '/') {
     throw new Error('ch3: route path must start with /')
   }
   const segs = p.split('/')
-  let node = root
+  let ni = 0
   for (let i = 1; i < segs.length; i++) {
     let seg = String(segs[i])
     let kind = 0
@@ -257,51 +278,50 @@ function addRoute(root: RouteNode, method: string, path: string, hIdx: number, m
         throw new Error('ch3: empty :param name in ' + p)
       }
     }
-    let child: RouteNode | null = null
-    const ch = node.children
+    let child = -1
+    const ch = nodes[ni].children
     for (let k = 0; k < ch.length; k++) {
-      const c = ch[k]
+      const c = nodes[ch[k]]
       if (c.kind === kind && c.seg === seg) {
-        child = c
+        child = ch[k]
         break
       }
     }
-    if (child === null) {
-      child = newNode(seg, kind)
+    if (child < 0) {
+      child = newNode(nodes, seg, kind)
       ch.push(child)
     }
-    node = child
+    ni = child
   }
-  node.hm.push(m)
-  node.hw.push(mw)
-  node.hf.push(hIdx)
+  nodes[ni].hm.push(m)
+  nodes[ni].hf.push(hIdx)
 }
 
 // Depth-first match over an explicit frame stack (no recursion — recursive
 // calls monomorphize an unknown instantiation). Children are pushed
 // wildcard → param → static so static pops first; pm unwinds on backtrack
 // by truncating to the frame's recorded length.
-function matchNode(root: RouteNode, segs: string[], pm: string[]): RouteNode | null {
-  let node = root
+function matchNode(nodes: RouteNode[], segs: string[], pm: string[]): RouteNode | null {
+  let node = nodes[0]
   let i = 1
   let dive = i < segs.length
   while (dive) {
     const seg = String(segs[i])
     const ch = node.children
-    let next: RouteNode | null = null
+    let next = -1
     let alt = false
     for (let k = 0; k < ch.length; k++) {
-      const c = ch[k]
+      const c = nodes[ch[k]]
       if (c.kind === 0 && c.seg === seg) {
-        next = c
+        next = ch[k]
       } else if (c.kind !== 0) {
         alt = true
       }
     }
-    if (alt || next === null) {
+    if (alt || next < 0) {
       dive = false
     } else {
-      node = next
+      node = nodes[next]
       i = i + 1
       dive = i < segs.length
     }
@@ -335,7 +355,7 @@ function matchNode(root: RouteNode, segs: string[], pm: string[]): RouteNode | n
     const base = pm.length
     let tail: string | null = null
     for (let k = ch.length - 1; k >= 0; k--) {
-      const c = ch[k]
+      const c = nodes[ch[k]]
       if (c.kind === 2) {
         if (tail === null) {
           tail = ''
@@ -350,13 +370,13 @@ function matchNode(root: RouteNode, segs: string[], pm: string[]): RouteNode | n
       }
     }
     for (let k = ch.length - 1; k >= 0; k--) {
-      const c = ch[k]
+      const c = nodes[ch[k]]
       if (c.kind === 1) {
         stack.push({ node: c, i: i + 1, pmlen: base, pname: String(c.seg), pval: dec(seg) })
       }
     }
     for (let k = ch.length - 1; k >= 0; k--) {
-      const c = ch[k]
+      const c = nodes[ch[k]]
       if (c.kind === 0 && c.seg === seg) {
         stack.push({ node: c, i: i + 1, pmlen: base, pname: null, pval: null })
       }
@@ -470,79 +490,98 @@ function mergeMw(a: Middleware[], b: Middleware[]): Middleware[] {
   return out
 }
 
-function mountRoutes(n: RouteNode, acc: string, prefix: string, pre: Middleware[], app: App, sub: App): void {
-  const a = String(acc)
-  const hs = n.hf
-  if (hs.length > 0) {
-    let path = String(prefix) + a
-    if (path === '') {
-      path = '/'
+interface MountFrame {
+  i: number
+  a: string
+}
+
+function mountRoutes(sub: App, app: App, prefix: string, pre: Middleware[]): void {
+  const sn = sub._nodes
+  const stack: MountFrame[] = [{ i: 0, a: '' }]
+  while (stack.length > 0) {
+    const f = stack[stack.length - 1]
+    stack.pop()
+    const n = sn[f.i]
+    const a = String(f.a)
+    const hs = n.hf
+    if (hs.length > 0) {
+      let path = String(prefix) + a
+      if (path === '') {
+        path = '/'
+      }
+      for (let i = 0; i < hs.length; i++) {
+        const subMw = sub._mws[hs[i]]
+        const idx = app._regFn(sub._fns[hs[i]], mergeMw(pre, subMw))
+        addRoute(app._nodes, n.hm[i], path, idx)
+      }
     }
-    for (let i = 0; i < hs.length; i++) {
-      const idx = app._regFn(sub._fns[hs[i]])
-      addRoute(app._root, n.hm[i], path, idx, mergeMw(pre, n.hw[i]))
+    const ch = n.children
+    for (let i = 0; i < ch.length; i++) {
+      const c = sn[ch[i]]
+      let seg = String(c.seg)
+      if (c.kind === 1) {
+        seg = ':' + seg
+      }
+      stack.push({ i: ch[i], a: a + '/' + seg })
     }
-  }
-  const ch = n.children
-  for (let i = 0; i < ch.length; i++) {
-    const c = ch[i]
-    let seg = String(c.seg)
-    if (c.kind === 1) {
-      seg = ':' + seg
-    }
-    mountRoutes(c, a + '/' + seg, prefix, pre, app, sub)
   }
 }
 
 export class App {
-  _root: RouteNode
+  _nodes: RouteNode[]
   _mw: Middleware[]
   _fns: Handler[]
+  // _mws[i] is the middleware snapshot for handler _fns[i] — kept on the
+  // class, not in RouteNode records, because function-array record members
+  // are rejected under eager program-code instantiation (SC2009).
+  _mws: Middleware[][]
   _nf: Handler
   _nfmw: Middleware[]
 
   constructor() {
-    this._root = newNode('', 0)
+    this._nodes = []
+    newNode(this._nodes, '', 0)
     this._mw = []
     this._fns = []
+    this._mws = []
     this._nf = defaultNotFound
     this._nfmw = []
   }
 
   get<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('GET', path, h as Handler)
+    return this._add('GET', path, (h as unknown) as Handler)
   }
 
   post<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('POST', path, h as Handler)
+    return this._add('POST', path, (h as unknown) as Handler)
   }
 
   put<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('PUT', path, h as Handler)
+    return this._add('PUT', path, (h as unknown) as Handler)
   }
 
   delete<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('DELETE', path, h as Handler)
+    return this._add('DELETE', path, (h as unknown) as Handler)
   }
 
   patch<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('PATCH', path, h as Handler)
+    return this._add('PATCH', path, (h as unknown) as Handler)
   }
 
   head<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('HEAD', path, h as Handler)
+    return this._add('HEAD', path, (h as unknown) as Handler)
   }
 
   options<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('OPTIONS', path, h as Handler)
+    return this._add('OPTIONS', path, (h as unknown) as Handler)
   }
 
   all<P extends string>(path: P, h: (c: Ctx<P>) => void): App {
-    return this._add('*', path, h as Handler)
+    return this._add('*', path, (h as unknown) as Handler)
   }
 
   on<P extends string>(method: string, path: P, h: (c: Ctx<P>) => void): App {
-    return this._add(String(method).toUpperCase(), path, h as Handler)
+    return this._add(String(method).toUpperCase(), path, (h as unknown) as Handler)
   }
 
   use(fn: Middleware): App {
@@ -551,7 +590,7 @@ export class App {
   }
 
   notFound(h: (c: Ctx) => void): App {
-    this._nf = h as Handler
+    this._nf = (h as unknown) as Handler
     this._nfmw = copyMw(this._mw)
     return this
   }
@@ -561,7 +600,7 @@ export class App {
     if (p.length > 1 && p.charAt(p.length - 1) === '/') {
       p = String(p.slice(0, p.length - 1))
     }
-    mountRoutes(sub._root, '', p, copyMw(this._mw), this, sub)
+    mountRoutes(sub, this, p, copyMw(this._mw))
     return this
   }
 
@@ -584,14 +623,15 @@ export class App {
     return s
   }
 
-  _regFn(h: Handler): number {
+  _regFn(h: Handler, mw: Middleware[]): number {
     this._fns.push(h)
+    this._mws.push(mw)
     return this._fns.length - 1
   }
 
   _add(method: string, path: string, h: Handler): App {
-    const idx = this._regFn(h)
-    addRoute(this._root, method, path, idx, copyMw(this._mw))
+    const idx = this._regFn(h, copyMw(this._mw))
+    addRoute(this._nodes, method, path, idx)
     return this
   }
 
@@ -607,14 +647,15 @@ export class App {
     }
     const pm: string[] = []
     const segs = path.split('/')
-    const node = matchNode(this._root, segs, pm)
+    const node = matchNode(this._nodes, segs, pm)
     let h = this._nf
     let mw = this._nfmw
     if (node !== null) {
       const j = findEntry(node, method)
       if (j >= 0) {
-        h = this._fns[node.hf[j]]
-        mw = node.hw[j]
+        const idx = node.hf[j]
+        h = this._fns[idx]
+        mw = (this._mws[idx] as Middleware[])
       }
     }
     const rv = new ReqView(req, pm, qs, path)
@@ -622,8 +663,8 @@ export class App {
     const self = this
     if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
       let buf = ''
-      req.on('data', function (chunk: { toString(): string }): void {
-        buf = buf + String(chunk)
+      req.on('data', function (chunk: Buffer): void {
+        buf = buf + chunk.toString()
       })
       req.on('end', function (): void {
         rv._setBody(buf)
