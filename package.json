@@ -1,0 +1,53 @@
+{
+  "name": "@sigilco/ch3",
+  "version": "0.1.0",
+  "description": "Minimal synchronous HTTP router authored inside the scriptc compilable subset",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./h3": {
+      "types": "./dist/esm/shims/h3.d.ts",
+      "import": "./dist/esm/shims/h3.js",
+      "require": "./dist/cjs/shims/h3.js"
+    },
+    "./fmw": {
+      "types": "./dist/esm/shims/fmw.d.ts",
+      "import": "./dist/esm/shims/fmw.js",
+      "require": "./dist/cjs/shims/fmw.js"
+    },
+    "./hono": {
+      "types": "./dist/esm/shims/hono.d.ts",
+      "import": "./dist/esm/shims/hono.js",
+      "require": "./dist/cjs/shims/hono.js"
+    },
+    "./express": {
+      "types": "./dist/esm/shims/express.d.ts",
+      "import": "./dist/esm/shims/express.js",
+      "require": "./dist/cjs/shims/express.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/postbuild.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  },
+  "license": "MIT"
+}

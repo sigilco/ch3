@@ -1,0 +1,7 @@
+.scriptc/
+node_modules/
+dist/
+demo/app-bin
+demo/app.ll
+demo/node_modules/
+demo/package-lock.json

@@ -1,0 +1,17 @@
+# https://docs.devin.ai/onboard-devin/environment-yaml
+# One-time setup: scriptc CLI + gcc stand-in for clang (scriptc shells to
+# `clang -target <t>` for linking; the wrapper strips -target and execs gcc).
+initialize: |
+  npm i -g scriptc
+  mkdir -p "$HOME/bin"
+  printf '#!/usr/bin/env bash\na=(); skip=0; for x in "$@"; do [ $skip = 1 ] && { skip=0; continue; }; [ "$x" = -target ] && { skip=1; continue; }; a+=("$x"); done; exec gcc "${a[@]}"\n' > "$HOME/bin/clang"
+  printf '#!/usr/bin/env bash\na=(); skip=0; for x in "$@"; do [ $skip = 1 ] && { skip=0; continue; }; [ "$x" = -target ] && { skip=1; continue; }; a+=("$x"); done; exec g++ "${a[@]}"\n' > "$HOME/bin/clang++"
+  chmod +x "$HOME/bin/clang" "$HOME/bin/clang++"
+  echo "PATH=$HOME/bin:$PATH" >> $ENVRC
+knowledge:
+  - name: test
+    contents: |
+      bash test/run-hono.sh
+  - name: build
+    contents: |
+      scriptc build test/smoke-hono.ts -o .scriptc/smoke-hono
