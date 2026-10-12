@@ -141,6 +141,26 @@ export class ReqView<P extends string = string> {
     return out
   }
 
+  // All values for a repeated query key, first-seen order. Returns the
+  // shared empty array when absent — read-only, never mutated.
+  queries(name: string): string[] {
+    const n = String(name)
+    const qp = this._parsed()
+    let out: string[] | null = null
+    for (let i = 0; i < qp.length; i += 2) {
+      if (qp[i] === n) {
+        if (out === null) {
+          out = []
+        }
+        out.push(String(qp[i + 1]))
+      }
+    }
+    if (out === null) {
+      return EMPTY_S
+    }
+    return out
+  }
+
   header(name: string): string | null {
     const key = String(name).toLowerCase()
     const v = this.raw.headers[key]

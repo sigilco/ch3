@@ -20,4 +20,4 @@ for (const p of MIXED_STATIC) app.get(p, (c) => c.json({ ok: true }))
 for (const p of MIXED_PARAM) app.get(p, (c) => c.json({ ok: true }))
 for (const p of MIXED_WILD) app.get(p, (c) => c.json({ ok: true }))
 
-app.serve({ port: 3000 })
+app.serve({ port: Number(process.argv[2] || 3000) })

@@ -385,3 +385,17 @@ test('generated dispatch can spawn ctx + seed params + buffer via helpers', () =
     assert.equal(call(app, { url: '/zzz' }).statusCode, 404)
   })
 })
+
+test('queries() returns all values for a repeated key in order', () => {
+  const app = createRouter()
+  app.get('/q', (c) => c.text(c.req.queries('tag').join(',')))
+  const res = call(app, { url: '/q?tag=a&x=1&tag=b&tag=c' })
+  assert.equal(res.body, 'a,b,c')
+})
+
+test('queries() on absent key returns empty array', () => {
+  const app = createRouter()
+  app.get('/q', (c) => c.text(String(c.req.queries('nope').length)))
+  const res = call(app, { url: '/q?x=1' })
+  assert.equal(res.body, '0')
+})
