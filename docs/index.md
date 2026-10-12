@@ -1,6 +1,6 @@
-# ch3
+# Introduction
 
-A minimal synchronous HTTP router for `node:http` with zero dependencies, authored inside the scriptc compilable subset.
+ch3 is a minimal synchronous HTTP router for `node:http` with zero dependencies, authored inside the scriptc compilable subset.
 
 ```ts
 import { createRouter } from "ch3";

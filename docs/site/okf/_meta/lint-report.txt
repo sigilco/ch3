@@ -1,4 +1,3 @@
-[WARN] missing-site-url  (source: fields will be relative)
 [WARN] missing-type /architecture/  (using fallback 'concept')
 [WARN] missing-type /benchmarks/  (using fallback 'concept')
 [WARN] missing-type /errors/  (using fallback 'concept')

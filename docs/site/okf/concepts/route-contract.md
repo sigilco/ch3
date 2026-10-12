@@ -1,12 +1,12 @@
 ---
 type: concept
 title: "ch3 generated-dispatch contract (`src/gen.ts`)"
-source: /route-contract/
+source: "https://ch3js.pages.dev/route-contract/"
 path: /route-contract/
 updated: 2026-10-12
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-12T22:50:52.759Z"
+  generated_at: "2026-10-12T23:17:15.224Z"
 ---
 # ch3 generated-dispatch contract (`src/gen.ts`)
 

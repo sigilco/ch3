@@ -1,12 +1,12 @@
 ---
 type: concept
 title: Middleware
-source: /middleware/
+source: "https://ch3js.pages.dev/middleware/"
 path: /middleware/
 updated: 2026-10-12
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-12T22:50:52.758Z"
+  generated_at: "2026-10-12T23:17:15.223Z"
 ---
 # Middleware
 

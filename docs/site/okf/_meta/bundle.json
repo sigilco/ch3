@@ -1,12 +1,12 @@
 {
   "okf_version": "0.9.7",
   "bundle": {
-    "name": "bundle",
-    "title": ".",
+    "name": "ch3-documentation",
+    "title": "ch3 Documentation",
     "description": "",
-    "url": "",
+    "url": "https://ch3js.pages.dev/",
     "generated_by": "@docmd/plugin-okf",
-    "generated_at": "2026-10-12T22:50:52.760Z",
+    "generated_at": "2026-10-12T23:17:15.224Z",
     "default_type": "concept"
   },
   "stats": {
@@ -54,7 +54,7 @@
     {
       "id": "root",
       "type": "concept",
-      "title": "ch3",
+      "title": "Introduction",
       "description": "",
       "path": "/",
       "file": "concepts/root.md",

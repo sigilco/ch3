@@ -1,12 +1,12 @@
 ---
 type: concept
 title: Benchmarks
-source: /benchmarks/
+source: "https://ch3js.pages.dev/benchmarks/"
 path: /benchmarks/
 updated: 2026-10-12
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-12T22:50:52.757Z"
+  generated_at: "2026-10-12T23:17:15.223Z"
 ---
 # Benchmarks
 

@@ -1,16 +1,16 @@
 ---
 type: concept
-title: ch3
-source: /
+title: Introduction
+source: "https://ch3js.pages.dev/"
 path: /
 updated: 2026-10-12
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-12T22:50:52.758Z"
+  generated_at: "2026-10-12T23:17:15.223Z"
 ---
-# ch3
+# Introduction
 
-A minimal synchronous HTTP router for `node:http` with zero dependencies, authored inside the scriptc compilable subset.
+ch3 is a minimal synchronous HTTP router for `node:http` with zero dependencies, authored inside the scriptc compilable subset.
 
 ```ts
 import { createRouter } from "ch3";

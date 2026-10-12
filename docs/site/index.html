@@ -98,31 +98,34 @@
         visibility: hidden;
       }
     </style>
-    <title>ch3 - .</title>
+    <title>Introduction - ch3 Documentation</title>
     
     
 
-    <link id="site-favicon" rel="icon" href="./assets/favicon.ico?v=mv5uinlg">
-    <link rel="stylesheet" href="./assets/css/docmd-main.css?v=mv5uinlg">
+    <link id="site-favicon" rel="icon" href="./assets/favicon.ico?v=mv5vgkpg">
+    <link rel="stylesheet" href="./assets/css/docmd-main.css?v=mv5vgkpg">
     
-    <link rel="stylesheet" href="./assets/css/docmd-highlight-light.css?v=mv5uinlg" id="hljs-light" >
-    <link rel="stylesheet" href="./assets/css/docmd-highlight-dark.css?v=mv5uinlg" id="hljs-dark" disabled>
+    <link rel="stylesheet" href="./assets/css/docmd-highlight-light.css?v=mv5vgkpg" id="hljs-light" >
+    <link rel="stylesheet" href="./assets/css/docmd-highlight-dark.css?v=mv5vgkpg" id="hljs-dark" disabled>
     
     
 <meta name="description" content="">
-<meta property="og:title" content="ch3 - .">
+<link rel="canonical" href="https://ch3js.pages.dev/">
+<meta property="og:title" content="Introduction - ch3 Documentation">
 <meta property="og:description" content="">
+<meta property="og:url" content="https://ch3js.pages.dev/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ch3 - .">
+<meta name="twitter:title" content="Introduction - ch3 Documentation">
 <meta name="twitter:description" content="">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"ch3 Documentation","url":"https://ch3js.pages.dev/","potentialAction":{"@type":"SearchAction","target":"https://ch3js.pages.dev/?q={search_term_string}","query-input":"required name=search_term_string"}}
+</script>
 
 
 
-
-<link rel="stylesheet" href="./assets/css/docmd-git.css?v=mv5uinlg" >
-<link rel="stylesheet" href="./assets/css/docmd-openapi.css?v=mv5uinlg" >
-<link rel="stylesheet" href="./assets/css/docmd-ai.css?v=mv5uinlg" >
+<link rel="stylesheet" href="./assets/css/docmd-git.css?v=mv5vgkpg" >
+<link rel="stylesheet" href="./assets/css/docmd-openapi.css?v=mv5vgkpg" >
 
     
     
@@ -145,7 +148,7 @@
         <div class="sidebar-header">
           
             <h1><a href="./">
-                .
+                ch3 Documentation
               </a></h1>
           
           <span class="mobile-view sidebar-menu-button float-right">
@@ -187,7 +190,7 @@
           >
           
           <span class="nav-item-title">
-            ch3
+            Introduction
             </span>
           
           
@@ -349,7 +352,7 @@
               
               <div class="header-titles-wrapper">
                 <span class="header-title">
-                  ch3
+                  Introduction
                 </span>
               </div>
             </div>
@@ -445,7 +448,7 @@
             <div class="content-layout">
               <div class="main-content">
                 <div class="docmd-breadcrumbs-row">
-                  <div id="docmd-raw-markdown" data-content="%23%20ch3%0A%0AA%20minimal%20synchronous%20HTTP%20router%20for%20%60node%3Ahttp%60%20with%20zero%20dependencies%2C%20authored%20inside%20the%20scriptc%20compilable%20subset.%0A%0A%60%60%60ts%0Aimport%20%7B%20createRouter%20%7D%20from%20%22ch3%22%3B%0A%0Aconst%20app%20%3D%20createRouter()%3B%0A%0Aapp.get(%22%2F%22%2C%20(c)%20%3D%3E%20c.text(%22hi%22))%3B%0Aapp.get(%22%2Fuser%2F%3Aid%22%2C%20(c)%20%3D%3E%20c.json(%7B%20id%3A%20c.req.param(%22id%22)%20%7D))%3B%0Aapp.post(%22%2Fecho%22%2C%20(c)%20%3D%3E%20c.text(c.req.body()))%3B%0Aapp.notFound((c)%20%3D%3E%20c.status(404).text(%22not%20found%22))%3B%0A%0Aapp.serve(%7B%20port%3A%203000%20%7D)%3B%0A%60%60%60%0A%0A%23%23%20Why%0A%0ATwo%20reasons%3A%0A%0A-%20Handlers%20are%20synchronous.%20Dispatch%20pre-buffers%20request%20bodies%2C%20so%20there%20is%20no%20await%20anywhere%20in%20the%20hot%20path.%0A-%20The%20package%20obeys%20the%20scriptc%20compilable%20subset%20(see%20%5BArchitecture%5D(architecture.md))%2C%20so%20the%20exact%20same%20source%20compiles%20to%20a%20native%20ELF%3A%203%20ms%20cold%20start%2C%204%20MB%20RSS%2C%20204k%20req%2Fs%20pipelined%20on%20a%20shared%20VM.%0A%0A%23%23%20Install%0A%0A%60%60%60bash%0Anpm%20i%20ch3%0A%60%60%60%0A%0ANext%3A%20%5BRouting%5D(routing.md).%0A" style="display: none;"></div>
+                  <div id="docmd-raw-markdown" data-content="%23%20Introduction%0A%0Ach3%20is%20a%20minimal%20synchronous%20HTTP%20router%20for%20%60node%3Ahttp%60%20with%20zero%20dependencies%2C%20authored%20inside%20the%20scriptc%20compilable%20subset.%0A%0A%60%60%60ts%0Aimport%20%7B%20createRouter%20%7D%20from%20%22ch3%22%3B%0A%0Aconst%20app%20%3D%20createRouter()%3B%0A%0Aapp.get(%22%2F%22%2C%20(c)%20%3D%3E%20c.text(%22hi%22))%3B%0Aapp.get(%22%2Fuser%2F%3Aid%22%2C%20(c)%20%3D%3E%20c.json(%7B%20id%3A%20c.req.param(%22id%22)%20%7D))%3B%0Aapp.post(%22%2Fecho%22%2C%20(c)%20%3D%3E%20c.text(c.req.body()))%3B%0Aapp.notFound((c)%20%3D%3E%20c.status(404).text(%22not%20found%22))%3B%0A%0Aapp.serve(%7B%20port%3A%203000%20%7D)%3B%0A%60%60%60%0A%0A%23%23%20Why%0A%0ATwo%20reasons%3A%0A%0A-%20Handlers%20are%20synchronous.%20Dispatch%20pre-buffers%20request%20bodies%2C%20so%20there%20is%20no%20await%20anywhere%20in%20the%20hot%20path.%0A-%20The%20package%20obeys%20the%20scriptc%20compilable%20subset%20(see%20%5BArchitecture%5D(architecture.md))%2C%20so%20the%20exact%20same%20source%20compiles%20to%20a%20native%20ELF%3A%203%20ms%20cold%20start%2C%204%20MB%20RSS%2C%20204k%20req%2Fs%20pipelined%20on%20a%20shared%20VM.%0A%0A%23%23%20Install%0A%0A%60%60%60bash%0Anpm%20i%20ch3%0A%60%60%60%0A%0ANext%3A%20%5BRouting%5D(routing.md).%0A" style="display: none;"></div>
                   
                     <nav aria-label="breadcrumb" class="docmd-breadcrumbs">
                       <ol>
@@ -453,7 +456,7 @@
                         
                           <li class="breadcrumb-item active" aria-current=&quot;page&quot;>
                             
-                              <span>ch3</span>
+                              <span>Introduction</span>
                             
                             
                           </li>
@@ -513,11 +516,11 @@
                 </div>
                 
                   <h1 class="docmd-focus-title">
-                    ch3
+                    Introduction
                   </h1>
                 
-                <h1 id="ch3" class="docmd-heading"><a href="#ch3" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>ch3</h1>
-<p>A minimal synchronous HTTP router for <code>node:http</code> with zero dependencies, authored inside the scriptc compilable subset.</p>
+                <h1 id="introduction" class="docmd-heading"><a href="#introduction" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Introduction</h1>
+<p>ch3 is a minimal synchronous HTTP router for <code>node:http</code> with zero dependencies, authored inside the scriptc compilable subset.</p>
 <pre class="hljs"><code class="language-ts"><span class="hljs-keyword">import</span> { createRouter } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;ch3&quot;</span>;
 
 <span class="hljs-keyword">const</span> app <span class="hljs-operator">=</span> <span class="hljs-title function_">createRouter</span>();
@@ -529,13 +532,13 @@ app.<span class="hljs-title function_">notFound</span>((c) <span class="hljs-ope
 
 app.<span class="hljs-title function_">serve</span>({ port<span class="hljs-operator">:</span> <span class="hljs-number">3000</span> });
 </code></pre>
-<h2 id="ch3-why" class="docmd-heading"><a href="#ch3-why" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Why</h2>
+<h2 id="introduction-why" class="docmd-heading"><a href="#introduction-why" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Why</h2>
 <p>Two reasons:</p>
 <ul>
 <li>Handlers are synchronous. Dispatch pre-buffers request bodies, so there is no await anywhere in the hot path.</li>
 <li>The package obeys the scriptc compilable subset (see <a href="./architecture/">Architecture</a>), so the exact same source compiles to a native ELF: 3 ms cold start, 4 MB RSS, 204k req/s pipelined on a shared VM.</li>
 </ul>
-<h2 id="ch3-install" class="docmd-heading"><a href="#ch3-install" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Install</h2>
+<h2 id="introduction-install" class="docmd-heading"><a href="#introduction-install" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Install</h2>
 <pre class="hljs"><code class="language-bash"><span class="hljs-keyword">npm</span> i ch3
 </code></pre>
 <p>Next: <a href="./routing/">Routing</a>.</p>
@@ -602,15 +605,15 @@ app.<span class="hljs-title function_">serve</span>({ port<span class="hljs-oper
     <ul class="toc-list">
       
         <li class="toc-item toc-level-1">
-          <a href="#ch3" class="toc-link">ch3</a>
+          <a href="#introduction" class="toc-link">Introduction</a>
         </li>
       
         <li class="toc-item toc-level-2">
-          <a href="#ch3-why" class="toc-link">Why</a>
+          <a href="#introduction-why" class="toc-link">Why</a>
         </li>
       
         <li class="toc-item toc-level-2">
-          <a href="#ch3-install" class="toc-link">Install</a>
+          <a href="#introduction-install" class="toc-link">Install</a>
         </li>
       
     </ul>
@@ -623,6 +626,53 @@ app.<span class="hljs-title function_">serve</span>({ port<span class="hljs-oper
             </div>
             <div class="page-footer-actions">
               
+              
+                <span class="git-last-updated" data-timestamp="1791846676000">
+                  <svg class="git-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="git-label">Last updated:</span>
+                  <span class="git-time" data-timestamp="1791846676000"></span>
+                  
+                  <div class="git-commit-tooltip" role="tooltip">
+                    <div class="git-tooltip-title">Recent commits</div>
+                    <ul class="git-commit-list">
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="Joaquin Terrasa">
+                            
+                              <img src="https://www.gravatar.com/avatar/4a251eec163ac7c6903836d37769d03e?d=mp&amp;s=64" alt="Joaquin Terrasa">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="fix(unplugin): e2e path resolution on symlinked tmpdir + emit assert specifiers">fix(unplugin): e2e path resolution on...</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">Joaquin Terrasa</span>
+                              <span class="git-commit-date" data-timestamp="1791846676000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="Joaquin Terrasa">
+                            
+                              <img src="https://www.gravatar.com/avatar/4a251eec163ac7c6903836d37769d03e?d=mp&amp;s=64" alt="Joaquin Terrasa">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="docs: docmd site (ch3js.pages.dev), docs:build script, link in README">docs: docmd site (ch3js.pages.dev), d...</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">Joaquin Terrasa</span>
+                              <span class="git-commit-date" data-timestamp="1791842043000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  
+                </span>
               
               <span class="git-spacer"></span>
               
@@ -645,14 +695,13 @@ app.<span class="hljs-title function_">serve</span>({ port<span class="hljs-oper
         </div>
       </div>
       
-      <script src="./assets/js/docmd-main.js?v=mv5uinlg"></script>
+      <script src="./assets/js/docmd-main.js?v=mv5vgkpg"></script>
       
-      <script src="./assets/js/docmd-git.js?v=mv5uinlg"></script>
-      <script src="./assets/js/docmd-image-lightbox.js?v=mv5uinlg" ></script>
-<script src="./assets/js/vendor/minisearch.js?v=mv5uinlg" ></script>
-<script src="./assets/js/docmd-search.js?v=mv5uinlg" ></script>
-<script src="./assets/js/docmd-git.js?v=mv5uinlg" ></script>
-<script src="./assets/js/docmd-ai.js?v=mv5uinlg" ></script>
+      <script src="./assets/js/docmd-git.js?v=mv5vgkpg"></script>
+      <script src="./assets/js/docmd-image-lightbox.js?v=mv5vgkpg" ></script>
+<script src="./assets/js/vendor/minisearch.js?v=mv5vgkpg" ></script>
+<script src="./assets/js/docmd-search.js?v=mv5vgkpg" ></script>
+<script src="./assets/js/docmd-git.js?v=mv5vgkpg" ></script>
 
   <!-- Search Modal (Injected by @docmd/plugin-search) -->
   <div id="docmd-search-modal" class="docmd-search-modal" style="display: none;" data-show-confidence="false" data-show-filters="true"
@@ -728,7 +777,6 @@ app.<span class="hljs-title function_">serve</span>({ port<span class="hljs-oper
     </script>
 
 <script>window.__git_config={"repo":null,"branch":"main","editLink":false,"lastUpdated":true,"commitHistory":true,"maxCommits":5,"dateFormat":"relative"};window.__git_i18n={"lastUpdated":"Last updated","recentCommits":"Recent commits","viewCommitHistory":"View commit history","editOnGitHub":"Edit on GitHub","editOnGitLab":"Edit on GitLab","editOnBitbucket":"Edit on Bitbucket","editThisPage":"Edit this page","justNow":"just now","minutesAgo":"{n}m ago","hoursAgo":"{n}h ago","daysAgo":"{n}d ago"}</script>
-<div id="docmd-ai-root"></div><script>window.__docmd_ai_config={"endpoint":"","cloud":{},"captcha":true,"position":"bottom-center","siteTitle":".","siteBase":"/","siteUrl":"","versions":null,"i18n":null,"navigation":[{"title":"ch3","path":"/"},{"title":"Architecture","path":"/architecture/"},{"title":"Benchmarks","path":"/benchmarks/"},{"title":"ch3 generated-dispatch contract (`src/gen.ts`)","path":"/route-contract/"},{"title":"Errors","path":"/errors/"},{"title":"Middleware","path":"/middleware/"},{"title":"Routing","path":"/routing/"},{"title":"unplugin-ch3","path":"/unplugin/"}],"searchCapabilities":{"keyword":true,"semantic":false},"isWorkspace":false,"workspaceProjects":[],"messageActions":false,"contextLimit":5};</script>
       
       
       

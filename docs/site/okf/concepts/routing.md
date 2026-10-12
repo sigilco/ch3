@@ -1,12 +1,12 @@
 ---
 type: concept
 title: Routing
-source: /routing/
+source: "https://ch3js.pages.dev/routing/"
 path: /routing/
 updated: 2026-10-12
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-12T22:50:52.759Z"
+  generated_at: "2026-10-12T23:17:15.224Z"
 ---
 # Routing
 

@@ -1,2 +1,5 @@
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://ch3js.pages.dev/sitemap.xml
