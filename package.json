@@ -1,5 +1,5 @@
 {
-  "name": "@sigilco/ch3",
+  "name": "ch3",
   "version": "0.1.0",
   "description": "Minimal synchronous HTTP router authored inside the scriptc compilable subset",
   "type": "module",
@@ -49,5 +49,22 @@
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sigilco/ch3.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sigilco/ch3/issues"
+  },
+  "homepage": "https://github.com/sigilco/ch3#readme",
+  "keywords": [
+    "http",
+    "router",
+    "router-http",
+    "native",
+    "aot",
+    "scriptc",
+    "node"
+  ]
 }
