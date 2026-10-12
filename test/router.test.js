@@ -399,3 +399,36 @@ test('queries() on absent key returns empty array', () => {
   const res = call(app, { url: '/q?x=1' })
   assert.equal(res.body, '0')
 })
+
+test('onError handles thrown errors and writes the response', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('kaboom') })
+  app.onError((err, c) => c.status(503).json({ error: String((err).message) }))
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 503)
+  assert.equal(res.body, '{"error":"kaboom"}')
+})
+
+test('onError that never responds falls back to built-in 500', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('x') })
+  app.onError(() => { /* writes nothing */ })
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 500)
+  assert.equal(res.body, 'Internal Server Error')
+})
+
+test('onError that throws still yields a single 500', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('x') })
+  app.onError(() => { throw new Error('handler bug') })
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 500)
+})
+
+test('no onError registered: default 500 behavior unchanged', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('x') })
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 500)
+})

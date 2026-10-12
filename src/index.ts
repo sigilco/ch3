@@ -214,11 +214,16 @@ export class Ctx<P extends string = string> {
   req: ReqView<P>
   res: ServerResponse
   _status: number
+  // True once a body-carrying helper (_send/redirect) flushed the response.
+  // runOnError reads it: an onError that already answered must not get a
+  // second 500 write.
+  sent: boolean
 
   constructor(req: ReqView<P>, res: ServerResponse) {
     this.req = req
     this.res = res
     this._status = 200
+    this.sent = false
   }
 
   status(n: number): Ctx<P> {
@@ -257,6 +262,7 @@ export class Ctx<P extends string = string> {
     this.status(n)
     this.res.setHeader('location', String(url))
     this.res.end()
+    this.sent = true
     return this
   }
 
@@ -266,6 +272,7 @@ export class Ctx<P extends string = string> {
     this.res.setHeader('content-type', ct)
     this.res.setHeader('content-length', String(utf8len(b)))
     this.res.end(b)
+    this.sent = true
     return this
   }
 }
@@ -725,6 +732,8 @@ export class App {
   _mws: Middleware[][]
   _nf: Handler
   _nfmw: Middleware[]
+  // onError handler: (err, c) => void. null = unset (default send500 path).
+  _oef: ((err: unknown, c: Ctx) => void) | null
   // _chains[i] is _mws[i] + _fns[i] flattened into one Handler — dispatch
   // calls it directly; there is no runtime chain walker.
   _chains: Handler[]
@@ -749,6 +758,7 @@ export class App {
     this._mws = []
     this._nf = defaultNotFound
     this._nfmw = []
+    this._oef = null
     this._chains = []
     this._nfchain = defaultNotFound
     this._pn = []
@@ -814,6 +824,14 @@ export class App {
     return this
   }
 
+  // Single catch-all around the whole chain. Honored by both dispatch
+  // paths (immediate + buffered-body). Rethrow/throw inside the handler
+  // falls back to the built-in 500 — onError must not loop.
+  onError(h: (err: unknown, c: Ctx) => void): App {
+    this._oef = h
+    return this
+  }
+
   route(prefix: string, sub: App): App {
     let p = String(prefix)
     if (p.length > 1 && p.charAt(p.length - 1) === '/') {
@@ -875,6 +893,7 @@ export class App {
     if (this._gen(req, res)) {
       return
     }
+    const oef = this._oef
     const method: string = String(req.method || '')
     const url: string = String(req.url || '/')
     let path = url
@@ -916,14 +935,53 @@ export class App {
         try {
           chain(c)
         } catch (e) {
-          send500(res)
+          if (oef !== null) {
+            runOnError(oef, e, res, c)
+          } else {
+            send500(res)
+          }
         }
       })
     } else {
       try {
         chain(c)
       } catch (e) {
-        send500(res)
+        if (oef !== null) {
+          runOnError(oef, e, res, c)
+        } else {
+          send500(res)
+        }
+      }
+    }
+  }
+}
+
+// Run the user onError handler; anything it throws (or a response it never
+// writes) falls back to the built-in 500 path so the socket always gets
+// exactly one terminal outcome.
+function runOnError(
+  oef: (err: unknown, c: Ctx) => void,
+  e: unknown,
+  res: ServerResponse,
+  c: Ctx,
+): void {
+  try {
+    if (res.headersSent) {
+      res.destroy()
+      return
+    }
+    oef(e, c)
+    if (!c.sent) {
+      send500(res)
+    }
+  } catch (e2) {
+    if (!res.headersSent) {
+      send500(res)
+    } else {
+      try {
+        res.destroy()
+      } catch (e3) {
+        // socket already gone
       }
     }
   }
