@@ -9,8 +9,11 @@ const router = FindMyWay()
 const json = (res, s) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(s) }
 const text = (res, s) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end(s) }
 
+router.get('/', (req, res) => text(res, ''))
+router.get('/hello', (req, res) => text(res, 'Hello World!'))
 router.get('/json', (req, res) => json(res, '{"hello":"world"}'))
 router.get('/user/:id', (req, res, params) => json(res, JSON.stringify({ id: params.id })))
+router.post('/user', (req, res) => text(res, ''))
 router.post('/echo', (req, res) => {
   const chunks = []
   req.on('data', (c) => chunks.push(c))

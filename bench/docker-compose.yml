@@ -1,0 +1,11 @@
+# One-command repro: `docker compose -f bench/docker-compose.yml up --build`
+# from the repo root. Results land in bench/results{,-wrk2}/ on the host.
+services:
+  bench:
+    build:
+      context: ..
+      dockerfile: bench/Dockerfile
+    # Host port collisions are impossible: subjects bind inside the container.
+    volumes:
+      - ./results:/work/bench/results
+      - ./results-wrk2:/work/bench/results-wrk2

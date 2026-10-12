@@ -5,9 +5,12 @@ import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from './common.mjs'
 const app = express()
 app.disable('x-powered-by')
 
+app.get('/', (req, res) => res.type('text/plain').send(''))
+app.get('/hello', (req, res) => res.type('text/plain').send('Hello World!'))
 app.get('/json', (req, res) => res.json({ hello: 'world' }))
 app.get('/user/:id', (req, res) => res.json({ id: req.params.id }))
 app.post('/echo', express.text({ type: () => true }), (req, res) => res.type('text/plain').send(req.body))
+app.post('/user', (req, res) => res.type('text/plain').send(''))
 app.get('/deep/a/b/c/d/e', (req, res) => res.json({ ok: true }))
 app.get('/files/*splat', (req, res) => res.type('text/plain').send(req.params.splat.join('/')))
 

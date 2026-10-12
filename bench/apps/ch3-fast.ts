@@ -32,6 +32,18 @@ class CompiledRoutes extends GenDispatch {
     const rv = new ReqView(req, qs, path)
     const c = new Ctx(rv, res)
     if (method === 'GET' || method === 'HEAD') {
+      if (path === '/') {
+        _guard(res, function (): void {
+          c.text('')
+        })
+        return true
+      }
+      if (path === '/hello') {
+        _guard(res, function (): void {
+          c.text('Hello World!')
+        })
+        return true
+      }
       if (path === '/json') {
         _guard(res, function (): void {
           c.json({ hello: 'world' })
@@ -96,6 +108,12 @@ class CompiledRoutes extends GenDispatch {
       })
       return true
     }
+    if (method === 'POST' && path === '/user') {
+      _guard(res, function (): void {
+        c.text('')
+      })
+      return true
+    }
     return false
   }
 }
@@ -103,9 +121,12 @@ class CompiledRoutes extends GenDispatch {
 const app = createRouter()
 app.withDispatch(new CompiledRoutes())
 
+app.get('/', (c) => c.text(''))
+app.get('/hello', (c) => c.text('Hello World!'))
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
 app.post('/echo', (c) => c.text(c.req.body()), { body: true })
+app.post('/user', (c) => c.text(''))
 app.get('/deep/a/b/c/d/e', (c) => c.json({ ok: true }))
 app.get('/files/*', (c) => c.text(c.req.param('*') || ''))
 
