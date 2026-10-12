@@ -40,12 +40,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/postbuild.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/router.test.js test/server.test.js"
+    "test": "npm run build && node --test test/router.test.js test/server.test.js",
+    "docs:build": "docmd build --cwd site",
+    "docs:dev": "docmd dev --cwd site"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
+    "@docmd/core": "^0.9.7",
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0"
   },
