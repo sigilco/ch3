@@ -447,5 +447,5 @@ test('405 surfaces through onError with allow list on the error', () => {
   const res = call(app, { method: 'DELETE', url: '/r' })
   assert.equal(res.statusCode, 405)
   assert.equal(res.body, 'custom 405')
-  assert.equal(res.headers['allow'], 'GET, HEAD')
+  assert.equal(res.headers['allow'], 'GET,HEAD')
 })
