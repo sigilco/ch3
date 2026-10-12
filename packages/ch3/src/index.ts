@@ -17,13 +17,13 @@
 //   - body via req.on('data'|'end') + string concat (Buffer.concat unlowered)
 //   - res.end() always statement-called (result use is deferred)
 
-import * as http from 'node:http'
-import type { IncomingMessage, Server, ServerResponse } from 'node:http'
-import { GenDispatch } from './gen.ts'
-import type { DispatchFn } from './gen.ts'
+import * as http from "node:http";
+import type { IncomingMessage, Server, ServerResponse } from "node:http";
+import { GenDispatch } from "./gen.ts";
+import type { DispatchFn } from "./gen.ts";
 
-export { GenDispatch }
-export type { DispatchFn }
+export { GenDispatch };
+export type { DispatchFn };
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -31,37 +31,37 @@ export type { DispatchFn }
 
 // Shared immutable defaults for ReqView's unbound param tables — read
 // only, never mutated (nothing writes _pn/_pi after construction).
-const EMPTY_S: string[] = []
-const EMPTY_N: number[] = []
+const EMPTY_S: string[] = [];
+const EMPTY_N: number[] = [];
 
 export class ReqView<P extends string = string> {
-  raw: IncomingMessage
-  method: string
-  path: string
-  _qs: string
-  _qp: string[] | null
+  raw: IncomingMessage;
+  method: string;
+  path: string;
+  _qs: string;
+  _qp: string[] | null;
   // Lazy param materialization: _pm stays null until the first param()/
   // splat read, then fills once from the matched entry's declared
   // (name, seg-index) positions — dispatch does zero param work for
   // handlers that never read params. _pn/_pi/_sp come from registration
   // metadata (see pathMeta); generated dispatch seeds _pm directly.
-  _pm: string[] | null
-  _pn: string[]
-  _pi: number[]
-  _sp: number
-  _body: string
+  _pm: string[] | null;
+  _pn: string[];
+  _pi: number[];
+  _sp: number;
+  _body: string;
 
   constructor(raw: IncomingMessage, qs: string, path: string) {
-    this.raw = raw
-    this.method = String(raw.method || '')
-    this._qs = String(qs)
-    this._qp = null
-    this._pm = null
-    this._pn = EMPTY_S
-    this._pi = EMPTY_N
-    this._sp = -1
-    this._body = ''
-    this.path = String(path)
+    this.raw = raw;
+    this.method = String(raw.method || "");
+    this._qs = String(qs);
+    this._qp = null;
+    this._pm = null;
+    this._pn = EMPTY_S;
+    this._pi = EMPTY_N;
+    this._sp = -1;
+    this._body = "";
+    this.path = String(path);
   }
 
   // param() takes `string`, not ParamKey<P>: conditional types never
@@ -69,211 +69,211 @@ export class ReqView<P extends string = string> {
   // report). ParamKey<P> stays exported for .d.ts consumers and any
   // future lazy-instantiation surface; P is still carried on Ctx.
   param(name: string): string | null {
-    const n = String(name)
-    const pm = this._pmNow()
+    const n = String(name);
+    const pm = this._pmNow();
     for (let i = 0; i < pm.length; i += 2) {
       if (pm[i] === n) {
-        return String(pm[i + 1])
+        return String(pm[i + 1]);
       }
     }
-    return null
+    return null;
   }
 
   // Generated dispatch (docs/route-contract.md) installs pre-materialized
   // decoded pairs — flat [name, value, ...] including '*' for a splat.
   _seedPm(pm: string[]): void {
-    this._pm = pm
+    this._pm = pm;
   }
 
   _pmNow(): string[] {
-    const pm = this._pm
+    const pm = this._pm;
     if (pm !== null) {
-      return pm
+      return pm;
     }
-    const out: string[] = []
-    const pn = this._pn
-    const sp = this._sp
+    const out: string[] = [];
+    const pn = this._pn;
+    const sp = this._sp;
     if (pn.length > 0 || sp >= 0) {
-      const segs = String(this.path).split('/')
+      const segs = String(this.path).split("/");
       for (let i = 0; i < pn.length; i++) {
-        const idx = this._pi[i]
-        let v = ''
+        const idx = this._pi[i];
+        let v = "";
         if (idx < segs.length) {
-          v = String(segs[idx])
+          v = String(segs[idx]);
         }
-        out.push(pn[i])
-        out.push(dec(v))
+        out.push(pn[i]);
+        out.push(dec(v));
       }
       if (sp >= 0) {
-        let tail = ''
+        let tail = "";
         for (let j = sp; j < segs.length; j++) {
           if (j > sp) {
-            tail = tail + '/'
+            tail = tail + "/";
           }
-          tail = tail + String(segs[j])
+          tail = tail + String(segs[j]);
         }
-        out.push('*')
-        out.push(dec(tail))
+        out.push("*");
+        out.push(dec(tail));
       }
     }
-    this._pm = out
-    return out
+    this._pm = out;
+    return out;
   }
 
   query(name: string): string | null {
-    const n = String(name)
-    const qp = this._parsed()
+    const n = String(name);
+    const qp = this._parsed();
     for (let i = 0; i < qp.length; i += 2) {
       if (qp[i] === n) {
-        return String(qp[i + 1])
+        return String(qp[i + 1]);
       }
     }
-    return null
+    return null;
   }
 
   queryAll(): Record<string, string> {
-    const qp = this._parsed()
-    const out: Record<string, string> = {}
+    const qp = this._parsed();
+    const out: Record<string, string> = {};
     for (let i = 0; i < qp.length; i += 2) {
-      const k = String(qp[i])
-      out[k] = String(qp[i + 1])
+      const k = String(qp[i]);
+      out[k] = String(qp[i + 1]);
     }
-    return out
+    return out;
   }
 
   // All values for a repeated query key, first-seen order. Returns the
   // shared empty array when absent — read-only, never mutated.
   queries(name: string): string[] {
-    const n = String(name)
-    const qp = this._parsed()
-    let out: string[] | null = null
+    const n = String(name);
+    const qp = this._parsed();
+    let out: string[] | null = null;
     for (let i = 0; i < qp.length; i += 2) {
       if (qp[i] === n) {
         if (out === null) {
-          out = []
+          out = [];
         }
-        out.push(String(qp[i + 1]))
+        out.push(String(qp[i + 1]));
       }
     }
     if (out === null) {
-      return EMPTY_S
+      return EMPTY_S;
     }
-    return out
+    return out;
   }
 
   header(name: string): string | null {
-    const key = String(name).toLowerCase()
-    const v = this.raw.headers[key]
-    if (typeof v === 'string') {
-      return String(v)
+    const key = String(name).toLowerCase();
+    const v = this.raw.headers[key];
+    if (typeof v === "string") {
+      return String(v);
     }
     // Narrow string[] | undefined to the single string[] arm — neither
     // else-branch narrowing (SC0001: resolves to never) nor an
     // unknown-cast (SC2003: union layout mismatch) compiles here.
     if (v !== undefined && v !== null && v.length > 0) {
-      return String(v[0])
+      return String(v[0]);
     }
-    return null
+    return null;
   }
 
   body(): string {
-    return String(this._body)
+    return String(this._body);
   }
 
   _setBody(s: string): void {
-    this._body = String(s)
+    this._body = String(s);
   }
 
   _parsed(): string[] {
-    const cached = this._qp
+    const cached = this._qp;
     if (cached !== null) {
-      return cached
+      return cached;
     }
-    const out: string[] = []
-    const qs = String(this._qs)
+    const out: string[] = [];
+    const qs = String(this._qs);
     if (qs.length > 0) {
-      const parts = qs.split('&')
+      const parts = qs.split("&");
       for (let i = 0; i < parts.length; i++) {
-        const p = String(parts[i])
-        const eq = p.indexOf('=')
+        const p = String(parts[i]);
+        const eq = p.indexOf("=");
         if (eq < 0) {
-          out.push(dec(p))
-          out.push('')
+          out.push(dec(p));
+          out.push("");
         } else {
-          out.push(dec(p.slice(0, eq)))
-          out.push(dec(p.slice(eq + 1)))
+          out.push(dec(p.slice(0, eq)));
+          out.push(dec(p.slice(eq + 1)));
         }
       }
     }
-    this._qp = out
-    return out
+    this._qp = out;
+    return out;
   }
 }
 
 export class Ctx<P extends string = string> {
-  req: ReqView<P>
-  res: ServerResponse
-  _status: number
+  req: ReqView<P>;
+  res: ServerResponse;
+  _status: number;
   // True once a body-carrying helper (_send/redirect) flushed the response.
   // runOnError reads it: an onError that already answered must not get a
   // second 500 write.
-  sent: boolean
+  sent: boolean;
 
   constructor(req: ReqView<P>, res: ServerResponse) {
-    this.req = req
-    this.res = res
-    this._status = 200
-    this.sent = false
+    this.req = req;
+    this.res = res;
+    this._status = 200;
+    this.sent = false;
   }
 
   status(n: number): Ctx<P> {
-    const code = Number(n)
-    this._status = code
-    this.res.statusCode = code
-    return this
+    const code = Number(n);
+    this._status = code;
+    this.res.statusCode = code;
+    return this;
   }
 
   header(k: string, v: string): Ctx<P> {
-    this.res.setHeader(String(k), String(v))
-    return this
+    this.res.setHeader(String(k), String(v));
+    return this;
   }
 
   json(o: unknown): Ctx<P> {
-    const t = JSON.stringify(o)
-    let s = 'null'
-    if (typeof t === 'string') {
-      s = t
+    const t = JSON.stringify(o);
+    let s = "null";
+    if (typeof t === "string") {
+      s = t;
     }
-    return this._send(s, 'application/json; charset=utf-8')
+    return this._send(s, "application/json; charset=utf-8");
   }
 
   text(s: string): Ctx<P> {
-    return this._send(String(s), 'text/plain; charset=utf-8')
+    return this._send(String(s), "text/plain; charset=utf-8");
   }
 
   html(s: string): Ctx<P> {
-    return this._send(String(s), 'text/html; charset=utf-8')
+    return this._send(String(s), "text/html; charset=utf-8");
   }
 
-  redirect(url: string): Ctx<P>
-  redirect(url: string, code: number): Ctx<P>
+  redirect(url: string): Ctx<P>;
+  redirect(url: string, code: number): Ctx<P>;
   redirect(url: string, code?: number): Ctx<P> {
-    const n = code === null || code === undefined ? 302 : Number(code)
-    this.status(n)
-    this.res.setHeader('location', String(url))
-    this.res.end()
-    this.sent = true
-    return this
+    const n = code === null || code === undefined ? 302 : Number(code);
+    this.status(n);
+    this.res.setHeader("location", String(url));
+    this.res.end();
+    this.sent = true;
+    return this;
   }
 
   _send(s: string, ct: string): Ctx<P> {
-    const b = String(s)
-    this.res.statusCode = this._status
-    this.res.setHeader('content-type', ct)
-    this.res.setHeader('content-length', String(utf8len(b)))
-    this.res.end(b)
-    this.sent = true
-    return this
+    const b = String(s);
+    this.res.statusCode = this._status;
+    this.res.setHeader("content-type", ct);
+    this.res.setHeader("content-length", String(utf8len(b)));
+    this.res.end(b);
+    this.sent = true;
+    return this;
   }
 }
 
@@ -290,30 +290,30 @@ export type ParamKey<P extends string> = string extends P
   : P extends `${infer _Head}:${infer Rest}`
     ? Rest extends `${infer K}/${infer Tail}`
       ? K | ParamKey<`/${Tail}`>
-      : Rest | (P extends `${string}/*` ? '*' : never)
+      : Rest | (P extends `${string}/*` ? "*" : never)
     : P extends `${string}/*`
-      ? '*'
-      : string
+      ? "*"
+      : string;
 
-export type Handler = (c: Ctx) => void
-export type Next = () => void
-export type Middleware = (c: Ctx, next: Next) => void
+export type Handler = (c: Ctx) => void;
+export type Next = () => void;
+export type Middleware = (c: Ctx, next: Next) => void;
 
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
 // for routes that asked for it (docs/route-contract.md).
 export interface RouteOpts {
-  body?: boolean
+  body?: boolean;
 }
 
 function bodyFlag(opts: RouteOpts | undefined): number {
   if (opts === undefined || opts === null) {
-    return 0
+    return 0;
   }
   if (opts.body === true) {
-    return 1
+    return 1;
   }
-  return 0
+  return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -323,26 +323,26 @@ function bodyFlag(opts: RouteOpts | undefined): number {
 // ---------------------------------------------------------------------------
 
 interface RouteNode {
-  seg: string
-  kind: number
+  seg: string;
+  kind: number;
   // children holds indices into the owning App._nodes table: a
   // `RouteNode[]` member self-references the record and is rejected under
   // eager program-code instantiation (SC2009), while boxed `unknown[]`
   // reads degrade dispatch — integer indices keep every member concrete.
-  children: number[]
-  hm: string[]
+  children: number[];
+  hm: string[];
   // hf[i] is the entry index for hm[i]'s method into App._fns/_mws —
   // function arrays (incl. nested Middleware[][]) cannot live inside
   // records under eager instantiation, so handlers AND their middleware
   // snapshots both live in parallel class-side arrays.
-  hf: number[]
+  hf: number[];
 }
 
 interface Frame {
-  node: RouteNode
+  node: RouteNode;
   // pos is the start index (in path) of the next segment to try;
   // pos > len is the leaf-check state (all segments consumed).
-  pos: number
+  pos: number;
 }
 
 function newNode(nodes: RouteNode[], seg: string, kind: number): number {
@@ -352,50 +352,50 @@ function newNode(nodes: RouteNode[], seg: string, kind: number): number {
     children: [],
     hm: [],
     hf: [],
-  })
-  return nodes.length - 1
+  });
+  return nodes.length - 1;
 }
 
 function addRoute(nodes: RouteNode[], method: string, path: string, hIdx: number): void {
-  const m = String(method)
-  const p = String(path)
-  if (p === '' || p.charAt(0) !== '/') {
-    throw new Error('ch3: route path must start with /')
+  const m = String(method);
+  const p = String(path);
+  if (p === "" || p.charAt(0) !== "/") {
+    throw new Error("ch3: route path must start with /");
   }
-  const segs = p.split('/')
-  let ni = 0
+  const segs = p.split("/");
+  let ni = 0;
   for (let i = 1; i < segs.length; i++) {
-    let seg = String(segs[i])
-    let kind = 0
-    if (seg === '*') {
-      kind = 2
+    let seg = String(segs[i]);
+    let kind = 0;
+    if (seg === "*") {
+      kind = 2;
       if (i !== segs.length - 1) {
-        throw new Error('ch3: * wildcard must be the last path segment')
+        throw new Error("ch3: * wildcard must be the last path segment");
       }
-    } else if (seg.charAt(0) === ':') {
-      kind = 1
-      seg = String(seg.slice(1))
-      if (seg === '') {
-        throw new Error('ch3: empty :param name in ' + p)
+    } else if (seg.charAt(0) === ":") {
+      kind = 1;
+      seg = String(seg.slice(1));
+      if (seg === "") {
+        throw new Error("ch3: empty :param name in " + p);
       }
     }
-    let child = -1
-    const ch = nodes[ni].children
+    let child = -1;
+    const ch = nodes[ni].children;
     for (let k = 0; k < ch.length; k++) {
-      const c = nodes[ch[k]]
+      const c = nodes[ch[k]];
       if (c.kind === kind && c.seg === seg) {
-        child = ch[k]
-        break
+        child = ch[k];
+        break;
       }
     }
     if (child < 0) {
-      child = newNode(nodes, seg, kind)
-      ch.push(child)
+      child = newNode(nodes, seg, kind);
+      ch.push(child);
     }
-    ni = child
+    ni = child;
   }
-  nodes[ni].hm.push(m)
-  nodes[ni].hf.push(hIdx)
+  nodes[ni].hm.push(m);
+  nodes[ni].hf.push(hIdx);
 }
 
 // Segment bounds inside `path` without materializing a string[] — the
@@ -403,23 +403,23 @@ function addRoute(nodes: RouteNode[], method: string, path: string, hIdx: number
 function segEndAt(path: string, pos: number, len: number): number {
   for (let i = pos; i < len; i++) {
     if (path.charCodeAt(i) === 47) {
-      return i
+      return i;
     }
   }
-  return len
+  return len;
 }
 
 function segEq(path: string, pos: number, end: number, seg: string): boolean {
-  const s = String(seg)
+  const s = String(seg);
   if (end - pos !== s.length) {
-    return false
+    return false;
   }
   for (let i = 0; i < s.length; i++) {
     if (path.charCodeAt(pos + i) !== s.charCodeAt(i)) {
-      return false
+      return false;
     }
   }
-  return true
+  return true;
 }
 
 // Zero-allocation match over the raw path. Depth-first over an explicit
@@ -429,100 +429,100 @@ function segEq(path: string, pos: number, end: number, seg: string): boolean {
 // extracted here — values are materialized lazily by ReqView from the
 // matched entry's declared positions.
 function matchPath(nodes: RouteNode[], path: string): RouteNode | null {
-  const p = String(path)
-  const len = p.length
-  let node = nodes[0]
-  let pos = 1
+  const p = String(path);
+  const len = p.length;
+  let node = nodes[0];
+  let pos = 1;
   // Zero-alloc static descent: advance only while every level resolves to
   // an exact static child; a param/wildcard sibling or a miss hands off
   // to the DFS below.
-  let dive = pos <= len
+  let dive = pos <= len;
   while (dive) {
-    const end = segEndAt(p, pos, len)
-    const ch = node.children
-    let next = -1
-    let alt = false
+    const end = segEndAt(p, pos, len);
+    const ch = node.children;
+    let next = -1;
+    let alt = false;
     for (let k = 0; k < ch.length; k++) {
-      const c = nodes[ch[k]]
+      const c = nodes[ch[k]];
       if (c.kind === 0) {
         if (segEq(p, pos, end, c.seg)) {
-          next = ch[k]
+          next = ch[k];
         }
       } else {
-        alt = true
+        alt = true;
       }
     }
     if (alt || next < 0) {
-      dive = false
+      dive = false;
     } else {
-      node = nodes[next]
-      pos = end + 1
-      dive = pos <= len
+      node = nodes[next];
+      pos = end + 1;
+      dive = pos <= len;
     }
   }
   if (pos > len && node.hf.length > 0) {
-    return node
+    return node;
   }
-  const stack: Frame[] = []
-  stack.push({ node: node, pos: pos })
+  const stack: Frame[] = [];
+  stack.push({ node: node, pos: pos });
   while (stack.length > 0) {
-    const f = stack[stack.length - 1]
-    stack.pop()
-    const fnode = f.node
-    const fpos = f.pos
+    const f = stack[stack.length - 1];
+    stack.pop();
+    const fnode = f.node;
+    const fpos = f.pos;
     if (fpos > len) {
       if (fnode.hf.length > 0) {
-        return fnode
+        return fnode;
       }
-      continue
+      continue;
     }
-    const end = segEndAt(p, fpos, len)
-    const ch = fnode.children
+    const end = segEndAt(p, fpos, len);
+    const ch = fnode.children;
     for (let k = ch.length - 1; k >= 0; k--) {
-      const c = nodes[ch[k]]
+      const c = nodes[ch[k]];
       if (c.kind === 2) {
-        stack.push({ node: c, pos: len + 1 })
+        stack.push({ node: c, pos: len + 1 });
       }
     }
     for (let k = ch.length - 1; k >= 0; k--) {
-      const c = nodes[ch[k]]
+      const c = nodes[ch[k]];
       if (c.kind === 1) {
-        stack.push({ node: c, pos: end + 1 })
+        stack.push({ node: c, pos: end + 1 });
       }
     }
     for (let k = ch.length - 1; k >= 0; k--) {
-      const c = nodes[ch[k]]
+      const c = nodes[ch[k]];
       if (c.kind === 0 && segEq(p, fpos, end, c.seg)) {
-        stack.push({ node: c, pos: end + 1 })
+        stack.push({ node: c, pos: end + 1 });
       }
     }
   }
-  return null
+  return null;
 }
 
 function findEntry(node: RouteNode, method: string): number {
-  const m = String(method)
-  const hm = node.hm
-  let star = -1
+  const m = String(method);
+  const hm = node.hm;
+  let star = -1;
   for (let i = 0; i < hm.length; i++) {
     if (hm[i] === m) {
-      return i
+      return i;
     }
-    if (hm[i] === '*' && star < 0) {
-      star = i
+    if (hm[i] === "*" && star < 0) {
+      star = i;
     }
   }
   if (star >= 0) {
-    return star
+    return star;
   }
-  if (m === 'HEAD') {
+  if (m === "HEAD") {
     for (let i = 0; i < hm.length; i++) {
-      if (hm[i] === 'GET') {
-        return i
+      if (hm[i] === "GET") {
+        return i;
       }
     }
   }
-  return -1
+  return -1;
 }
 
 // ---------------------------------------------------------------------------
@@ -530,8 +530,8 @@ function findEntry(node: RouteNode, method: string): number {
 // ---------------------------------------------------------------------------
 
 function defaultNotFound(c: Ctx): void {
-  c.status(404)
-  c.text('Not Found')
+  c.status(404);
+  c.text("Not Found");
 }
 
 // Contract helpers for generated dispatch modules (docs/route-contract.md):
@@ -541,27 +541,22 @@ function defaultNotFound(c: Ctx): void {
 // hot path never pays a closure it doesn't need.
 export function _guard(res: ServerResponse, k: () => void): void {
   try {
-    k()
+    k();
   } catch (e) {
-    send500(res)
+    send500(res);
   }
 }
 
-export function _buffer(
-  req: IncomingMessage,
-  res: ServerResponse,
-  c: Ctx,
-  k: () => void,
-): void {
-  const rv = c.req
-  let buf = ''
-  req.on('data', function (chunk: Buffer): void {
-    buf = buf + chunk.toString()
-  })
-  req.on('end', function (): void {
-    rv._setBody(buf)
-    _guard(res, k)
-  })
+export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: () => void): void {
+  const rv = c.req;
+  let buf = "";
+  req.on("data", function (chunk: Buffer): void {
+    buf = buf + chunk.toString();
+  });
+  req.on("end", function (): void {
+    rv._setBody(buf);
+    _guard(res, k);
+  });
 }
 
 // 405 Method Not Allowed with an Allow header built from the matched
@@ -573,24 +568,24 @@ function allow405(
   res: ServerResponse,
   oef: ((err: unknown, c: Ctx) => void) | null,
 ): void {
-  const hm = node.hm
-  const seen: { [k: string]: number } = {}
-  const out: string[] = []
+  const hm = node.hm;
+  const seen: { [k: string]: number } = {};
+  const out: string[] = [];
   for (let i = 0; i < hm.length; i++) {
-    let m = String(hm[i])
-    if (m === '*') {
-      m = 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS'
-    } else if (m === 'GET' && seen['HEAD'] === undefined) {
+    let m = String(hm[i]);
+    if (m === "*") {
+      m = "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS";
+    } else if (m === "GET" && seen["HEAD"] === undefined) {
       // GET implies HEAD; both names end up in the header
-      if (seen['GET'] === undefined) {
-        seen['GET'] = 1
-        out.push('GET')
+      if (seen["GET"] === undefined) {
+        seen["GET"] = 1;
+        out.push("GET");
       }
-      m = 'HEAD'
+      m = "HEAD";
     }
     if (seen[m] === undefined) {
-      seen[m] = 1
-      out.push(m)
+      seen[m] = 1;
+      out.push(m);
     }
   }
   if (oef !== null) {
@@ -598,28 +593,28 @@ function allow405(
     // onError handler can inspect it; params are unbound (no match was
     // made for this method) and body is ''. scriptc rejects constructing
     // external classes or widened literals, so no placeholder object here.
-    const url = String(req.url || '/')
-    let path = url
-    let qs = ''
-    const qi = url.indexOf('?')
+    const url = String(req.url || "/");
+    let path = url;
+    let qs = "";
+    const qi = url.indexOf("?");
     if (qi >= 0) {
-      path = String(url.slice(0, qi))
-      qs = String(url.slice(qi + 1))
+      path = String(url.slice(0, qi));
+      qs = String(url.slice(qi + 1));
     }
-    oef(new MethodNotAllowedError(out.join(',')), new Ctx(new ReqView(req, qs, path), res))
+    oef(new MethodNotAllowedError(out.join(",")), new Ctx(new ReqView(req, qs, path), res));
     if (res.headersSent) {
-      return
+      return;
     }
   }
   try {
-    res.statusCode = 405
-    res.setHeader('allow', out.join(', '))
-    res.setHeader('content-type', 'text/plain; charset=utf-8')
-    res.setHeader('content-length', '18')
-    res.end('Method Not Allowed')
+    res.statusCode = 405;
+    res.setHeader("allow", out.join(", "));
+    res.setHeader("content-type", "text/plain; charset=utf-8");
+    res.setHeader("content-length", "18");
+    res.end("Method Not Allowed");
   } catch (e) {
     try {
-      res.destroy()
+      res.destroy();
     } catch (e2) {
       // socket already gone
     }
@@ -627,28 +622,27 @@ function allow405(
 }
 
 class MethodNotAllowedError extends Error {
-  allow: string
+  allow: string;
   constructor(allow: string) {
-    super('Method Not Allowed')
-    this.name = 'MethodNotAllowedError'
-    this.allow = String(allow)
+    super("Method Not Allowed");
+    this.name = "MethodNotAllowedError";
+    this.allow = String(allow);
   }
 }
-
 
 function send500(res: ServerResponse): void {
   try {
     if (res.headersSent) {
-      res.destroy()
+      res.destroy();
     } else {
-      res.statusCode = 500
-      res.setHeader('content-type', 'text/plain; charset=utf-8')
-      res.setHeader('content-length', '21')
-      res.end('Internal Server Error')
+      res.statusCode = 500;
+      res.setHeader("content-type", "text/plain; charset=utf-8");
+      res.setHeader("content-length", "21");
+      res.end("Internal Server Error");
     }
   } catch (e) {
     try {
-      res.destroy()
+      res.destroy();
     } catch (e2) {
       // socket already gone
     }
@@ -656,44 +650,44 @@ function send500(res: ServerResponse): void {
 }
 
 function utf8len(s: string): number {
-  const b = String(s)
-  let n = 0
+  const b = String(s);
+  let n = 0;
   for (let i = 0; i < b.length; i++) {
-    const c = b.charCodeAt(i)
+    const c = b.charCodeAt(i);
     if (c < 0x80) {
-      n = n + 1
+      n = n + 1;
     } else if (c < 0x800) {
-      n = n + 2
+      n = n + 2;
     } else if (c >= 0xd800 && c <= 0xdbff && i + 1 < b.length) {
-      const c2 = b.charCodeAt(i + 1)
+      const c2 = b.charCodeAt(i + 1);
       if (c2 >= 0xdc00 && c2 <= 0xdfff) {
-        n = n + 4
-        i = i + 1
+        n = n + 4;
+        i = i + 1;
       } else {
-        n = n + 3
+        n = n + 3;
       }
     } else {
-      n = n + 3
+      n = n + 3;
     }
   }
-  return n
+  return n;
 }
 
 export function dec(s: string): string {
-  const t = String(s).split('+').join(' ')
+  const t = String(s).split("+").join(" ");
   try {
-    return decodeURIComponent(t)
+    return decodeURIComponent(t);
   } catch (e) {
-    return t
+    return t;
   }
 }
 
 function copyMw(mw: Middleware[]): Middleware[] {
-  const out: Middleware[] = []
+  const out: Middleware[] = [];
   for (let i = 0; i < mw.length; i++) {
-    out.push(mw[i])
+    out.push(mw[i]);
   }
-  return out
+  return out;
 }
 
 // Middleware flattened per route at registration: mw[..] + handler compose
@@ -702,144 +696,144 @@ function copyMw(mw: Middleware[]): Middleware[] {
 // request). Linear semantics are identical: next() resumes the tail, and a
 // mw calling next() twice re-runs the tail twice — same as the cursor.
 function compose(mw: Middleware[], h: Handler): Handler {
-  let chain: Handler = h
+  let chain: Handler = h;
   for (let i = mw.length - 1; i >= 0; i--) {
-    const fn = mw[i]
-    const inner = chain
+    const fn = mw[i];
+    const inner = chain;
     chain = function (c: Ctx): void {
       fn(c, function (): void {
-        inner(c)
-      })
-    }
+        inner(c);
+      });
+    };
   }
-  return chain
+  return chain;
 }
 
 function mergeMw(a: Middleware[], b: Middleware[]): Middleware[] {
-  const out: Middleware[] = []
+  const out: Middleware[] = [];
   for (let i = 0; i < a.length; i++) {
-    out.push(a[i])
+    out.push(a[i]);
   }
   for (let i = 0; i < b.length; i++) {
-    out.push(b[i])
+    out.push(b[i]);
   }
-  return out
+  return out;
 }
 
 // Registration-time route metadata: declared param positions in the
 // pattern. Dispatch binds these to ReqView so params materialize lazily
 // (never touched for routes whose handlers don't read params).
 interface PathMeta {
-  names: string[]
-  idxs: number[]
-  splat: number
+  names: string[];
+  idxs: number[];
+  splat: number;
 }
 
 function pathMeta(path: string): PathMeta {
-  const names: string[] = []
-  const idxs: number[] = []
-  let splat = -1
-  const segs = String(path).split('/')
+  const names: string[] = [];
+  const idxs: number[] = [];
+  let splat = -1;
+  const segs = String(path).split("/");
   for (let i = 1; i < segs.length; i++) {
-    const seg = String(segs[i])
-    if (seg === '*') {
-      splat = i
-    } else if (seg.charAt(0) === ':') {
-      names.push(String(seg.slice(1)))
-      idxs.push(i)
+    const seg = String(segs[i]);
+    if (seg === "*") {
+      splat = i;
+    } else if (seg.charAt(0) === ":") {
+      names.push(String(seg.slice(1)));
+      idxs.push(i);
     }
   }
-  return { names: names, idxs: idxs, splat: splat }
+  return { names: names, idxs: idxs, splat: splat };
 }
 
 interface MountFrame {
-  i: number
-  a: string
+  i: number;
+  a: string;
 }
 
 function mountRoutes(sub: App, app: App, prefix: string, pre: Middleware[]): void {
-  const sn = sub._nodes
-  const stack: MountFrame[] = [{ i: 0, a: '' }]
+  const sn = sub._nodes;
+  const stack: MountFrame[] = [{ i: 0, a: "" }];
   while (stack.length > 0) {
-    const f = stack[stack.length - 1]
-    stack.pop()
-    const n = sn[f.i]
-    const a = String(f.a)
-    const hs = n.hf
+    const f = stack[stack.length - 1];
+    stack.pop();
+    const n = sn[f.i];
+    const a = String(f.a);
+    const hs = n.hf;
     if (hs.length > 0) {
-      let path = String(prefix) + a
-      if (path === '') {
-        path = '/'
+      let path = String(prefix) + a;
+      if (path === "") {
+        path = "/";
       }
       for (let i = 0; i < hs.length; i++) {
-        const subMw = sub._mws[hs[i]]
+        const subMw = sub._mws[hs[i]];
         const idx = app._regFn(
           sub._fns[hs[i]],
           mergeMw(pre, subMw),
           pathMeta(path),
           sub._bodyF[hs[i]],
-        )
-        addRoute(app._nodes, n.hm[i], path, idx)
+        );
+        addRoute(app._nodes, n.hm[i], path, idx);
       }
     }
-    const ch = n.children
+    const ch = n.children;
     for (let i = 0; i < ch.length; i++) {
-      const c = sn[ch[i]]
-      let seg = String(c.seg)
+      const c = sn[ch[i]];
+      let seg = String(c.seg);
       if (c.kind === 1) {
-        seg = ':' + seg
+        seg = ":" + seg;
       }
-      stack.push({ i: ch[i], a: a + '/' + seg })
+      stack.push({ i: ch[i], a: a + "/" + seg });
     }
   }
 }
 
 export class App {
-  _nodes: RouteNode[]
-  _mw: Middleware[]
-  _fns: Handler[]
+  _nodes: RouteNode[];
+  _mw: Middleware[];
+  _fns: Handler[];
   // _mws[i] is the middleware snapshot for handler _fns[i] — kept on the
   // class, not in RouteNode records, because function-array record members
   // are rejected under eager program-code instantiation (SC2009).
-  _mws: Middleware[][]
-  _nf: Handler
-  _nfmw: Middleware[]
+  _mws: Middleware[][];
+  _nf: Handler;
+  _nfmw: Middleware[];
   // onError handler: (err, c) => void. null = unset (default send500 path).
-  _oef: ((err: unknown, c: Ctx) => void) | null
+  _oef: ((err: unknown, c: Ctx) => void) | null;
   // _chains[i] is _mws[i] + _fns[i] flattened into one Handler — dispatch
   // calls it directly; there is no runtime chain walker.
-  _chains: Handler[]
-  _nfchain: Handler
+  _chains: Handler[];
+  _nfchain: Handler;
   // Per-entry route metadata (parallel to _fns): declared param positions
   // for lazy materialization and the `body: true` declaration flag.
-  _pn: string[][]
-  _pi: number[][]
-  _sp: number[]
-  _bodyF: number[]
+  _pn: string[][];
+  _pi: number[][];
+  _sp: number[];
+  _bodyF: number[];
   // Generated-dispatch seam (docs/route-contract.md): a plain function
   // field, not an interface-typed field — an interface with a method member
   // would fence eager program-code instantiation the same way a function
   // inside a record does. Default returns false (never registered).
-  _gen: DispatchFn
+  _gen: DispatchFn;
 
   constructor() {
-    this._nodes = []
-    newNode(this._nodes, '', 0)
-    this._mw = []
-    this._fns = []
-    this._mws = []
-    this._nf = defaultNotFound
-    this._nfmw = []
-    this._oef = null
-    this._chains = []
-    this._nfchain = defaultNotFound
-    this._pn = []
-    this._pi = []
-    this._sp = []
-    this._bodyF = []
+    this._nodes = [];
+    newNode(this._nodes, "", 0);
+    this._mw = [];
+    this._fns = [];
+    this._mws = [];
+    this._nf = defaultNotFound;
+    this._nfmw = [];
+    this._oef = null;
+    this._chains = [];
+    this._nfchain = defaultNotFound;
+    this._pn = [];
+    this._pi = [];
+    this._sp = [];
+    this._bodyF = [];
     this._gen = function (_r: IncomingMessage, _s: ServerResponse): boolean {
-      return false
-    }
+      return false;
+    };
   }
 
   // Verb methods take `path: string` + `Ctx`, not `<P extends string>`:
@@ -849,68 +843,68 @@ export class App {
   // — no type-safety is lost. `opts.body` declares body use; without it
   // c.req.body() returns '' (docs/route-contract.md).
   get(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('GET', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("GET", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   post(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('POST', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("POST", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   put(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('PUT', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("PUT", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   delete(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('DELETE', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("DELETE", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   patch(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('PATCH', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("PATCH", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   head(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('HEAD', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("HEAD", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   options(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('OPTIONS', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("OPTIONS", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   all(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add('*', path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add("*", path, h as unknown as Handler, bodyFlag(opts));
   }
 
   on(method: string, path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add(String(method).toUpperCase(), path, (h as unknown) as Handler, bodyFlag(opts))
+    return this._add(String(method).toUpperCase(), path, h as unknown as Handler, bodyFlag(opts));
   }
 
   use(fn: Middleware): App {
-    this._mw.push(fn)
-    return this
+    this._mw.push(fn);
+    return this;
   }
 
   notFound(h: (c: Ctx) => void): App {
-    this._nf = (h as unknown) as Handler
-    this._nfmw = copyMw(this._mw)
-    this._nfchain = compose(this._nfmw, this._nf)
-    return this
+    this._nf = h as unknown as Handler;
+    this._nfmw = copyMw(this._mw);
+    this._nfchain = compose(this._nfmw, this._nf);
+    return this;
   }
 
   // Single catch-all around the whole chain. Honored by both dispatch
   // paths (immediate + buffered-body). Rethrow/throw inside the handler
   // falls back to the built-in 500 — onError must not loop.
   onError(h: (err: unknown, c: Ctx) => void): App {
-    this._oef = h
-    return this
+    this._oef = h;
+    return this;
   }
 
   route(prefix: string, sub: App): App {
-    let p = String(prefix)
-    if (p.length > 1 && p.charAt(p.length - 1) === '/') {
-      p = String(p.slice(0, p.length - 1))
+    let p = String(prefix);
+    if (p.length > 1 && p.charAt(p.length - 1) === "/") {
+      p = String(p.slice(0, p.length - 1));
     }
-    mountRoutes(sub, this, p, copyMw(this._mw))
-    return this
+    mountRoutes(sub, this, p, copyMw(this._mw));
+    return this;
   }
 
   // Registers a generated dispatch module (docs/route-contract.md). The
@@ -918,115 +912,115 @@ export class App {
   // class shape at the call site — subclasses, duck-typed objects, and the
   // emitted `class X extends GenDispatch` all work.
   withDispatch(d: GenDispatch): App {
-    const g = d
+    const g = d;
     this._gen = function (rq: IncomingMessage, rs: ServerResponse): boolean {
-      return g.dispatch(rq, rs)
-    }
-    return this
+      return g.dispatch(rq, rs);
+    };
+    return this;
   }
 
   handler(): (req: IncomingMessage, res: ServerResponse) => void {
-    const app = this
+    const app = this;
     return function (req: IncomingMessage, res: ServerResponse): void {
-      app._dispatch(req, res)
-    }
+      app._dispatch(req, res);
+    };
   }
 
-  serve(opts: { port: number }): Server
-  serve(opts: { port: number; host: string }): Server
+  serve(opts: { port: number }): Server;
+  serve(opts: { port: number; host: string }): Server;
   serve(opts: { port: number; host?: string }): Server {
-    const s = http.createServer(this.handler())
+    const s = http.createServer(this.handler());
     if (opts.host === null || opts.host === undefined) {
-      s.listen(Number(opts.port))
+      s.listen(Number(opts.port));
     } else {
-      s.listen(Number(opts.port), String(opts.host))
+      s.listen(Number(opts.port), String(opts.host));
     }
-    return s
+    return s;
   }
 
   _regFn(h: Handler, mw: Middleware[], m: PathMeta, body: number): number {
-    this._fns.push(h)
-    this._mws.push(mw)
-    this._chains.push(compose(mw, h))
-    this._pn.push(m.names)
-    this._pi.push(m.idxs)
-    this._sp.push(m.splat)
-    this._bodyF.push(body)
-    return this._fns.length - 1
+    this._fns.push(h);
+    this._mws.push(mw);
+    this._chains.push(compose(mw, h));
+    this._pn.push(m.names);
+    this._pi.push(m.idxs);
+    this._sp.push(m.splat);
+    this._bodyF.push(body);
+    return this._fns.length - 1;
   }
 
   _add(method: string, path: string, h: Handler, body: number): App {
-    const idx = this._regFn(h, copyMw(this._mw), pathMeta(path), body)
-    addRoute(this._nodes, method, path, idx)
-    return this
+    const idx = this._regFn(h, copyMw(this._mw), pathMeta(path), body);
+    addRoute(this._nodes, method, path, idx);
+    return this;
   }
 
   _dispatch(req: IncomingMessage, res: ServerResponse): void {
     if (this._gen(req, res)) {
-      return
+      return;
     }
-    const oef = this._oef
-    const method: string = String(req.method || '')
-    const url: string = String(req.url || '/')
-    let path = url
-    let qs = ''
-    const qi = url.indexOf('?')
+    const oef = this._oef;
+    const method: string = String(req.method || "");
+    const url: string = String(req.url || "/");
+    let path = url;
+    let qs = "";
+    const qi = url.indexOf("?");
     if (qi >= 0) {
-      path = String(url.slice(0, qi))
-      qs = String(url.slice(qi + 1))
+      path = String(url.slice(0, qi));
+      qs = String(url.slice(qi + 1));
     }
-    const node = matchPath(this._nodes, path)
-    let chain = this._nfchain
-    let body = 0
-    let idx = -1
+    const node = matchPath(this._nodes, path);
+    let chain = this._nfchain;
+    let body = 0;
+    let idx = -1;
     if (node !== null) {
-      const j = findEntry(node, method)
+      const j = findEntry(node, method);
       if (j >= 0) {
-        idx = node.hf[j]
-        chain = this._chains[idx]
-        body = this._bodyF[idx]
+        idx = node.hf[j];
+        chain = this._chains[idx];
+        body = this._bodyF[idx];
       } else if (node.hf.length > 0) {
         // Path matched, method didn't: 405 + Allow from the node's method
         // table (computed only on this miss path — zero hot-path cost).
-        allow405(node, req, res, oef)
-        return
+        allow405(node, req, res, oef);
+        return;
       }
     }
-    const rv = new ReqView(req, qs, path)
+    const rv = new ReqView(req, qs, path);
     if (idx >= 0) {
-      rv._pn = this._pn[idx]
-      rv._pi = this._pi[idx]
-      rv._sp = this._sp[idx]
+      rv._pn = this._pn[idx];
+      rv._pi = this._pi[idx];
+      rv._sp = this._sp[idx];
     }
-    const c = new Ctx(rv, res)
+    const c = new Ctx(rv, res);
     if (
       body === 1 &&
-      (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')
+      (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE")
     ) {
-      let buf = ''
-      req.on('data', function (chunk: Buffer): void {
-        buf = buf + chunk.toString()
-      })
-      req.on('end', function (): void {
-        rv._setBody(buf)
+      let buf = "";
+      req.on("data", function (chunk: Buffer): void {
+        buf = buf + chunk.toString();
+      });
+      req.on("end", function (): void {
+        rv._setBody(buf);
         try {
-          chain(c)
+          chain(c);
         } catch (e) {
           if (oef !== null) {
-            runOnError(oef, e, res, c)
+            runOnError(oef, e, res, c);
           } else {
-            send500(res)
+            send500(res);
           }
         }
-      })
+      });
     } else {
       try {
-        chain(c)
+        chain(c);
       } catch (e) {
         if (oef !== null) {
-          runOnError(oef, e, res, c)
+          runOnError(oef, e, res, c);
         } else {
-          send500(res)
+          send500(res);
         }
       }
     }
@@ -1044,19 +1038,19 @@ function runOnError(
 ): void {
   try {
     if (res.headersSent) {
-      res.destroy()
-      return
+      res.destroy();
+      return;
     }
-    oef(e, c)
+    oef(e, c);
     if (!c.sent) {
-      send500(res)
+      send500(res);
     }
   } catch (e2) {
     if (!res.headersSent) {
-      send500(res)
+      send500(res);
     } else {
       try {
-        res.destroy()
+        res.destroy();
       } catch (e3) {
         // socket already gone
       }
@@ -1065,5 +1059,5 @@ function runOnError(
 }
 
 export function createRouter(): App {
-  return new App()
+  return new App();
 }

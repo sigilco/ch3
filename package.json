@@ -7,16 +7,16 @@
     "build": "pnpm --filter ch3 build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "lint": "oxlint packages demo --type-aware",
-    "fmt": "oxfmt packages demo",
-    "fmt:check": "oxfmt --check packages demo",
+    "lint": "oxlint packages demo bench/lib bench/apps",
+    "fmt": "oxfmt packages demo bench/lib bench/apps",
+    "fmt:check": "oxfmt --check packages demo bench/lib bench/apps",
     "docs:build": "docmd build --cwd docs",
     "docs:dev": "docmd dev --cwd docs"
   },
   "devDependencies": {
     "@docmd/core": "^0.9.7",
     "oxfmt": "^0.17.0",
-    "oxlint": "^1.36.0",
+    "oxlint": "^1.87.0",
     "typescript": "^5.9.0"
   },
   "packageManager": "pnpm@12.11.2",

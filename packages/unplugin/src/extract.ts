@@ -6,83 +6,78 @@
 // app.on) is a compile-time string literal. Anything else is left to the
 // runtime router and reported as a warning, never silently dropped.
 
-import ts from 'typescript'
-import type {
-  ModuleModel,
-  RouteSpec,
-  SegSpec,
-  StaticSend,
-} from './model.ts'
-import { ROUTE_METHODS } from './model.ts'
+import ts from "typescript";
+import type { ModuleModel, RouteSpec, SegSpec, StaticSend } from "./model.ts";
+import { ROUTE_METHODS } from "./model.ts";
 
 export interface ExtractOptions {
   // Extra module specifiers to treat as ch3 imports (default
   // ['ch3', 'ch3'] plus '<pkg>/*' subpaths).
-  imports?: string[]
+  imports?: string[];
   // Exported binding carrying the router: a name, or 'default'.
   // Default: auto-detect (default export, then 'app', then first export).
-  appExport?: string
+  appExport?: string;
 }
 
 interface PendingRoute {
-  method: string
-  path: string
-  segs: SegSpec[]
-  hasMw: boolean
-  mwUnsafe: boolean
-  declaredBody: boolean // opts.body === true at registration (contract)
-  handlerNode: ts.Expression | null
-  node: ts.Node
+  method: string;
+  path: string;
+  segs: SegSpec[];
+  hasMw: boolean;
+  mwUnsafe: boolean;
+  declaredBody: boolean; // opts.body === true at registration (contract)
+  handlerNode: ts.Expression | null;
+  node: ts.Node;
 }
 
 interface VarState {
-  routes: PendingRoute[]
+  routes: PendingRoute[];
   // Simulated App._fns / App._nodes: mounted sub-routers are replayed
   // into the parent in the runtime's DFS order, so every var needs the
   // trie the runtime would have built — not just a flat route list.
-  fns: (PendingRoute | null)[]
-  nodes: SimNode[]
-  mwDepth: number
-  mwUnsafe: boolean
-  dynamic: boolean // nested/conditional registrations seen — count unreliable
+  fns: (PendingRoute | null)[];
+  nodes: SimNode[];
+  mwDepth: number;
+  mwUnsafe: boolean;
+  dynamic: boolean; // nested/conditional registrations seen — count unreliable
 }
 
 // Mirror of the runtime RouteNode for mount replay.
 interface SimNode {
-  seg: string // static text, param name without ':', or '*'
-  kind: number // 0 static, 1 param, 2 wildcard
-  hm: string[]
-  hf: number[] // indices into the var's fns
-  children: number[]
+  seg: string; // static text, param name without ':', or '*'
+  kind: number; // 0 static, 1 param, 2 wildcard
+  hm: string[];
+  hf: number[]; // indices into the var's fns
+  children: number[];
 }
 
 function simRoot(): SimNode {
-  return { seg: '', kind: 0, hm: [], hf: [], children: [] }
+  return { seg: "", kind: 0, hm: [], hf: [], children: [] };
 }
 
 // Mirror of addRoute(): dedup children on (kind, seg), leaf gets
 // (method, fnsIdx) appended to parallel arrays.
 function simAddRoute(v: VarState, method: string, segs: SegSpec[], fnsIdx: number): void {
-  let ni = 0
+  let ni = 0;
   for (const s of segs) {
-    let child = -1
-    const ch = v.nodes[ni].children
+    let child = -1;
+    const ch = v.nodes[ni].children;
     for (const ci of ch) {
-      const c = v.nodes[ci]
+      const c = v.nodes[ci];
       if (c.kind === s.kind && c.seg === s.lit) {
-        child = ci
-        break
+        child = ci;
+        break;
       }
     }
     if (child < 0) {
-      child = v.nodes.length
-      v.nodes.push({ seg: s.lit, kind: s.kind, hm: [], hf: [], children: [] })
-      ch.push(child)
+      child = v.nodes.length;
+      v.nodes.push({ seg: s.lit, kind: s.kind, hm: [], hf: [], children: [] });
+      ch.push(child);
     }
-    ni = child
+    ni = child;
   }
-  v.nodes[ni].hm.push(method)
-  v.nodes[ni].hf.push(fnsIdx)
+  v.nodes[ni].hm.push(method);
+  v.nodes[ni].hf.push(fnsIdx);
 }
 
 // Mirror of mountRoutes(): explicit-stack DFS over the sub's node list —
@@ -92,9 +87,9 @@ function simAddRoute(v: VarState, method: string, segs: SegSpec[], fnsIdx: numbe
 // runtime mounted a snapshot too).
 function replayMount(
   sub: VarState,
-  onRoute: (method: string, mountedPath: string, pr: PendingRoute | null) => void
+  onRoute: (method: string, mountedPath: string, pr: PendingRoute | null) => void,
 ): void {
-  const nodes: SimNode[] = []
+  const nodes: SimNode[] = [];
   for (const n of sub.nodes) {
     nodes.push({
       seg: n.seg,
@@ -102,175 +97,172 @@ function replayMount(
       hm: n.hm.slice(),
       hf: n.hf.slice(),
       children: n.children.slice(),
-    })
+    });
   }
-  const stack: { i: number; a: string }[] = [{ i: 0, a: '' }]
+  const stack: { i: number; a: string }[] = [{ i: 0, a: "" }];
   while (stack.length > 0) {
-    const f = stack[stack.length - 1]
-    stack.pop()
-    const n = nodes[f.i]
+    const f = stack[stack.length - 1];
+    stack.pop();
+    const n = nodes[f.i];
     if (n.hf.length > 0) {
       for (let k = 0; k < n.hf.length; k++) {
-        onRoute(n.hm[k], f.a, sub.fns[n.hf[k]])
+        onRoute(n.hm[k], f.a, sub.fns[n.hf[k]]);
       }
     }
     for (let k = 0; k < n.children.length; k++) {
-      const c = nodes[n.children[k]]
-      let seg = c.seg
+      const c = nodes[n.children[k]];
+      let seg = c.seg;
       if (c.kind === 1) {
-        seg = ':' + seg
+        seg = ":" + seg;
       }
-      stack.push({ i: n.children[k], a: f.a + '/' + seg })
+      stack.push({ i: n.children[k], a: f.a + "/" + seg });
     }
   }
 }
 
-const DEFAULT_IMPORTS = ['ch3', 'ch3']
+const DEFAULT_IMPORTS = ["ch3", "ch3"];
 
 function isCh3Specifier(spec: string, extra: string[]): boolean {
-  const all = DEFAULT_IMPORTS.concat(extra)
+  const all = DEFAULT_IMPORTS.concat(extra);
   for (const p of all) {
-    if (spec === p || spec.indexOf(p + '/') === 0) {
-      return true
+    if (spec === p || spec.indexOf(p + "/") === 0) {
+      return true;
     }
   }
-  return false
+  return false;
 }
 
 // Evaluate a compile-time literal. Returns {ok:false} for anything else.
 function evalLiteral(e: ts.Expression): { ok: boolean; v: unknown } {
   if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) {
-    return { ok: true, v: e.text }
+    return { ok: true, v: e.text };
   }
   if (ts.isNumericLiteral(e)) {
-    return { ok: true, v: Number(e.text) }
+    return { ok: true, v: Number(e.text) };
   }
   if (e.kind === ts.SyntaxKind.TrueKeyword) {
-    return { ok: true, v: true }
+    return { ok: true, v: true };
   }
   if (e.kind === ts.SyntaxKind.FalseKeyword) {
-    return { ok: true, v: false }
+    return { ok: true, v: false };
   }
   if (e.kind === ts.SyntaxKind.NullKeyword) {
-    return { ok: true, v: null }
+    return { ok: true, v: null };
   }
   if (ts.isPrefixUnaryExpression(e)) {
-    const inner = evalLiteral(e.operand)
-    if (inner.ok && typeof inner.v === 'number') {
+    const inner = evalLiteral(e.operand);
+    if (inner.ok && typeof inner.v === "number") {
       if (e.operator === ts.SyntaxKind.MinusToken) {
-        return { ok: true, v: -inner.v }
+        return { ok: true, v: -inner.v };
       }
       if (e.operator === ts.SyntaxKind.PlusToken) {
-        return { ok: true, v: inner.v }
+        return { ok: true, v: inner.v };
       }
     }
-    return { ok: false, v: null }
+    return { ok: false, v: null };
   }
-  if (
-    ts.isBinaryExpression(e) &&
-    e.operatorToken.kind === ts.SyntaxKind.PlusToken
-  ) {
-    const l = evalLiteral(e.left)
-    const r = evalLiteral(e.right)
-    if (l.ok && r.ok && typeof l.v === 'string' && typeof r.v === 'string') {
-      return { ok: true, v: String(l.v) + String(r.v) }
+  if (ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    const l = evalLiteral(e.left);
+    const r = evalLiteral(e.right);
+    if (l.ok && r.ok && typeof l.v === "string" && typeof r.v === "string") {
+      return { ok: true, v: String(l.v) + String(r.v) };
     }
-    return { ok: false, v: null }
+    return { ok: false, v: null };
   }
   if (ts.isArrayLiteralExpression(e)) {
-    const out: unknown[] = []
+    const out: unknown[] = [];
     for (const el of e.elements) {
-      const v = evalLiteral(el)
+      const v = evalLiteral(el);
       if (!v.ok) {
-        return { ok: false, v: null }
+        return { ok: false, v: null };
       }
-      out.push(v.v)
+      out.push(v.v);
     }
-    return { ok: true, v: out }
+    return { ok: true, v: out };
   }
   if (ts.isObjectLiteralExpression(e)) {
-    const out: { [k: string]: unknown } = {}
+    const out: { [k: string]: unknown } = {};
     for (const p of e.properties) {
       if (!ts.isPropertyAssignment(p)) {
-        return { ok: false, v: null }
+        return { ok: false, v: null };
       }
-      const n = p.name
+      const n = p.name;
       if (!ts.isIdentifier(n) && !ts.isStringLiteral(n) && !ts.isNumericLiteral(n)) {
-        return { ok: false, v: null }
+        return { ok: false, v: null };
       }
-      const v = evalLiteral(p.initializer)
+      const v = evalLiteral(p.initializer);
       if (!v.ok) {
-        return { ok: false, v: null }
+        return { ok: false, v: null };
       }
-      out[n.text] = v.v
+      out[n.text] = v.v;
     }
-    return { ok: true, v: out }
+    return { ok: true, v: out };
   }
   if (ts.isParenthesizedExpression(e)) {
-    return evalLiteral(e.expression)
+    return evalLiteral(e.expression);
   }
-  return { ok: false, v: null }
+  return { ok: false, v: null };
 }
 
 function evalString(e: ts.Expression): { ok: boolean; v: string } {
-  const r = evalLiteral(e)
-  if (r.ok && typeof r.v === 'string') {
-    return { ok: true, v: r.v }
+  const r = evalLiteral(e);
+  if (r.ok && typeof r.v === "string") {
+    return { ok: true, v: r.v };
   }
-  return { ok: false, v: '' }
+  return { ok: false, v: "" };
 }
 
 // Parse '/user/:id/files/*' into segment specs. Mirrors addRoute():
 // ':'-prefixed segs are params, a bare '*' is a tail-only wildcard.
 function parsePath(p: string): { segs: SegSpec[] | null; err: string } {
-  if (p === '' || p.charAt(0) !== '/') {
-    return { segs: null, err: 'route path must start with /' }
+  if (p === "" || p.charAt(0) !== "/") {
+    return { segs: null, err: "route path must start with /" };
   }
-  const raw = p.split('/')
-  const segs: SegSpec[] = []
+  const raw = p.split("/");
+  const segs: SegSpec[] = [];
   for (let i = 1; i < raw.length; i++) {
-    const s = raw[i]
-    if (s === '*') {
+    const s = raw[i];
+    if (s === "*") {
       if (i !== raw.length - 1) {
-        return { segs: null, err: '* wildcard must be the last path segment' }
+        return { segs: null, err: "* wildcard must be the last path segment" };
       }
-      segs.push({ kind: 2, lit: '*' })
-    } else if (s.charAt(0) === ':') {
-      const name = s.slice(1)
-      if (name === '') {
-        return { segs: null, err: 'empty :param name in ' + p }
+      segs.push({ kind: 2, lit: "*" });
+    } else if (s.charAt(0) === ":") {
+      const name = s.slice(1);
+      if (name === "") {
+        return { segs: null, err: "empty :param name in " + p };
       }
-      segs.push({ kind: 1, lit: name })
+      segs.push({ kind: 1, lit: name });
     } else {
-      segs.push({ kind: 0, lit: s })
+      segs.push({ kind: 0, lit: s });
     }
   }
-  return { segs: segs, err: '' }
+  return { segs: segs, err: "" };
 }
 
 interface ChainCall {
-  name: string
-  args: ts.NodeArray<ts.Expression>
-  node: ts.CallExpression
+  name: string;
+  args: ts.NodeArray<ts.Expression>;
+  node: ts.CallExpression;
 }
 
 // Decompose a fluent chain `app.get('/a', h).post('/b', h2)` into the
 // sequence of member calls rooted at a bare identifier.
 function decomposeChain(e: ts.Expression): { root: string; calls: ChainCall[] } | null {
-  const calls: ChainCall[] = []
-  let cur = e
+  const calls: ChainCall[] = [];
+  let cur = e;
   while (ts.isCallExpression(cur) && ts.isPropertyAccessExpression(cur.expression)) {
     calls.unshift({
       name: cur.expression.name.text,
       args: cur.arguments,
       node: cur,
-    })
-    cur = cur.expression.expression
+    });
+    cur = cur.expression.expression;
   }
   if (calls.length > 0 && ts.isIdentifier(cur)) {
-    return { root: cur.text, calls: calls }
+    return { root: cur.text, calls: calls };
   }
-  return null
+  return null;
 }
 
 // ---- static-send specialization ------------------------------------------
@@ -281,153 +273,148 @@ function decomposeChain(e: ts.Expression): { root: string; calls: ChainCall[] } 
 
 function detectStaticSend(h: ts.Expression): StaticSend | null {
   if (!ts.isArrowFunction(h) && !ts.isFunctionExpression(h)) {
-    return null
+    return null;
   }
   if (h.parameters.length !== 1) {
-    return null
+    return null;
   }
-  const p = h.parameters[0]
+  const p = h.parameters[0];
   if (!ts.isIdentifier(p.name)) {
-    return null
+    return null;
   }
-  const cname = p.name.text
-  let body: ts.Expression | null = null
+  const cname = p.name.text;
+  let body: ts.Expression | null = null;
   if (ts.isBlock(h.body)) {
     if (h.body.statements.length === 1) {
-      const s = h.body.statements[0]
+      const s = h.body.statements[0];
       if (ts.isReturnStatement(s) && s.expression !== undefined) {
-        body = s.expression
+        body = s.expression;
       }
     }
   } else {
-    body = h.body as ts.Expression
+    body = h.body as ts.Expression;
   }
   if (body === null) {
-    return null
+    return null;
   }
   // peel the call chain innermost-first
-  const ops: { name: string; args: ts.NodeArray<ts.Expression> }[] = []
-  let cur: ts.Expression = body
+  const ops: { name: string; args: ts.NodeArray<ts.Expression> }[] = [];
+  let cur: ts.Expression = body;
   while (ts.isCallExpression(cur) && ts.isPropertyAccessExpression(cur.expression)) {
-    ops.unshift({ name: cur.expression.name.text, args: cur.arguments })
-    cur = cur.expression.expression
+    ops.unshift({ name: cur.expression.name.text, args: cur.arguments });
+    cur = cur.expression.expression;
   }
   if (ops.length === 0 || !ts.isIdentifier(cur) || cur.text !== cname) {
-    return null
+    return null;
   }
   const send: StaticSend = {
     status: 200,
     headers: [],
-    contentType: '',
-    body: '',
-    location: '',
-  }
+    contentType: "",
+    body: "",
+    location: "",
+  };
   for (let i = 0; i < ops.length; i++) {
-    const op = ops[i]
-    const last = i === ops.length - 1
+    const op = ops[i];
+    const last = i === ops.length - 1;
     if (!last) {
-      if (op.name === 'status' && op.args.length === 1) {
-        const v = evalLiteral(op.args[0])
-        if (!v.ok || typeof v.v !== 'number') {
-          return null
+      if (op.name === "status" && op.args.length === 1) {
+        const v = evalLiteral(op.args[0]);
+        if (!v.ok || typeof v.v !== "number") {
+          return null;
         }
-        send.status = v.v
-      } else if (op.name === 'header' && op.args.length === 2) {
-        const k = evalString(op.args[0])
-        const v = evalString(op.args[1])
+        send.status = v.v;
+      } else if (op.name === "header" && op.args.length === 2) {
+        const k = evalString(op.args[0]);
+        const v = evalString(op.args[1]);
         if (!k.ok || !v.ok) {
-          return null
+          return null;
         }
-        send.headers.push([k.v, v.v])
+        send.headers.push([k.v, v.v]);
       } else {
-        return null
+        return null;
       }
-      continue
+      continue;
     }
-    if (op.name === 'json' && op.args.length === 1) {
-      const v = evalLiteral(op.args[0])
+    if (op.name === "json" && op.args.length === 1) {
+      const v = evalLiteral(op.args[0]);
       if (!v.ok) {
-        return null
+        return null;
       }
-      const t = JSON.stringify(v.v)
-      if (typeof t !== 'string') {
-        return null
+      const t = JSON.stringify(v.v);
+      if (typeof t !== "string") {
+        return null;
       }
-      send.contentType = 'application/json; charset=utf-8'
-      send.body = t
-    } else if ((op.name === 'text' || op.name === 'html') && op.args.length === 1) {
-      const v = evalString(op.args[0])
+      send.contentType = "application/json; charset=utf-8";
+      send.body = t;
+    } else if ((op.name === "text" || op.name === "html") && op.args.length === 1) {
+      const v = evalString(op.args[0]);
       if (!v.ok) {
-        return null
+        return null;
       }
       send.contentType =
-        op.name === 'text' ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8'
-      send.body = v.v
-    } else if (op.name === 'redirect' && op.args.length >= 1 && op.args.length <= 2) {
-      const u = evalString(op.args[0])
+        op.name === "text" ? "text/plain; charset=utf-8" : "text/html; charset=utf-8";
+      send.body = v.v;
+    } else if (op.name === "redirect" && op.args.length >= 1 && op.args.length <= 2) {
+      const u = evalString(op.args[0]);
       if (!u.ok) {
-        return null
+        return null;
       }
-      send.location = u.v
+      send.location = u.v;
       if (op.args.length === 2) {
-        const code = evalLiteral(op.args[1])
-        if (!code.ok || typeof code.v !== 'number') {
-          return null
+        const code = evalLiteral(op.args[1]);
+        if (!code.ok || typeof code.v !== "number") {
+          return null;
         }
-        send.status = code.v
+        send.status = code.v;
       } else {
-        send.status = 302
+        send.status = 302;
       }
     } else {
-      return null
+      return null;
     }
   }
-  return send
+  return send;
 }
 
 // ---------------------------------------------------------------------------
 
-export function extractModule(
-  fileName: string,
-  code: string,
-  opts?: ExtractOptions
-): ModuleModel {
-  const extraImports = opts?.imports ?? []
-  const warnings: string[] = []
+export function extractModule(fileName: string, code: string, opts?: ExtractOptions): ModuleModel {
+  const extraImports = opts?.imports ?? [];
+  const warnings: string[] = [];
   const model: ModuleModel = {
     fileName: fileName,
     app: null,
     routes: [],
     warnings: warnings,
-    fatal: '',
-  }
-  const sk = /\.m?js$/i.test(fileName) ? ts.ScriptKind.JS : ts.ScriptKind.TS
-  const sf = ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, sk)
-  const line = (n: ts.Node): number =>
-    sf.getLineAndCharacterOfPosition(n.getStart()).line + 1
+    fatal: "",
+  };
+  const sk = /\.m?js$/i.test(fileName) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
+  const sf = ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, sk);
+  const line = (n: ts.Node): number => sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
   const warn = (n: ts.Node, msg: string): void => {
-    warnings.push('unplugin-ch3: ' + fileName + ':' + line(n) + ' ' + msg)
-  }
+    warnings.push("unplugin-ch3: " + fileName + ":" + line(n) + " " + msg);
+  };
 
   // 1. createRouter bindings from ch3 imports
-  const factories = new Set<string>()
-  const namespaces = new Set<string>()
+  const factories = new Set<string>();
+  const namespaces = new Set<string>();
   for (const st of sf.statements) {
     if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier)) {
       if (!isCh3Specifier(st.moduleSpecifier.text, extraImports)) {
-        continue
+        continue;
       }
-      const clause = st.importClause
+      const clause = st.importClause;
       if (clause && clause.namedBindings) {
         if (ts.isNamedImports(clause.namedBindings)) {
           for (const el of clause.namedBindings.elements) {
-            const imported = el.propertyName ? el.propertyName.text : el.name.text
-            if (imported === 'createRouter') {
-              factories.add(el.name.text)
+            const imported = el.propertyName ? el.propertyName.text : el.name.text;
+            if (imported === "createRouter") {
+              factories.add(el.name.text);
             }
           }
         } else if (ts.isNamespaceImport(clause.namedBindings)) {
-          namespaces.add(clause.namedBindings.name.text)
+          namespaces.add(clause.namedBindings.name.text);
         }
       }
     }
@@ -435,28 +422,28 @@ export function extractModule(
 
   const isCreateCall = (e: ts.Expression | undefined): boolean => {
     if (e === undefined || !ts.isCallExpression(e)) {
-      return false
+      return false;
     }
-    const c = e.expression
+    const c = e.expression;
     if (ts.isIdentifier(c) && factories.has(c.text)) {
-      return true
+      return true;
     }
     if (
       ts.isPropertyAccessExpression(c) &&
       ts.isIdentifier(c.expression) &&
       namespaces.has(c.expression.text) &&
-      c.name.text === 'createRouter'
+      c.name.text === "createRouter"
     ) {
-      return true
+      return true;
     }
-    return false
-  }
+    return false;
+  };
 
   // 2. router var declarations + export surface
-  const vars = new Map<string, VarState>()
-  const routerVarOrder: string[] = []
+  const vars = new Map<string, VarState>();
+  const routerVarOrder: string[] = [];
   const getVar = (name: string): VarState => {
-    let v = vars.get(name)
+    let v = vars.get(name);
     if (v === undefined) {
       v = {
         routes: [],
@@ -465,41 +452,41 @@ export function extractModule(
         mwDepth: 0,
         mwUnsafe: false,
         dynamic: false,
-      }
-      vars.set(name, v)
-      routerVarOrder.push(name)
+      };
+      vars.set(name, v);
+      routerVarOrder.push(name);
     }
-    return v
-  }
-  const directExportedVars = new Set<string>()
-  const namedExports: { local: string; exported: string; pos: number }[] = []
-  let defaultExport: { local: string; pos: number } | null = null
+    return v;
+  };
+  const directExportedVars = new Set<string>();
+  const namedExports: { local: string; exported: string; pos: number }[] = [];
+  let defaultExport: { local: string; pos: number } | null = null;
 
   for (const st of sf.statements) {
     if (ts.isVariableStatement(st)) {
-      let exported = false
-      const mods = st.modifiers
+      let exported = false;
+      const mods = st.modifiers;
       if (mods) {
         for (const m of mods) {
           if (m.kind === ts.SyntaxKind.ExportKeyword) {
-            exported = true
+            exported = true;
           }
         }
       }
       for (const d of st.declarationList.declarations) {
         if (ts.isIdentifier(d.name)) {
           if (isCreateCall(d.initializer)) {
-            getVar(d.name.text)
+            getVar(d.name.text);
           }
           if (exported) {
-            directExportedVars.add(d.name.text)
+            directExportedVars.add(d.name.text);
           }
         }
       }
     }
     if (ts.isExportAssignment(st) && st.isExportEquals !== true) {
       if (ts.isIdentifier(st.expression)) {
-        defaultExport = { local: st.expression.text, pos: st.getStart() }
+        defaultExport = { local: st.expression.text, pos: st.getStart() };
       }
     }
     if (
@@ -508,78 +495,85 @@ export function extractModule(
       ts.isNamedExports(st.exportClause)
     ) {
       for (const el of st.exportClause.elements) {
-        const local = el.propertyName ? el.propertyName.text : el.name.text
-        namedExports.push({ local: local, exported: el.name.text, pos: st.getStart() })
+        const local = el.propertyName ? el.propertyName.text : el.name.text;
+        namedExports.push({ local: local, exported: el.name.text, pos: st.getStart() });
       }
     }
   }
 
   // 3. pick the app var (explicit option → default export → 'app' → first)
-  let appVar = ''
+  let appVar = "";
   const isExportedVar = (n: string): boolean =>
-    directExportedVars.has(n) || namedExports.some((e) => e.local === n)
+    directExportedVars.has(n) || namedExports.some((e) => e.local === n);
   if (opts?.appExport !== undefined) {
-    const want = opts.appExport
-    if (want === 'default') {
+    const want = opts.appExport;
+    if (want === "default") {
       if (defaultExport !== null && vars.has(defaultExport.local)) {
-        appVar = defaultExport.local
+        appVar = defaultExport.local;
       }
     } else {
       for (const n of routerVarOrder) {
-        if (vars.has(n) && (n === want || namedExports.some((e) => e.local === n && e.exported === want))) {
-          appVar = n
-          break
+        if (
+          vars.has(n) &&
+          (n === want || namedExports.some((e) => e.local === n && e.exported === want))
+        ) {
+          appVar = n;
+          break;
         }
       }
     }
-    if (appVar === '') {
+    if (appVar === "") {
       warnings.push(
-        'unplugin-ch3: appExport "' + want + '" does not resolve to an exported createRouter() binding — emitting a stub dispatch'
-      )
+        'unplugin-ch3: appExport "' +
+          want +
+          '" does not resolve to an exported createRouter() binding — emitting a stub dispatch',
+      );
     }
   }
-  if (appVar === '') {
+  if (appVar === "") {
     if (defaultExport !== null && vars.has(defaultExport.local)) {
-      appVar = defaultExport.local
+      appVar = defaultExport.local;
     } else {
-      const exported = routerVarOrder.filter((n) => isExportedVar(n))
-      if (exported.indexOf('app') >= 0) {
-        appVar = 'app'
+      const exported = routerVarOrder.filter((n) => isExportedVar(n));
+      if (exported.indexOf("app") >= 0) {
+        appVar = "app";
       } else if (exported.length > 0) {
-        appVar = exported[0]
+        appVar = exported[0];
       }
     }
   }
-  if (appVar !== '') {
+  if (appVar !== "") {
     if (defaultExport !== null && defaultExport.local === appVar) {
-      model.app = { varName: appVar, importKind: 'default', exportName: 'default' }
+      model.app = { varName: appVar, importKind: "default", exportName: "default" };
     } else if (directExportedVars.has(appVar)) {
-      model.app = { varName: appVar, importKind: 'named', exportName: appVar }
+      model.app = { varName: appVar, importKind: "named", exportName: appVar };
     } else {
-      const ne = namedExports.find((e) => e.local === appVar)
+      const ne = namedExports.find((e) => e.local === appVar);
       if (ne !== undefined) {
-        model.app = { varName: appVar, importKind: 'named', exportName: ne.exported }
+        model.app = { varName: appVar, importKind: "named", exportName: ne.exported };
       }
     }
     if (model.app === null) {
       warnings.push(
-        'unplugin-ch3: router var "' + appVar + '" is not exported — emitting a stub dispatch; export it to enable the compiled path'
-      )
+        'unplugin-ch3: router var "' +
+          appVar +
+          '" is not exported — emitting a stub dispatch; export it to enable the compiled path',
+      );
     }
   } else {
     warnings.push(
-      'unplugin-ch3: no exported createRouter() binding found — emitting a stub dispatch'
-    )
+      "unplugin-ch3: no exported createRouter() binding found — emitting a stub dispatch",
+    );
   }
 
   // 4. positional walk — appVarState.fns.length tracks the runtime's
   // App._fns index for the next registration; countUncertain pins every
   // later index to -1.
-  let countUncertain = false
+  let countUncertain = false;
 
   const consumeFnsSlot = (v: VarState): void => {
-    v.fns.push(null)
-  }
+    v.fns.push(null);
+  };
 
   const toSpec = (
     pr: PendingRoute,
@@ -587,7 +581,7 @@ export function extractModule(
     mergedPath: string,
     mergedSegs: SegSpec[],
     mergedHasMw: boolean,
-    mergedMwUnsafe: boolean
+    mergedMwUnsafe: boolean,
   ): RouteSpec => {
     return {
       method: pr.method,
@@ -602,27 +596,27 @@ export function extractModule(
       staticSend: null,
       registered: model.routes.length,
       emit: true,
-      bailReason: '',
-    }
-  }
+      bailReason: "",
+    };
+  };
 
   // Third-arg options on verb/on registrations: { body: true } declares
   // body use (docs/route-contract.md). Non-literal opts bail the route.
   const optsBody = (
     optArg: ts.Expression | undefined,
-    node: ts.Node
+    node: ts.Node,
   ): { ok: boolean; body: boolean } => {
     if (optArg === undefined) {
-      return { ok: true, body: false }
+      return { ok: true, body: false };
     }
-    const v = evalLiteral(optArg)
-    if (!v.ok || typeof v.v !== 'object' || v.v === null || Array.isArray(v.v)) {
-      warn(node, 'non-literal options object — this route stays runtime-only')
-      return { ok: false, body: false }
+    const v = evalLiteral(optArg);
+    if (!v.ok || typeof v.v !== "object" || v.v === null || Array.isArray(v.v)) {
+      warn(node, "non-literal options object — this route stays runtime-only");
+      return { ok: false, body: false };
     }
-    const o = v.v as { [k: string]: unknown }
-    return { ok: true, body: o.body === true }
-  }
+    const o = v.v as { [k: string]: unknown };
+    return { ok: true, body: o.body === true };
+  };
 
   const pushRoute = (
     v: VarState,
@@ -631,15 +625,15 @@ export function extractModule(
     path: string,
     node: ts.Node,
     handlerNode: ts.Expression | null,
-    declaredBody: boolean
+    declaredBody: boolean,
   ): void => {
-    const parsed = parsePath(path)
+    const parsed = parsePath(path);
     if (parsed.segs === null) {
-      warn(node, 'invalid route "' + path + '": ' + parsed.err + ' (runtime keeps it)')
+      warn(node, 'invalid route "' + path + '": ' + parsed.err + " (runtime keeps it)");
       // the runtime's _regFn already ran before addRoute threw — the
       // handler slot is consumed
-      consumeFnsSlot(v)
-      return
+      consumeFnsSlot(v);
+      return;
     }
     const pr: PendingRoute = {
       method: method,
@@ -650,86 +644,84 @@ export function extractModule(
       declaredBody: declaredBody,
       handlerNode: handlerNode,
       node: node,
-    }
-    v.routes.push(pr)
-    const idx = v.fns.length
-    v.fns.push(pr)
-    simAddRoute(v, method, parsed.segs, idx)
+    };
+    v.routes.push(pr);
+    const idx = v.fns.length;
+    v.fns.push(pr);
+    simAddRoute(v, method, parsed.segs, idx);
     if (isApp) {
       model.routes.push(
-        toSpec(pr, countUncertain ? -1 : idx, path, parsed.segs, pr.hasMw, pr.mwUnsafe)
-      )
+        toSpec(pr, countUncertain ? -1 : idx, path, parsed.segs, pr.hasMw, pr.mwUnsafe),
+      );
     }
-  }
+  };
 
   const handleCall = (varName: string, call: ChainCall): void => {
-    const v = getVar(varName)
-    const isApp = varName === appVar
-    const name = call.name
-    const args = call.args
-    if (name === 'use') {
+    const v = getVar(varName);
+    const isApp = varName === appVar;
+    const name = call.name;
+    const args = call.args;
+    if (name === "use") {
       if (args.length >= 1) {
-        v.mwDepth += 1
+        v.mwDepth += 1;
       }
-      return
+      return;
     }
-    if (name === 'route') {
-      const sub = args.length >= 2 && ts.isIdentifier(args[1]) ? args[1].text : ''
-      const subVar = sub !== '' && sub !== varName ? vars.get(sub) : undefined
+    if (name === "route") {
+      const sub = args.length >= 2 && ts.isIdentifier(args[1]) ? args[1].text : "";
+      const subVar = sub !== "" && sub !== varName ? vars.get(sub) : undefined;
       if (subVar === undefined) {
         warn(
           call.node,
-          'route() mount target is not a same-module createRouter() var — mount stays runtime-only; later routes stay runtime-only'
-        )
+          "route() mount target is not a same-module createRouter() var — mount stays runtime-only; later routes stay runtime-only",
+        );
         if (isApp) {
-          countUncertain = true
+          countUncertain = true;
         }
-        return
+        return;
       }
-      const pre = args.length >= 1 ? evalString(args[0]) : { ok: false, v: '' }
+      const pre = args.length >= 1 ? evalString(args[0]) : { ok: false, v: "" };
       if (!pre.ok) {
-        warn(
-          call.node,
-          'route() with a non-literal prefix — mounted routes stay runtime-only'
-        )
+        warn(call.node, "route() with a non-literal prefix — mounted routes stay runtime-only");
         // the runtime still mounts every sub handler — consume their
         // slots so later indices stay aligned
         for (const pr of subVar.fns) {
-          v.fns.push(pr)
+          v.fns.push(pr);
         }
-        v.dynamic = true
+        v.dynamic = true;
         if (isApp) {
-          countUncertain = true
+          countUncertain = true;
         }
-        return
+        return;
       }
-      let prefix = pre.v
-      if (prefix.length > 1 && prefix.charAt(prefix.length - 1) === '/') {
-        prefix = prefix.slice(0, prefix.length - 1)
+      let prefix = pre.v;
+      if (prefix.length > 1 && prefix.charAt(prefix.length - 1) === "/") {
+        prefix = prefix.slice(0, prefix.length - 1);
       }
       if (subVar.dynamic || subVar.fns.indexOf(null) >= 0) {
         warn(
           call.node,
-          'mounted router "' + sub + '" has dynamic or non-literal registrations — later routes stay runtime-only'
-        )
-        v.dynamic = true
+          'mounted router "' +
+            sub +
+            '" has dynamic or non-literal registrations — later routes stay runtime-only',
+        );
+        v.dynamic = true;
         if (isApp) {
-          countUncertain = true
+          countUncertain = true;
         }
       }
       // DFS-replay the sub's trie exactly like mountRoutes(): the app
       // gains the sub's handlers in visit order, not registration order.
-      const appVarState = v
+      const appVarState = v;
       replayMount(subVar, (method: string, mountedPath: string, pr: PendingRoute | null) => {
-        const merged =
-          prefix === '' || prefix === '/' ? mountedPath : prefix + mountedPath
-        const parsed = parsePath(merged)
-        const idx = appVarState.fns.length
-        appVarState.fns.push(pr)
+        const merged = prefix === "" || prefix === "/" ? mountedPath : prefix + mountedPath;
+        const parsed = parsePath(merged);
+        const idx = appVarState.fns.length;
+        appVarState.fns.push(pr);
         if (parsed.segs !== null) {
-          simAddRoute(appVarState, method, parsed.segs, idx)
+          simAddRoute(appVarState, method, parsed.segs, idx);
         } else {
-          warn(call.node, 'mounted route "' + merged + '" is invalid: ' + parsed.err)
+          warn(call.node, 'mounted route "' + merged + '" is invalid: ' + parsed.err);
         }
         if (isApp && pr !== null && parsed.segs !== null) {
           model.routes.push(
@@ -739,81 +731,78 @@ export function extractModule(
               merged,
               parsed.segs,
               pr.hasMw || appVarState.mwDepth > 0,
-              pr.mwUnsafe || appVarState.mwUnsafe
-            )
-          )
+              pr.mwUnsafe || appVarState.mwUnsafe,
+            ),
+          );
         }
-      })
-      return
+      });
+      return;
     }
-    if (name === 'on') {
-      const m = args.length >= 1 ? evalString(args[0]) : { ok: false, v: '' }
-      const p = args.length >= 2 ? evalString(args[1]) : { ok: false, v: '' }
+    if (name === "on") {
+      const m = args.length >= 1 ? evalString(args[0]) : { ok: false, v: "" };
+      const p = args.length >= 2 ? evalString(args[1]) : { ok: false, v: "" };
       if ((args.length !== 3 && args.length !== 4) || !m.ok || !p.ok) {
         warn(
           call.node,
-          'on() expects (method: literal, path: literal, handler[, opts]) — left to runtime'
-        )
-        consumeFnsSlot(v)
-        return
+          "on() expects (method: literal, path: literal, handler[, opts]) — left to runtime",
+        );
+        consumeFnsSlot(v);
+        return;
       }
-      const ob = optsBody(args[3], call.node)
+      const ob = optsBody(args[3], call.node);
       if (!ob.ok) {
-        consumeFnsSlot(v)
-        return
+        consumeFnsSlot(v);
+        return;
       }
-      pushRoute(v, isApp, m.v.toUpperCase(), p.v, call.node, args[2], ob.body)
-      return
+      pushRoute(v, isApp, m.v.toUpperCase(), p.v, call.node, args[2], ob.body);
+      return;
     }
     if (Object.prototype.hasOwnProperty.call(ROUTE_METHODS, name)) {
-      const p = args.length >= 1 ? evalString(args[0]) : { ok: false, v: '' }
+      const p = args.length >= 1 ? evalString(args[0]) : { ok: false, v: "" };
       if (args.length !== 2 && args.length !== 3) {
         warn(
           call.node,
-          name + '() expects (path, handler[, opts]) — this route stays runtime-only'
-        )
-        consumeFnsSlot(v)
-        return
+          name + "() expects (path, handler[, opts]) — this route stays runtime-only",
+        );
+        consumeFnsSlot(v);
+        return;
       }
       if (!p.ok) {
-        warn(
-          call.node,
-          name + '() with a non-literal path — this route stays runtime-only'
-        )
-        consumeFnsSlot(v)
-        return
+        warn(call.node, name + "() with a non-literal path — this route stays runtime-only");
+        consumeFnsSlot(v);
+        return;
       }
-      const ob = optsBody(args[2], call.node)
+      const ob = optsBody(args[2], call.node);
       if (!ob.ok) {
-        consumeFnsSlot(v)
-        return
+        consumeFnsSlot(v);
+        return;
       }
-      pushRoute(v, isApp, ROUTE_METHODS[name], p.v, call.node, args[1], ob.body)
-      return
+      pushRoute(v, isApp, ROUTE_METHODS[name], p.v, call.node, args[1], ob.body);
+      return;
     }
     // notFound/serve/handler/request — runtime surface, nothing to extract
-  }
+  };
 
   const callsIn = (root: ts.Node): ts.CallExpression[] => {
-    const out: ts.CallExpression[] = []
+    const out: ts.CallExpression[] = [];
     const visit = (n: ts.Node): void => {
       if (ts.isCallExpression(n)) {
-        out.push(n)
+        out.push(n);
       }
-      ts.forEachChild(n, visit)
-    }
-    visit(root)
-    return out
-  }
+      ts.forEachChild(n, visit);
+    };
+    visit(root);
+    return out;
+  };
 
   for (const st of sf.statements) {
-    const consumed = new Set<ts.Node>()
+    const consumed = new Set<ts.Node>();
     if (ts.isExpressionStatement(st)) {
-      const chain = decomposeChain(st.expression)
+      const chain = decomposeChain(st.expression);
       if (chain !== null && vars.has(chain.root)) {
         for (const c of chain.calls) {
-          consumed.add(c.node)
-          handleCall(chain.root, c)
+          consumed.add(c.node);
+          handleCall(chain.root, c);
         }
       }
     }
@@ -821,36 +810,37 @@ export function extractModule(
     // var's state uncertain from this position on
     for (const callNode of callsIn(st)) {
       if (consumed.has(callNode)) {
-        continue
+        continue;
       }
-      const callee = callNode.expression
+      const callee = callNode.expression;
       if (!ts.isPropertyAccessExpression(callee) || !ts.isIdentifier(callee.expression)) {
-        continue
+        continue;
       }
-      const vn = callee.expression.text
+      const vn = callee.expression.text;
       if (!vars.has(vn)) {
-        continue
+        continue;
       }
-      const mn = callee.name.text
-      const v = getVar(vn)
-      if (mn === 'use') {
+      const mn = callee.name.text;
+      const v = getVar(vn);
+      if (mn === "use") {
         warn(
           callNode,
-          'use() inside a nested/conditional context — middleware state from here is uncertain; later routes lose static-send specialization'
-        )
-        v.mwUnsafe = true
+          "use() inside a nested/conditional context — middleware state from here is uncertain; later routes lose static-send specialization",
+        );
+        v.mwUnsafe = true;
       } else if (
         Object.prototype.hasOwnProperty.call(ROUTE_METHODS, mn) ||
-        mn === 'on' ||
-        mn === 'route'
+        mn === "on" ||
+        mn === "route"
       ) {
         warn(
           callNode,
-          mn + '() inside a nested/conditional context — registration order is uncertain; later routes stay runtime-only'
-        )
-        v.dynamic = true
+          mn +
+            "() inside a nested/conditional context — registration order is uncertain; later routes stay runtime-only",
+        );
+        v.dynamic = true;
         if (vn === appVar) {
-          countUncertain = true
+          countUncertain = true;
         }
       }
     }
@@ -859,19 +849,19 @@ export function extractModule(
   // 5. specialization + needsBody + emit eligibility
   for (const r of model.routes) {
     if (r.handlerNode !== undefined && !r.hasMw && !r.mwUnsafe) {
-      const s = detectStaticSend(r.handlerNode)
+      const s = detectStaticSend(r.handlerNode);
       if (s !== null) {
-        r.staticSend = s
+        r.staticSend = s;
       }
     }
     // needsBody drives _buffer in the emitted runner: only routes that
     // declared `body: true` at registration (contract), never speculative.
-    r.needsBody = r.staticSend === null && r.declaredBody
+    r.needsBody = r.staticSend === null && r.declaredBody;
     if (r.handlerIdx < 0 && r.staticSend === null) {
-      r.emit = false
-      r.bailReason = 'registration order is uncertain past this point'
+      r.emit = false;
+      r.bailReason = "registration order is uncertain past this point";
     }
   }
 
-  return model
+  return model;
 }

@@ -2,6 +2,27 @@
   "name": "ch3",
   "version": "0.1.0",
   "description": "Minimal synchronous HTTP router authored inside the scriptc compilable subset",
+  "keywords": [
+    "aot",
+    "http",
+    "native",
+    "node",
+    "router",
+    "router-http",
+    "scriptc"
+  ],
+  "homepage": "https://github.com/sigilco/ch3#readme",
+  "bugs": {
+    "url": "https://github.com/sigilco/ch3/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sigilco/ch3.git"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
@@ -12,37 +33,16 @@
     },
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/router.test.js test/server.test.js"
   },
-  "engines": {
-    "node": ">=22"
-  },
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sigilco/ch3.git"
-  },
-  "bugs": {
-    "url": "https://github.com/sigilco/ch3/issues"
-  },
-  "homepage": "https://github.com/sigilco/ch3#readme",
-  "keywords": [
-    "http",
-    "router",
-    "router-http",
-    "native",
-    "aot",
-    "scriptc",
-    "node"
-  ],
   "devDependencies": {
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

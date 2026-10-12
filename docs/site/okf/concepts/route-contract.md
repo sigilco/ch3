@@ -1,3 +1,13 @@
+---
+type: concept
+title: "ch3 generated-dispatch contract (`src/gen.ts`)"
+source: /route-contract/
+path: /route-contract/
+updated: 2026-10-12
+okf:
+  generated_by: "@docmd/plugin-okf"
+  generated_at: "2026-10-12T22:50:52.759Z"
+---
 # ch3 generated-dispatch contract (`src/gen.ts`)
 
 Status: **frozen** — this is the seam between `ch3` (route table +

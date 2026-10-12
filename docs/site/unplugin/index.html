@@ -1,0 +1,764 @@
+<!--
+  ---------------------------------------------------------------
+  docmd : the zero-config documentation engine.
+  @website https://docmd.io
+  [docmd-source] - Please do not remove this header.
+  ---------------------------------------------------------------
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="generator" content="docmd v0.9.7">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script>
+      var root = "../";
+      if (root && !root.endsWith('/')) root += '/';
+      if (root === '') root = './';
+      window.DOCMD_ROOT = root;
+
+      window.DOCMD_SITE_ROOT = "/";
+
+      window.DOCMD_APPEARANCE = "system";
+      window.DOCMD_VERSION_ROOT = "/";
+      window.DOCMD_BASE = "/";
+      window.DOCMD_LOCALE = "";
+      window.DOCMD_DEFAULT_LOCALE = "";
+    </script>
+    <script>/**
+ * --------------------------------------------------------------------
+ * docmd : the zero-config documentation engine.
+ *
+ * @package     @docmd/core (and ecosystem)
+ * @website     https://docmd.io
+ * @repository  https://github.com/docmd-io/docmd
+ * @license     MIT
+ * @copyright   Copyright (c) 2025-present docmd.io
+ *
+ * [docmd-source] - Please do not remove this header.
+ * --------------------------------------------------------------------
+ */
+
+(function () {
+  try {
+    // 1. Determine Theme
+    //
+    // Resolve from three sources, in priority order:
+    //   1. localStorage explicit user choice (light / dark)
+    //   2. window.DOCMD_APPEARANCE  (current canonical name, set by EJS templates)
+    //   3. window.DOCMD_DEFAULT_MODE (legacy alias kept for pre-0.8.7 outputs)
+    //   4. 'light' as the final fallback
+    //
+    // Note: localStorage is only honoured when it holds an explicit
+    // 'light' or 'dark' value. A stored 'system' value (from a prior
+    // session where the user picked "follow system") must NOT win over
+    // a freshly resolved config value — the resolved value will itself
+    // be 'system' in that case and the OS preference check below takes
+    // over, so this is a no-op for the in-session behaviour but keeps
+    // any future storage migration simple.
+    var localValue = localStorage.getItem('docmd-theme');
+    var configValue = window.DOCMD_APPEARANCE
+      || window.DOCMD_DEFAULT_MODE
+      || 'light';
+    var theme = (localValue === 'light' || localValue === 'dark')
+      ? localValue
+      : configValue;
+
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    // 2. Apply to Root
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // 3. Highlight.js Toggle Strategy
+    var lightLink = document.getElementById('hljs-light');
+    var darkLink = document.getElementById('hljs-dark');
+
+    if (lightLink && darkLink) {
+      if (theme === 'dark') {
+        lightLink.disabled = true;
+        darkLink.disabled = false;
+      } else {
+        lightLink.disabled = false;
+        darkLink.disabled = true;
+      }
+    }
+
+    document.documentElement.style.visibility = "visible";
+  } catch (e) {
+    document.documentElement.style.visibility = "visible";
+    console.error('Theme init failed', e);
+  }
+})();</script>
+    <style>
+      html {
+        visibility: hidden;
+      }
+    </style>
+    <title>unplugin-ch3 - .</title>
+    
+    
+
+    <link id="site-favicon" rel="icon" href="../assets/favicon.ico?v=mv5uinlg">
+    <link rel="stylesheet" href="../assets/css/docmd-main.css?v=mv5uinlg">
+    
+    <link rel="stylesheet" href="../assets/css/docmd-highlight-light.css?v=mv5uinlg" id="hljs-light" >
+    <link rel="stylesheet" href="../assets/css/docmd-highlight-dark.css?v=mv5uinlg" id="hljs-dark" disabled>
+    
+    
+<meta name="description" content="">
+<meta property="og:title" content="unplugin-ch3 - .">
+<meta property="og:description" content="">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="unplugin-ch3 - .">
+<meta name="twitter:description" content="">
+
+
+
+
+<link rel="stylesheet" href="../assets/css/docmd-git.css?v=mv5uinlg" >
+<link rel="stylesheet" href="../assets/css/docmd-openapi.css?v=mv5uinlg" >
+<link rel="stylesheet" href="../assets/css/docmd-ai.css?v=mv5uinlg" >
+
+    
+    
+  </head>
+  <body
+    class="sidebar-collapsible"
+    data-default-collapsed="false"
+    data-copy-code-enabled="true" data-spa-enabled="true" data-source-file="unplugin.md">
+
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    
+    
+
+    
+
+    
+    
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          
+            <h1><a href="../">
+                .
+              </a></h1>
+          
+          <span class="mobile-view sidebar-menu-button float-right">
+            
+<svg class="lucide-icon icon-menu " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-menu"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 5h16" />
+  <path d="M4 12h16" />
+  <path d="M4 19h16" />
+</svg>
+
+          </span>
+        </div>
+        <div class="sidebar-top-group">
+          
+          
+          
+          
+          
+        </div>
+        
+
+<nav class="sidebar-nav" aria-label="Main Navigation">
+  <ul>
+    
+      <li class="" >
+      
+        <a href="../" class=" "
+          >
+          
+          <span class="nav-item-title">
+            ch3
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../architecture/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Architecture
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../benchmarks/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Benchmarks
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../route-contract/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            ch3 generated-dispatch contract (`src/gen.ts`)
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../errors/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Errors
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../middleware/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Middleware
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../routing/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Routing
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="active" >
+      
+        <a href="../unplugin/" class="active "
+          >
+          
+          <span class="nav-item-title">
+            unplugin-ch3
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+  </ul>
+</nav>
+        <div class="sidebar-bottom-group mt-auto">
+          
+          
+          
+          
+          
+        </div>
+      </aside>
+      
+      <div class="main-content-wrapper">
+        
+        
+        
+          <header class="page-header">
+            <div class="header-left">
+              
+                <button id="sidebar-toggle-button" class="sidebar-toggle-button"
+                  aria-label="Toggle Sidebar">
+                  
+<svg class="lucide-icon icon-chevron-left " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15 18-6-6 6-6" />
+</svg>
+
+                </button>
+              
+              <div class="header-titles-wrapper">
+                <span class="header-title">
+                  unplugin-ch3
+                </span>
+              </div>
+            </div>
+            <div class="header-right">
+              
+                
+
+
+<div class="docmd-options-menu">
+    
+    <button class="docmd-search-trigger" aria-label="Search">
+        
+<svg class="lucide-icon icon-search " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+
+        <span class="search-label">Search</span>
+        <span class="search-keys"><kbd class="docmd-kbd">⌘</kbd><kbd class="docmd-kbd">K</kbd></span>
+    </button>
+    
+
+    
+
+    
+
+    
+    <button class="theme-toggle-button" aria-label="Toggle theme" title="Toggle theme">
+        
+<svg class="lucide-icon icon-sun icon-sun" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-sun"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="4" />
+  <path d="M12 2v2" />
+  <path d="M12 20v2" />
+  <path d="m4.93 4.93 1.41 1.41" />
+  <path d="m17.66 17.66 1.41 1.41" />
+  <path d="M2 12h2" />
+  <path d="M20 12h2" />
+  <path d="m6.34 17.66-1.41 1.41" />
+  <path d="m19.07 4.93-1.41 1.41" />
+</svg>
+ 
+<svg class="lucide-icon icon-moon icon-moon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-moon"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+</svg>
+
+    </button>
+    
+
+    
+
+    
+</div>
+
+              
+            </div>
+          </header>
+        
+        <div class="content-theme-cover">
+          <main class="content-area" id="main-content">
+            <div class="content-layout">
+              <div class="main-content">
+                <div class="docmd-breadcrumbs-row">
+                  <div id="docmd-raw-markdown" data-content="%23%20unplugin-ch3%0A%0ABuild-time%20route%20lowering%20for%20%60ch3%60.%20This%20is%20the%20point%20of%20the%20project&#039;s%20build%20story%3A%20the%20plugin%20statically%20reads%20your%20route%20registrations%20and%20emits%20a%20specialized%20dispatch%20module%20next%20to%20them%2C%20so%20requests%20skip%20the%20runtime%20trie%20walk%20on%20every%20match.%20Everything%20emitted%20is%20authored%20inside%20the%20scriptc-compilable%20subset%2C%20so%20%60scriptc%20build%60%20lowers%20it%20into%20the%20native%20binary.%0A%0AFull%20reference%3A%20%5Bpackages%2Funplugin%2FPLUGIN.md%5D(https%3A%2F%2Fgithub.com%2Fsigilco%2Fch3%2Fblob%2Fmain%2Fpackages%2Funplugin%2FPLUGIN.md).%0A%0A%23%23%20What%20the%20plugin%20does%0A%0AAt%20%60buildStart%60%20(and%20on%20each%20watch%20event%20for%20the%20file)%20the%20plugin%20scans%20route%20modules%20(default%20%60**%2F*.ch3.ts%60%2C%20%60**%2F*.ch3.js%60)%20and%20emits%20%60.ch3%2Froutes.gen.ts%60%20next%20to%20them%2C%20satisfying%20the%20%5Bgenerated-dispatch%20contract%5D(route-contract.md)%3A%0A%0A-%20%60export%20class%20CompiledRoutes%20extends%20GenDispatch%60%20whose%20%60dispatch(req%2C%20res)%60%20runs%20per-method%20sections%20ordered%20like%20the%20runtime%20trie%20(static%20before%20param%20before%20wildcard%2C%20then%20registration%20order).%0A-%20%60routeTable%60%3A%20full-shape%20literals%20%60%7B%20method%2C%20path%2C%20kind%2C%20handlerIdx%2C%20needsBody%20%7D%5B%5D%60.%0A-%20Per-route%20runners%3A%20literal%20send-chains%20(%60c.json%60%2C%20%60c.text%60%2C%20...)%20compile%20to%20straight%20%60res%60%20writes%20with%20no%20%60Ctx%60%20allocation%3B%20ctx%20routes%20build%20%60ReqView%60%2F%60Ctx%60%20through%20the%20contract%20surface%20and%20call%20the%20composed%20middleware%2Bhandler%20at%20%60app._chains%5Bidx%5D%60.%0A-%20%60constructor(a%3A%20App)%60%20injects%20the%20router%20instance%20(needed%20for%20scriptc%20lowering%3B%20see%20the%20scriptc%20section%20in%20PLUGIN.md).%0A%0A%23%23%20Bail%2C%20not%20guess%0A%0AThe%20plugin%20never%20silently%20produces%20wrong%20routes.%20Extracted%3A%20literal-path%20%60app.%3Cmethod%3E()%60%20calls%2C%20%60app.all%60%2F%60app.on%60%2C%20%60app.use%60%20snapshot%20semantics%2C%20same-file%20mounts%2C%20literal%20send-chains.%20Bailed%20to%20runtime%20registration%20(with%20a%20build%20warning)%3A%0A%0A-%20Non-literal%20paths%20(variables%2C%20calls%2C%20spreads).%0A-%20Conditional%20or%20loop-driven%20registration.%0A-%20Registrations%20whose%20handler%20index%20cannot%20be%20proven%20against%20the%20runtime%20tables.%0A-%20Mounts%20of%20routers%20imported%20from%20other%20modules.%0A%0AIf%20a%20routes%20module%20cannot%20be%20analyzed%20at%20all%2C%20the%20plugin%20emits%20a%20stub%20whose%20%60dispatch%60%20always%20returns%20%60false%60%2C%20so%20the%20app%20runs%20entirely%20on%20the%20runtime%20path.%0A%0A%23%23%20Usage%20(vite)%0A%0A%60%60%60ts%0A%2F%2F%20vite.config.ts%0Aimport%20%7B%20defineConfig%20%7D%20from%20&#039;vite&#039;%0Aimport%20%7B%20ch3Plugin%20%7D%20from%20&#039;unplugin-ch3&#039;%0A%0Aexport%20default%20defineConfig(%7B%0A%20%20plugins%3A%20%5Bch3Plugin.vite()%5D%2C%0A%7D)%0A%60%60%60%0A%0AMark%20a%20routes%20module%3A%0A%0A%60%60%60ts%0A%2F%2F%20src%2Froutes.ch3.ts%0Aimport%20%7B%20createRouter%20%7D%20from%20&#039;ch3&#039;%0A%0Aexport%20const%20app%20%3D%20createRouter()%0A%0Aapp.get(&#039;%2Fuser%2F%3Aid&#039;%2C%20(c)%20%3D%3E%20c.json(%7B%20id%3A%20c.req.param(&#039;id&#039;)%20%7D))%0Aapp.post(&#039;%2Fecho&#039;%2C%20(c)%20%3D%3E%20c.text(c.req.body())%2C%20%7B%20body%3A%20true%20%7D)%0A%60%60%60%0A%0AWire%20the%20generated%20dispatch%3A%0A%0A%60%60%60ts%0A%2F%2F%20src%2Fmain.ts%0Aimport%20%7B%20app%20%7D%20from%20&#039;.%2Froutes.ch3.ts&#039;%0Aimport%20%7B%20CompiledRoutes%20%7D%20from%20&#039;.%2F.ch3%2Froutes.gen.ts&#039;%0A%0Aapp.withDispatch(new%20CompiledRoutes(app))%0Aapp.serve(%7B%20port%3A%203000%20%7D)%0A%60%60%60%0A%0A%60app.serve()%60%20calls%20the%20generated%20dispatch%20first%3B%20%60false%60%20declines%20to%20the%20internal%20dispatch%2C%20which%20covers%20bails%2C%20%60notFound%60%2C%20and%20misses.%20Body%20buffering%20is%20opt-in%20per%20the%20contract%3A%20a%20handler%20reading%20%60c.req.body()%60%20must%20register%20with%20%60%7B%20body%3A%20true%20%7D%60%20or%20it%20receives%20%60&#039;&#039;%60.%0A%0AThe%20factory%20is%20unplugin-based%2C%20so%20%60ch3Plugin.rollup()%60%2C%20%60ch3Plugin.webpack()%60%2C%20and%20%60ch3Plugin.esbuild()%60%20work%20too.%20Only%20vite%20is%20verified%20by%20a%20fixture%20(%60fixtures%2Fvite-app%2F%60)%3A%20run%20%60npm%20i%20%26%26%20npm%20run%20build%60%20there%2C%20then%20%60node%20dist%2Fmain.js%203100%60%20to%20hit%20static%2C%20param%2C%20middleware%2C%20wildcard%2C%20bailed%2C%20POST-body%2C%20and%20miss%20routes.%0A" style="display: none;"></div>
+                  
+                    <nav aria-label="breadcrumb" class="docmd-breadcrumbs">
+                      <ol>
+                        
+                        
+                          <li class="breadcrumb-item active" aria-current=&quot;page&quot;>
+                            
+                              <span>unplugin-ch3</span>
+                            
+                            
+                          </li>
+                        
+                      </ol>
+                    </nav>
+                  
+
+                  
+                  
+                    <div class="docmd-copy-widgets">
+                      
+                        <button class="docmd-copy-btn docmd-copy-raw-btn" data-copied="Copied!" title="Copy Markdown" aria-label="Copy Markdown">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-copy " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-copy"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+</svg>
+</span>
+                        </button>
+                      
+                      
+                        <button class="docmd-copy-btn docmd-copy-context-btn" data-copied="Copied!" title="Copy Context">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-message-square " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-message-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+</svg>
+</span>
+                          <span class="docmd-btn-text">Copy Context</span>
+                        </button>
+                      
+                      
+                    </div>
+                  
+                </div>
+                
+                  <h1 class="docmd-focus-title">
+                    unplugin-ch3
+                  </h1>
+                
+                <h1 id="unplugin-ch3" class="docmd-heading"><a href="#unplugin-ch3" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>unplugin-ch3</h1>
+<p>Build-time route lowering for <code>ch3</code>. This is the point of the project’s build story: the plugin statically reads your route registrations and emits a specialized dispatch module next to them, so requests skip the runtime trie walk on every match. Everything emitted is authored inside the scriptc-compilable subset, so <code>scriptc build</code> lowers it into the native binary.</p>
+<p>Full reference: <a href="https://github.com/sigilco/ch3/blob/main/packages/unplugin/PLUGIN.md">packages/unplugin/PLUGIN.md</a>.</p>
+<h2 id="unplugin-ch3-what-the-plugin-does" class="docmd-heading"><a href="#unplugin-ch3-what-the-plugin-does" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>What the plugin does</h2>
+<p>At <code>buildStart</code> (and on each watch event for the file) the plugin scans route modules (default <code>**/*.ch3.ts</code>, <code>**/*.ch3.js</code>) and emits <code>.ch3/routes.gen.ts</code> next to them, satisfying the <a href="../route-contract/">generated-dispatch contract</a>:</p>
+<ul>
+<li><code>export class CompiledRoutes extends GenDispatch</code> whose <code>dispatch(req, res)</code> runs per-method sections ordered like the runtime trie (static before param before wildcard, then registration order).</li>
+<li><code>routeTable</code>: full-shape literals <code>{ method, path, kind, handlerIdx, needsBody }[]</code>.</li>
+<li>Per-route runners: literal send-chains (<code>c.json</code>, <code>c.text</code>, …) compile to straight <code>res</code> writes with no <code>Ctx</code> allocation; ctx routes build <code>ReqView</code>/<code>Ctx</code> through the contract surface and call the composed middleware+handler at <code>app._chains[idx]</code>.</li>
+<li><code>constructor(a: App)</code> injects the router instance (needed for scriptc lowering; see the scriptc section in <a href="https://PLUGIN.md">PLUGIN.md</a>).</li>
+</ul>
+<h2 id="unplugin-ch3-bail-not-guess" class="docmd-heading"><a href="#unplugin-ch3-bail-not-guess" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Bail, not guess</h2>
+<p>The plugin never silently produces wrong routes. Extracted: literal-path <code>app.&lt;method&gt;()</code> calls, <code>app.all</code>/<code>app.on</code>, <code>app.use</code> snapshot semantics, same-file mounts, literal send-chains. Bailed to runtime registration (with a build warning):</p>
+<ul>
+<li>Non-literal paths (variables, calls, spreads).</li>
+<li>Conditional or loop-driven registration.</li>
+<li>Registrations whose handler index cannot be proven against the runtime tables.</li>
+<li>Mounts of routers imported from other modules.</li>
+</ul>
+<p>If a routes module cannot be analyzed at all, the plugin emits a stub whose <code>dispatch</code> always returns <code>false</code>, so the app runs entirely on the runtime path.</p>
+<h2 id="unplugin-ch3-usage-vite" class="docmd-heading"><a href="#unplugin-ch3-usage-vite" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Usage (vite)</h2>
+<pre class="hljs"><code class="language-ts"><span class="hljs-comment">// vite.config.ts</span>
+<span class="hljs-keyword">import</span> { defineConfig } <span class="hljs-keyword">from</span> <span class="hljs-string">&#039;vite&#039;</span>
+<span class="hljs-keyword">import</span> { ch3Plugin } <span class="hljs-keyword">from</span> <span class="hljs-string">&#039;unplugin-ch3&#039;</span>
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">defineConfig</span>({
+  plugins<span class="hljs-operator">:</span> [ch3Plugin.<span class="hljs-title function_">vite</span>()],
+})
+</code></pre>
+<p>Mark a routes module:</p>
+<pre class="hljs"><code class="language-ts"><span class="hljs-comment">// src/routes.ch3.ts</span>
+<span class="hljs-keyword">import</span> { createRouter } <span class="hljs-keyword">from</span> <span class="hljs-string">&#039;ch3&#039;</span>
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> app <span class="hljs-operator">=</span> <span class="hljs-title function_">createRouter</span>()
+
+app.<span class="hljs-title function_">get</span>(<span class="hljs-string">&#039;/user/:id&#039;</span>, (c) <span class="hljs-operator">=&gt;</span> c.<span class="hljs-title function_">json</span>({ <span class="hljs-keyword">id</span><span class="hljs-operator">:</span> c.<span class="hljs-attr">req</span>.<span class="hljs-title function_">param</span>(<span class="hljs-string">&#039;id&#039;</span>) }))
+app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#039;/echo&#039;</span>, (c) <span class="hljs-operator">=&gt;</span> c.<span class="hljs-title function_">text</span>(c.<span class="hljs-attr">req</span>.<span class="hljs-title function_">body</span>()), { body<span class="hljs-operator">:</span> <span class="hljs-literal">true</span> })
+</code></pre>
+<p>Wire the generated dispatch:</p>
+<pre class="hljs"><code class="language-ts"><span class="hljs-comment">// src/main.ts</span>
+<span class="hljs-keyword">import</span> { app } <span class="hljs-keyword">from</span> <span class="hljs-string">&#039;./routes.ch3.ts&#039;</span>
+<span class="hljs-keyword">import</span> { CompiledRoutes } <span class="hljs-keyword">from</span> <span class="hljs-string">&#039;./.ch3/routes.gen.ts&#039;</span>
+
+app.<span class="hljs-title function_">withDispatch</span>(<span class="hljs-keyword">new</span> <span class="hljs-title function_">CompiledRoutes</span>(app))
+app.<span class="hljs-title function_">serve</span>({ port<span class="hljs-operator">:</span> <span class="hljs-number">3000</span> })
+</code></pre>
+<p><code>app.serve()</code> calls the generated dispatch first; <code>false</code> declines to the internal dispatch, which covers bails, <code>notFound</code>, and misses. Body buffering is opt-in per the contract: a handler reading <code>c.req.body()</code> must register with <code>{ body: true }</code> or it receives <code>''</code>.</p>
+<p>The factory is unplugin-based, so <code>ch3Plugin.rollup()</code>, <code>ch3Plugin.webpack()</code>, and <code>ch3Plugin.esbuild()</code> work too. Only vite is verified by a fixture (<code>fixtures/vite-app/</code>): run <code>npm i &amp;&amp; npm run build</code> there, then <code>node dist/main.js 3100</code> to hit static, param, middleware, wildcard, bailed, POST-body, and miss routes.</p>
+
+                
+                  <div class="page-navigation">
+                    
+                      <a href="../routing/" class="prev-page">
+                        
+<svg class="lucide-icon icon-arrow-left page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m12 19-7-7 7-7" />
+  <path d="M19 12H5" />
+</svg>
+
+                        <span><small>Previous</small><strong>
+                            Routing
+                          </strong></span>
+                      </a>
+                    
+                    
+                      <div class="next-page-placeholder">
+                      </div>
+                    
+                  </div>
+                
+              </div>
+              
+              
+              <div class="toc-sidebar">
+                
+                
+                  
+
+
+  <div class="toc-container">
+    <h2 class="toc-title">On This Page<span class="mobile-view toc-menu-button float-right">
+<svg class="lucide-icon icon-chevron-down " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m6 9 6 6 6-6" />
+</svg>
+</span></h2>
+    <ul class="toc-list">
+      
+        <li class="toc-item toc-level-1">
+          <a href="#unplugin-ch3" class="toc-link">unplugin-ch3</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#unplugin-ch3-what-the-plugin-does" class="toc-link">What the plugin does</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#unplugin-ch3-bail-not-guess" class="toc-link">Bail, not guess</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#unplugin-ch3-usage-vite" class="toc-link">Usage (vite)</a>
+        </li>
+      
+    </ul>
+  </div>
+
+                
+                
+              </div>
+              
+            </div>
+            <div class="page-footer-actions">
+              
+              
+              <span class="git-spacer"></span>
+              
+            </div>
+          </main>
+          
+
+
+<footer class="page-footer">
+  <div class="footer-content">
+    <div class="user-footer">© 2026</div>
+    
+      <div class="branding-footer">
+        Built with <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"></path><path d="m18 15-2-2"></path><path d="m15 18-2-2"></path></svg> <a href="https://docmd.io" target="_blank" rel="noopener">docmd.</a>
+      </div>
+    
+  </div>
+</footer>
+
+        </div>
+      </div>
+      
+      <script src="../assets/js/docmd-main.js?v=mv5uinlg"></script>
+      
+      <script src="../assets/js/docmd-git.js?v=mv5uinlg"></script>
+      <script src="../assets/js/docmd-image-lightbox.js?v=mv5uinlg" ></script>
+<script src="../assets/js/vendor/minisearch.js?v=mv5uinlg" ></script>
+<script src="../assets/js/docmd-search.js?v=mv5uinlg" ></script>
+<script src="../assets/js/docmd-git.js?v=mv5uinlg" ></script>
+<script src="../assets/js/docmd-ai.js?v=mv5uinlg" ></script>
+
+  <!-- Search Modal (Injected by @docmd/plugin-search) -->
+  <div id="docmd-search-modal" class="docmd-search-modal" style="display: none;" data-show-confidence="false" data-show-filters="true"
+       data-search-placeholder="Search documentation..."
+       data-search-no-results="No results found."
+       data-search-error="Failed to load search index."
+       data-search-offline="Search requires a web server. Open this site via http://localhost instead of file:// to enable search."
+       data-search-offline-build="Search is disabled because these docs were built with the --offline flag. Rebuild the site without the flag to enable search."
+       data-search-initial="Type to start searching..."
+       data-search-navigate="to navigate"
+       data-search-escape="to close">
+      <div class="docmd-search-box">
+          <div class="docmd-search-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" id="docmd-search-input" placeholder="Search documentation..." autocomplete="off" spellcheck="false">
+              <button onclick="window.closeDocmdSearch()" class="docmd-search-close" aria-label="Close search">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+          </div>
+          <div id="docmd-search-results" class="docmd-search-results"></div>
+          <div class="docmd-search-footer">
+              <span><kbd class="docmd-kbd">↑</kbd> <kbd class="docmd-kbd">↓</kbd> to navigate</span>
+              <span><kbd class="docmd-kbd">ESC</kbd> to close</span>
+          </div>
+      </div>
+  </div>
+
+    <script>
+      (function() {
+        var searchDebounceTimer;
+
+        document.addEventListener('click', function(e) {
+          var link = e.target.closest('a');
+          if (!link || !window.gtag) return;
+          
+          var url = link.href;
+          var hostname = window.location.hostname;
+          var isExternal = link.hostname && link.hostname !== hostname;
+          var isDownload = link.hasAttribute('download') || url.match(/\.(pdf|zip|tar|gz|exe|pkg)$/i);
+          
+          if (isExternal) {
+            gtag('event', 'click_external', { 'url': url, 'link_text': link.innerText.trim() });
+          } else if (isDownload) {
+            gtag('event', 'download', { 'file_name': url.split('/').pop(), 'url': url });
+          }
+
+          // TOC tracking
+          if (link.classList.contains('toc-link')) {
+            gtag('event', 'toc_click', { 'target_id': link.getAttribute('href'), 'title': link.innerText.trim() });
+          }
+
+          // Permalink tracking
+          if (link.classList.contains('heading-anchor')) {
+            gtag('event', 'permalink_click', { 'url': url });
+          }
+        });
+
+        
+        // Search Keyword Tracking
+        document.addEventListener('input', function(e) {
+          if (e.target.id === 'docmd-search-input' && window.gtag) {
+            var query = e.target.value.trim();
+            if (query.length < 3) return;
+            
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+              gtag('event', 'search', { 'search_term': query });
+            }, 1000);
+          }
+        });
+        
+      })();
+    </script>
+
+<script>window.__git_config={"repo":null,"branch":"main","editLink":false,"lastUpdated":true,"commitHistory":true,"maxCommits":5,"dateFormat":"relative"};window.__git_i18n={"lastUpdated":"Last updated","recentCommits":"Recent commits","viewCommitHistory":"View commit history","editOnGitHub":"Edit on GitHub","editOnGitLab":"Edit on GitLab","editOnBitbucket":"Edit on Bitbucket","editThisPage":"Edit this page","justNow":"just now","minutesAgo":"{n}m ago","hoursAgo":"{n}h ago","daysAgo":"{n}d ago"}</script>
+<div id="docmd-ai-root"></div><script>window.__docmd_ai_config={"endpoint":"","cloud":{},"captcha":true,"position":"bottom-center","siteTitle":".","siteBase":"/","siteUrl":"","versions":null,"i18n":null,"navigation":[{"title":"ch3","path":"/"},{"title":"Architecture","path":"/architecture/"},{"title":"Benchmarks","path":"/benchmarks/"},{"title":"ch3 generated-dispatch contract (`src/gen.ts`)","path":"/route-contract/"},{"title":"Errors","path":"/errors/"},{"title":"Middleware","path":"/middleware/"},{"title":"Routing","path":"/routing/"},{"title":"unplugin-ch3","path":"/unplugin/"}],"searchCapabilities":{"keyword":true,"semantic":false},"isWorkspace":false,"workspaceProjects":[],"messageActions":false,"contextLimit":5};</script>
+      
+      
+      
+  </body>
+</html>

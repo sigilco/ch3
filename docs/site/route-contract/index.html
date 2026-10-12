@@ -1,0 +1,989 @@
+<!--
+  ---------------------------------------------------------------
+  docmd : the zero-config documentation engine.
+  @website https://docmd.io
+  [docmd-source] - Please do not remove this header.
+  ---------------------------------------------------------------
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="generator" content="docmd v0.9.7">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script>
+      var root = "../";
+      if (root && !root.endsWith('/')) root += '/';
+      if (root === '') root = './';
+      window.DOCMD_ROOT = root;
+
+      window.DOCMD_SITE_ROOT = "/";
+
+      window.DOCMD_APPEARANCE = "system";
+      window.DOCMD_VERSION_ROOT = "/";
+      window.DOCMD_BASE = "/";
+      window.DOCMD_LOCALE = "";
+      window.DOCMD_DEFAULT_LOCALE = "";
+    </script>
+    <script>/**
+ * --------------------------------------------------------------------
+ * docmd : the zero-config documentation engine.
+ *
+ * @package     @docmd/core (and ecosystem)
+ * @website     https://docmd.io
+ * @repository  https://github.com/docmd-io/docmd
+ * @license     MIT
+ * @copyright   Copyright (c) 2025-present docmd.io
+ *
+ * [docmd-source] - Please do not remove this header.
+ * --------------------------------------------------------------------
+ */
+
+(function () {
+  try {
+    // 1. Determine Theme
+    //
+    // Resolve from three sources, in priority order:
+    //   1. localStorage explicit user choice (light / dark)
+    //   2. window.DOCMD_APPEARANCE  (current canonical name, set by EJS templates)
+    //   3. window.DOCMD_DEFAULT_MODE (legacy alias kept for pre-0.8.7 outputs)
+    //   4. 'light' as the final fallback
+    //
+    // Note: localStorage is only honoured when it holds an explicit
+    // 'light' or 'dark' value. A stored 'system' value (from a prior
+    // session where the user picked "follow system") must NOT win over
+    // a freshly resolved config value — the resolved value will itself
+    // be 'system' in that case and the OS preference check below takes
+    // over, so this is a no-op for the in-session behaviour but keeps
+    // any future storage migration simple.
+    var localValue = localStorage.getItem('docmd-theme');
+    var configValue = window.DOCMD_APPEARANCE
+      || window.DOCMD_DEFAULT_MODE
+      || 'light';
+    var theme = (localValue === 'light' || localValue === 'dark')
+      ? localValue
+      : configValue;
+
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    // 2. Apply to Root
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // 3. Highlight.js Toggle Strategy
+    var lightLink = document.getElementById('hljs-light');
+    var darkLink = document.getElementById('hljs-dark');
+
+    if (lightLink && darkLink) {
+      if (theme === 'dark') {
+        lightLink.disabled = true;
+        darkLink.disabled = false;
+      } else {
+        lightLink.disabled = false;
+        darkLink.disabled = true;
+      }
+    }
+
+    document.documentElement.style.visibility = "visible";
+  } catch (e) {
+    document.documentElement.style.visibility = "visible";
+    console.error('Theme init failed', e);
+  }
+})();</script>
+    <style>
+      html {
+        visibility: hidden;
+      }
+    </style>
+    <title>ch3 generated-dispatch contract (`src/gen.ts`) - .</title>
+    
+    
+
+    <link id="site-favicon" rel="icon" href="../assets/favicon.ico?v=mv5uinlg">
+    <link rel="stylesheet" href="../assets/css/docmd-main.css?v=mv5uinlg">
+    
+    <link rel="stylesheet" href="../assets/css/docmd-highlight-light.css?v=mv5uinlg" id="hljs-light" >
+    <link rel="stylesheet" href="../assets/css/docmd-highlight-dark.css?v=mv5uinlg" id="hljs-dark" disabled>
+    
+    
+<meta name="description" content="">
+<meta property="og:title" content="ch3 generated-dispatch contract (`src/gen.ts`) - .">
+<meta property="og:description" content="">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ch3 generated-dispatch contract (`src/gen.ts`) - .">
+<meta name="twitter:description" content="">
+
+
+
+
+<link rel="stylesheet" href="../assets/css/docmd-git.css?v=mv5uinlg" >
+<link rel="stylesheet" href="../assets/css/docmd-openapi.css?v=mv5uinlg" >
+<link rel="stylesheet" href="../assets/css/docmd-ai.css?v=mv5uinlg" >
+
+    
+    
+  </head>
+  <body
+    class="sidebar-collapsible"
+    data-default-collapsed="false"
+    data-copy-code-enabled="true" data-spa-enabled="true" data-source-file="route-contract.md">
+
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    
+    
+
+    
+
+    
+    
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          
+            <h1><a href="../">
+                .
+              </a></h1>
+          
+          <span class="mobile-view sidebar-menu-button float-right">
+            
+<svg class="lucide-icon icon-menu " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-menu"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 5h16" />
+  <path d="M4 12h16" />
+  <path d="M4 19h16" />
+</svg>
+
+          </span>
+        </div>
+        <div class="sidebar-top-group">
+          
+          
+          
+          
+          
+        </div>
+        
+
+<nav class="sidebar-nav" aria-label="Main Navigation">
+  <ul>
+    
+      <li class="" >
+      
+        <a href="../" class=" "
+          >
+          
+          <span class="nav-item-title">
+            ch3
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../architecture/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Architecture
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../benchmarks/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Benchmarks
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="active" >
+      
+        <a href="../route-contract/" class="active "
+          >
+          
+          <span class="nav-item-title">
+            ch3 generated-dispatch contract (`src/gen.ts`)
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../errors/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Errors
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../middleware/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Middleware
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../routing/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            Routing
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../unplugin/" class=" "
+          >
+          
+          <span class="nav-item-title">
+            unplugin-ch3
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+  </ul>
+</nav>
+        <div class="sidebar-bottom-group mt-auto">
+          
+          
+          
+          
+          
+        </div>
+      </aside>
+      
+      <div class="main-content-wrapper">
+        
+        
+        
+          <header class="page-header">
+            <div class="header-left">
+              
+                <button id="sidebar-toggle-button" class="sidebar-toggle-button"
+                  aria-label="Toggle Sidebar">
+                  
+<svg class="lucide-icon icon-chevron-left " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15 18-6-6 6-6" />
+</svg>
+
+                </button>
+              
+              <div class="header-titles-wrapper">
+                <span class="header-title">
+                  ch3 generated-dispatch contract (`src/gen.ts`)
+                </span>
+              </div>
+            </div>
+            <div class="header-right">
+              
+                
+
+
+<div class="docmd-options-menu">
+    
+    <button class="docmd-search-trigger" aria-label="Search">
+        
+<svg class="lucide-icon icon-search " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+
+        <span class="search-label">Search</span>
+        <span class="search-keys"><kbd class="docmd-kbd">⌘</kbd><kbd class="docmd-kbd">K</kbd></span>
+    </button>
+    
+
+    
+
+    
+
+    
+    <button class="theme-toggle-button" aria-label="Toggle theme" title="Toggle theme">
+        
+<svg class="lucide-icon icon-sun icon-sun" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-sun"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="4" />
+  <path d="M12 2v2" />
+  <path d="M12 20v2" />
+  <path d="m4.93 4.93 1.41 1.41" />
+  <path d="m17.66 17.66 1.41 1.41" />
+  <path d="M2 12h2" />
+  <path d="M20 12h2" />
+  <path d="m6.34 17.66-1.41 1.41" />
+  <path d="m19.07 4.93-1.41 1.41" />
+</svg>
+ 
+<svg class="lucide-icon icon-moon icon-moon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-moon"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+</svg>
+
+    </button>
+    
+
+    
+
+    
+</div>
+
+              
+            </div>
+          </header>
+        
+        <div class="content-theme-cover">
+          <main class="content-area" id="main-content">
+            <div class="content-layout">
+              <div class="main-content">
+                <div class="docmd-breadcrumbs-row">
+                  <div id="docmd-raw-markdown" data-content="%23%20ch3%20generated-dispatch%20contract%20(%60src%2Fgen.ts%60)%0A%0AStatus%3A%20**frozen**%20%E2%80%94%20this%20is%20the%20seam%20between%20%60ch3%60%20(route%20table%20%2B%0Actx%20machinery)%20and%20build-time%20code%20generators%20(the%20Vite%2Funplugin%20transform%0Aagent%20emits%20modules%20satisfying%20this%20contract).%20v0.2.0%2C%202026-10-11.%0A%0A%23%23%20The%20seam%20in%20one%20paragraph%0A%0A%60app.withDispatch(d)%60%20registers%20a%20generated%20dispatch%20object.%20On%20every%0Arequest%2C%20%60app.serve()%60%2F%60app.handler()%60%20calls%20%60d.dispatch(req%2C%20res)%60%20**first**.%0A%60true%60%20%3D%20the%20request%20is%20handled%20(or%20committed%20to%20be%20handled%20asynchronously%0Aafter%20a%20body-buffer)%3B%20%60false%60%20%3D%20decline%20%E2%80%94%20ch3&#039;s%20internal%20specialized%20dispatch%0Atakes%20over.%20Routes%20stay%20registered%20on%20%60app%60%20either%20way%3A%20the%20generated%20module%0Ais%20a%20pure%20accelerator%20overlay%2C%20never%20a%20replacement%20for%20the%20route%20table.%0A%0A%23%23%20Module%20shape%0A%0A%60%60%60ts%0Aimport%20%7B%20GenDispatch%20%7D%20from%20&#039;ch3&#039;%0A%0A%2F%2F%20Emit%20a%20CLASS%2C%20not%20an%20object%20literal.%20Under%20scriptc&#039;s%20eager%0A%2F%2F%20program-code%20instantiation%20a%20function%20value%20inside%20a%20record%0A%2F%2F%20instantiates%20the%20record%20as%20%60unknown%60%20and%20fences%20every%20call%20on%20it%3B%0A%2F%2F%20class%20instances%20with%20methods%20compile%20cleanly.%20%60extends%20GenDispatch%60%0A%2F%2F%20keeps%20the%20assignment%20nominal%20for%20both%20tsc%20and%20scriptc.%0Aexport%20class%20CompiledRoutes%20extends%20GenDispatch%20%7B%0A%20%20dispatch(req%3A%20IncomingMessage%2C%20res%3A%20ServerResponse)%3A%20boolean%20%7B%0A%20%20%20%20%2F%2F%20...%20generated%20matcher%20...%0A%20%20%7D%0A%7D%0A%60%60%60%0A%0AEmitting%20code%20then%20wires%20it%20at%20app%20construction%3A%0A%0A%60%60%60ts%0Aconst%20app%20%3D%20createRouter()%0Aapp.withDispatch(new%20CompiledRoutes())%0A%2F%2F%20app.get(...)%20calls%20still%20run%20%E2%80%94%20the%20route%20table%20stays%20the%20source%20of%20truth.%0A%60%60%60%0A%0A%60GenDispatch%60%20(from%20%60src%2Fgen.ts%60%2C%20re-exported%20by%20%60src%2Findex.ts%60)%3A%0A%0A%60%60%60ts%0Aexport%20class%20GenDispatch%20%7B%0A%20%20dispatch(req%3A%20IncomingMessage%2C%20res%3A%20ServerResponse)%3A%20boolean%20%7B%0A%20%20%20%20return%20false%0A%20%20%7D%0A%7D%0A%60%60%60%0A%0A%23%23%20Dispatch%20precedence%20%E2%80%94%20deterministic%0A%0A1.%20%60withDispatch%60%20may%20be%20called%20at%20most%20once%3B%20a%20second%20call%20**replaces**%20the%0A%20%20%20previous%20dispatch%20object%20(documented%2C%20deterministic%20%E2%80%94%20last%20wins).%0A2.%20Every%20request%20calls%20%60dispatch%60%20exactly%20once%2C%20before%20any%20internal%20work%20%E2%80%94%0A%20%20%20including%20requests%20the%20generated%20module%20does%20not%20recognize.%0A3.%20%60false%60%20must%20only%20be%20returned%20**before**%20any%20response%20bytes%2C%20headers%2C%20or%0A%20%20%20%60req.on(...)%60%20listeners%20are%20committed.%20Returning%20%60false%60%20after%0A%20%20%20%60setHeader%60%2F%60end%60%2Fbody-listeners%20is%20a%20contract%20violation%20(undefined%0A%20%20%20behavior%2C%20double-response).%0A4.%20Returning%20%60true%60%20after%20%60app._buffer(...)%60%20was%20invoked%20is%20correct%20even%0A%20%20%20though%20the%20response%20completes%20later%20%E2%80%94%20the%20commitment%20is%20made%20at%0A%20%20%20listener-attach%20time.%0A5.%20The%20internal%20dispatch%20never%20calls%20generated%20code%3B%20generated%20code%20never%0A%20%20%20calls%20back%20into%20%60App._dispatch%60.%20One%20direction%20only.%0A%0A%23%23%20What%20generated%20code%20may%20use%20(the%20stable%20surface)%0A%0AEverything%20below%20is%20a%20**contract%20member**%20%E2%80%94%20it%20will%20not%20change%20shape%20in%200.x%0Awithout%20a%20major-version%20note.%20Members%20not%20listed%20are%20private.%0A%0A%60%60%60ts%0A%2F%2F%20Construction%3A%20the%20generated%20matcher%20already%20parses%20the%20URL%20for%20its%20own%0A%2F%2F%20matching%20%E2%80%94%20pass%20the%20pieces%20through%2C%20no%20double-parse.%0Aconst%20rv%20%3D%20new%20ReqView(raw%2C%20qs%2C%20path)%20%20%20%2F%2F%20(req%2C%20query-string-w%2Fo-%3F%2C%20path-w%2Fo-%3F)%0Aconst%20c%20%20%3D%20new%20Ctx(rv%2C%20res)%0A%0A%2F%2F%20Params%3A%20after%20the%20generated%20matcher%20binds%20a%20route%20with%20params%2C%20seed%20the%0A%2F%2F%20lazy%20param%20store%20with%20decoded%20name%2Fvalue%20pairs%20%E2%80%94%20flat%20array%2C%20pairs%20of%202.%0Arv._seedPm(%5B&#039;id&#039;%2C%20dec(segValue)%5D)%20%20%20%20%20%20%20%2F%2F%20&#039;id&#039;%20%E2%86%92%20param(&#039;id&#039;)%2C%20&#039;*&#039;%20for%20splat%0A%2F%2F%20If%20nothing%20is%20seeded%2C%20param()%20materializes%20from%20the%20entry%20declared%20on%0A%2F%2F%20the%20internal%20table%20(only%20when%20the%20internal%20dispatch%20ran)%20%E2%80%94%20generated%0A%2F%2F%20routes%20that%20return%20true%20MUST%20seed%20their%20own%20params.%0A%0A%2F%2F%20Body%3A%20ONLY%20for%20routes%20the%20author%20declared%20%60body%3A%20true%60%20at%20registration.%0Aapp-free%20helper%2C%20attaches%20&#039;data&#039;%2F&#039;end&#039;%2C%20buffers%2C%20then%20runs%20k%20under%20the%0A%2F%2F%20send500%20guard.%20Returns%20void%3B%20dispatch()%20must%20still%20return%20true.%0A_buffer(req%2C%20res%2C%20c%2C%20function%20()%3A%20void%20%7B%20handler(c)%20%7D)%0A%0A%2F%2F%20Guard%3A%20wrap%20synchronous%20handler%20execution%20with%20the%20standard%20500%20path.%0A_guard(res%2C%20function%20()%3A%20void%20%7B%20handler(c)%20%7D)%0A%60%60%60%0A%0A%7C%20Export%20%7C%20Signature%20%7C%20Contract%20%7C%0A%7C--------%7C-----------%7C----------%7C%0A%7C%20%60GenDispatch%60%20%7C%20class%2C%20%60dispatch(req%2Cres)%3A%20boolean%60%20%7C%20subclass%20%2B%20override%20%7C%0A%7C%20%60ReqView%60%20%7C%20%60new%20(raw%2C%20qs%2C%20path)%60%20%7C%20qs%2Fpath%20already%20split%20at%20%60%3F%60%20%7C%0A%7C%20%60ReqView._seedPm%60%20%7C%20%60(pm%3A%20string%5B%5D)%20%3D%3E%20void%60%20%7C%20flat%20decoded%20pairs%20incl%20%60&#039;*&#039;%60%20%7C%0A%7C%20%60ReqView._setBody%60%20%7C%20%60(s%3A%20string)%20%3D%3E%20void%60%20%7C%20set%20by%20%60_buffer%60%20only%20%7C%0A%7C%20%60Ctx%60%20%7C%20%60new%20(rv%2C%20res)%60%20%2B%20%60json%2Ftext%2Fhtml%2Fstatus%2Fheader%2Fredirect%60%20%7C%20unchanged%20authoring%20API%20%7C%0A%7C%20%60App.withDispatch%60%20%7C%20%60(d%3A%20GenDispatch)%20%3D%3E%20App%60%20%7C%20last-wins%2C%20tried%20first%20per%20request%20%7C%0A%7C%20%60_buffer%60%20%7C%20%60(req%2C%20res%2C%20c%2C%20k%3A%20()%20%3D%3E%20void)%20%3D%3E%20void%60%20%7C%20data%2Fend%20%2B%20%60_setBody%60%20%2B%20guarded%20%60k%60%20%7C%0A%7C%20%60_guard%60%20%7C%20%60(res%2C%20k%3A%20()%20%3D%3E%20void)%20%3D%3E%20void%60%20%7C%20%60try%20%7B%20k()%20%7D%20catch%20%E2%86%92%20send500%60%20%7C%0A%7C%20%60dec%60%20%7C%20%60(s%3A%20string)%20%3D%3E%20string%60%20%7C%20%60%2B%60%E2%86%92space%20then%20%60decodeURIComponent%60%2C%20fallback%20raw%20%7C%0A%0A%23%23%20Body%20buffering%20%E2%80%94%20declared-body%20rule%0A%0AThe%20request%20body%20is%20buffered%20**only**%20when%20the%20route%20declared%20body%20use%20at%0Aregistration.%20This%20is%20a%20hard%20contract%2C%20not%20a%20hint%3A%0A%0A%60%60%60ts%0Aapp.post(&#039;%2Fecho&#039;%2C%20(c)%20%3D%3E%20c.text(c.req.body())%2C%20%7B%20body%3A%20true%20%7D)%0A%60%60%60%0A%0A-%20%60body%3A%20true%60%20%2B%20a%20body-carrying%20method%20(%60POST%60%2F%60PUT%60%2F%60PATCH%60%2F%60DELETE%60)%20%E2%86%92%0A%20%20body%20is%20buffered%20before%20the%20handler%20chain%20runs%3B%20%60c.req.body()%60%20returns%20it.%0A-%20%60body%3A%20true%60%20%2B%20%60GET%60%2F%60HEAD%60%2Fetc%20%E2%86%92%20no%20buffering%20(flag%20ignored%20for%0A%20%20non-carrying%20methods).%0A-%20No%20declaration%20%E2%86%92%20**no%20buffering%2C%20%60c.req.body()%60%20returns%20%60&#039;&#039;%60**%20%E2%80%94%20on%0A%20%20generated%20and%20internal%20dispatch%20alike.%20404%2FnotFound%20paths%20never%20buffer.%0A-%20A%20call-site%20marker%20(%60ctx.body()%60%20auto-detection)%20is%20**rejected**%3A%20handler%0A%20%20introspection%20is%20impossible%20inside%20the%20subset%20(%60fn.toString%60%2F%60fn.length%60%0A%20%20are%20SC2020)%20and%20would%20be%20non-deterministic%20across%20the%20two%20runtimes.%20The%0A%20%20registration%20flag%20is%20the%20one%20way%20to%20do%20it.%0A-%20%60maxBodyBytes%60%20is%20**not**%20implemented%20in%20v0.2%20%E2%80%94%20document%20if%20needed%20later.%0A%0A%23%23%20Rules%20for%20emitted%20code%20(scriptc%20subset%20%E2%80%94%20same%20as%20package%20internals)%0A%0AThe%20emitted%20module%20compiles%20into%20the%20user&#039;s%20program%2C%20so%20it%20lives%20under%20the%0Asame%20subset%20rules%20as%20%60src%2F%60%3A%0A%0A-%20Sync%20only.%20No%20%60Promise%60%2F%60async%60%20on%20the%20dispatch%20path.%0A-%20%60null%60%2C%20never%20%60undefined%60%2C%20in%20every%20union%20and%20return%20position.%0A-%20Class%20instances%20(not%20object%20literals)%20for%20%60GenDispatch%60%20impls.%0A-%20No%20function%20values%20inside%20records%20%E2%80%94%20generated%20tables%20hold%20%60number%60%0A%20%20indices%20into%20a%20class-side%20%60Handler%5B%5D%60%20or%20emit%20static%20%60if%60%2F%60switch%60%0A%20%20dispatch%20(both%20compile%3B%20%60switch%60%20on%20method%20strings%20and%20flat%20%60if%60%20chains%0A%20%20are%20the%20recommended%20emit%20shapes).%0A-%20Indexed%20%60for%60%20loops%3B%20no%20%60for%E2%80%A6in%60%3B%20no%20%60%3F.%60%20(use%20%60%26%26%60%2F%60%3D%3D%3D%20null%60)%3B%20no%0A%20%20spread%20calls%3B%20no%20%60new%20Function%60%2F%60eval%60%2F%60Object.create%60.%0A-%20%60String(x)%60%2F%60Number(x)%60%20coercion%20at%20function%20entry%20for%20%60unknown%60%20params.%0A-%20%60res.end(...)%60%20statement-called.%20Body%20accumulation%20via%0A%20%20%60req.on(&#039;data&#039;%2C%20(c%3A%20Buffer)%20%3D%3E%20%E2%80%A6)%60%20%2B%20%60toString()%60%20%2B%20%60join%60%2C%20or%20just%20call%0A%20%20%60_buffer%60.%0A-%20%60import%20type%60%20%2F%20%60.ts%60%20specifiers%20%2F%20%60for%E2%80%A6of%60%20over%20arrays%20%2F%20%60instanceof%60%0A%20%20vs%20program%20classes%20%2F%20class%20getters%20%2F%20default%20params%20all%20compile%20clean.%0A%0A%23%23%20Versioning%0A%0AThe%20contract%20majors%20with%20the%20package%3A%20any%20change%20to%20a%20member%20listed%20in%20the%0Astable-surface%20table%20bumps%20minor%20at%20minimum%20and%20is%20recorded%20here.%20The%0Aunplugin%20agent%20should%20pin%20%60ch3%60%20peer%20ranges%20accordingly.%0A" style="display: none;"></div>
+                  
+                    <nav aria-label="breadcrumb" class="docmd-breadcrumbs">
+                      <ol>
+                        
+                        
+                          <li class="breadcrumb-item active" aria-current=&quot;page&quot;>
+                            
+                              <span>ch3 generated-dispatch contract (`src/gen.ts`)</span>
+                            
+                            
+                          </li>
+                        
+                      </ol>
+                    </nav>
+                  
+
+                  
+                  
+                    <div class="docmd-copy-widgets">
+                      
+                        <button class="docmd-copy-btn docmd-copy-raw-btn" data-copied="Copied!" title="Copy Markdown" aria-label="Copy Markdown">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-copy " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-copy"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+</svg>
+</span>
+                        </button>
+                      
+                      
+                        <button class="docmd-copy-btn docmd-copy-context-btn" data-copied="Copied!" title="Copy Context">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-message-square " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-message-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+</svg>
+</span>
+                          <span class="docmd-btn-text">Copy Context</span>
+                        </button>
+                      
+                      
+                    </div>
+                  
+                </div>
+                
+                  <h1 class="docmd-focus-title">
+                    ch3 generated-dispatch contract (`src/gen.ts`)
+                  </h1>
+                
+                <h1 id="ch3-generated-dispatch-contract-srcgents" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>ch3 generated-dispatch contract (<code>src/gen.ts</code>)</h1>
+<p>Status: <strong>frozen</strong> — this is the seam between <code>ch3</code> (route table +<br>
+ctx machinery) and build-time code generators (the Vite/unplugin transform<br>
+agent emits modules satisfying this contract). v0.2.0, 2026-10-11.</p>
+<h2 id="ch3-generated-dispatch-contract-srcgents-the-seam-in-one-paragraph" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-the-seam-in-one-paragraph" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>The seam in one paragraph</h2>
+<p><code>app.withDispatch(d)</code> registers a generated dispatch object. On every<br>
+request, <code>app.serve()</code>/<code>app.handler()</code> calls <code>d.dispatch(req, res)</code> <strong>first</strong>.<br>
+<code>true</code> = the request is handled (or committed to be handled asynchronously<br>
+after a body-buffer); <code>false</code> = decline — ch3’s internal specialized dispatch<br>
+takes over. Routes stay registered on <code>app</code> either way: the generated module<br>
+is a pure accelerator overlay, never a replacement for the route table.</p>
+<h2 id="ch3-generated-dispatch-contract-srcgents-module-shape" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-module-shape" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Module shape</h2>
+<pre class="hljs"><code class="language-ts"><span class="hljs-keyword">import</span> { GenDispatch } <span class="hljs-keyword">from</span> <span class="hljs-string">&#039;ch3&#039;</span>
+
+<span class="hljs-comment">// Emit a CLASS, not an object literal. Under scriptc&#039;s eager</span>
+<span class="hljs-comment">// program-code instantiation a function value inside a record</span>
+<span class="hljs-comment">// instantiates the record as `unknown` and fences every call on it;</span>
+<span class="hljs-comment">// class instances with methods compile cleanly. `extends GenDispatch`</span>
+<span class="hljs-comment">// keeps the assignment nominal for both tsc and scriptc.</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">class</span> CompiledRoutes <span class="hljs-keyword">extends</span> GenDispatch {
+  <span class="hljs-title function_">dispatch</span>(req<span class="hljs-operator">:</span> IncomingMessage, res<span class="hljs-operator">:</span> ServerResponse)<span class="hljs-operator">:</span> boolean {
+    <span class="hljs-comment">// ... generated matcher ...</span>
+  }
+}
+</code></pre>
+<p>Emitting code then wires it at app construction:</p>
+<pre class="hljs"><code class="language-ts"><span class="hljs-keyword">const</span> app <span class="hljs-operator">=</span> <span class="hljs-title function_">createRouter</span>()
+app.<span class="hljs-title function_">withDispatch</span>(<span class="hljs-keyword">new</span> <span class="hljs-title function_">CompiledRoutes</span>())
+<span class="hljs-comment">// app.get(...) calls still run — the route table stays the source of truth.</span>
+</code></pre>
+<p><code>GenDispatch</code> (from <code>src/gen.ts</code>, re-exported by <code>src/index.ts</code>):</p>
+<pre class="hljs"><code class="language-ts"><span class="hljs-keyword">export</span> <span class="hljs-keyword">class</span> GenDispatch {
+  <span class="hljs-title function_">dispatch</span>(req<span class="hljs-operator">:</span> IncomingMessage, res<span class="hljs-operator">:</span> ServerResponse)<span class="hljs-operator">:</span> boolean {
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+  }
+}
+</code></pre>
+<h2 id="ch3-generated-dispatch-contract-srcgents-dispatch-precedence-deterministic" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-dispatch-precedence-deterministic" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Dispatch precedence — deterministic</h2>
+<ol>
+<li><code>withDispatch</code> may be called at most once; a second call <strong>replaces</strong> the<br>
+previous dispatch object (documented, deterministic — last wins).</li>
+<li>Every request calls <code>dispatch</code> exactly once, before any internal work —<br>
+including requests the generated module does not recognize.</li>
+<li><code>false</code> must only be returned <strong>before</strong> any response bytes, headers, or<br>
+<code>req.on(...)</code> listeners are committed. Returning <code>false</code> after<br>
+<code>setHeader</code>/<code>end</code>/body-listeners is a contract violation (undefined<br>
+behavior, double-response).</li>
+<li>Returning <code>true</code> after <code>app._buffer(...)</code> was invoked is correct even<br>
+though the response completes later — the commitment is made at<br>
+listener-attach time.</li>
+<li>The internal dispatch never calls generated code; generated code never<br>
+calls back into <code>App._dispatch</code>. One direction only.</li>
+</ol>
+<h2 id="ch3-generated-dispatch-contract-srcgents-what-generated-code-may-use-the-stable-surface" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-what-generated-code-may-use-the-stable-surface" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>What generated code may use (the stable surface)</h2>
+<p>Everything below is a <strong>contract member</strong> — it will not change shape in 0.x<br>
+without a major-version note. Members not listed are private.</p>
+<pre class="hljs"><code class="language-ts"><span class="hljs-comment">// Construction: the generated matcher already parses the URL for its own</span>
+<span class="hljs-comment">// matching — pass the pieces through, no double-parse.</span>
+<span class="hljs-keyword">const</span> rv <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title function_">ReqView</span>(raw, qs, path)   <span class="hljs-comment">// (req, query-string-w/o-?, path-w/o-?)</span>
+<span class="hljs-keyword">const</span> c  <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title function_">Ctx</span>(rv, res)
+
+<span class="hljs-comment">// Params: after the generated matcher binds a route with params, seed the</span>
+<span class="hljs-comment">// lazy param store with decoded name/value pairs — flat array, pairs of 2.</span>
+rv.<span class="hljs-title function_">_seedPm</span>([<span class="hljs-string">&#039;id&#039;</span>, <span class="hljs-title function_">dec</span>(segValue)])       <span class="hljs-comment">// &#039;id&#039; → param(&#039;id&#039;), &#039;*&#039; for splat</span>
+<span class="hljs-comment">// If nothing is seeded, param() materializes from the entry declared on</span>
+<span class="hljs-comment">// the internal table (only when the internal dispatch ran) — generated</span>
+<span class="hljs-comment">// routes that return true MUST seed their own params.</span>
+
+<span class="hljs-comment">// Body: ONLY for routes the author declared `body: true` at registration.</span>
+app<span class="hljs-operator">-</span><span class="hljs-keyword">free</span> helper, attaches <span class="hljs-string">&#039;data&#039;</span><span class="hljs-operator">/</span><span class="hljs-string">&#039;end&#039;</span>, buffers, then runs k under the
+<span class="hljs-comment">// send500 guard. Returns void; dispatch() must still return true.</span>
+<span class="hljs-title function_">_buffer</span>(req, res, c, <span class="hljs-keyword">function</span> ()<span class="hljs-operator">:</span> <span class="hljs-keyword">void</span> { <span class="hljs-title function_">handler</span>(c) })
+
+<span class="hljs-comment">// Guard: wrap synchronous handler execution with the standard 500 path.</span>
+<span class="hljs-title function_">_guard</span>(res, <span class="hljs-keyword">function</span> ()<span class="hljs-operator">:</span> <span class="hljs-keyword">void</span> { <span class="hljs-title function_">handler</span>(c) })
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Export</th>
+<th>Signature</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GenDispatch</code></td>
+<td>class, <code>dispatch(req,res): boolean</code></td>
+<td>subclass + override</td>
+</tr>
+<tr>
+<td><code>ReqView</code></td>
+<td><code>new (raw, qs, path)</code></td>
+<td>qs/path already split at <code>?</code></td>
+</tr>
+<tr>
+<td><code>ReqView._seedPm</code></td>
+<td><code>(pm: string[]) =&gt; void</code></td>
+<td>flat decoded pairs incl <code>'*'</code></td>
+</tr>
+<tr>
+<td><code>ReqView._setBody</code></td>
+<td><code>(s: string) =&gt; void</code></td>
+<td>set by <code>_buffer</code> only</td>
+</tr>
+<tr>
+<td><code>Ctx</code></td>
+<td><code>new (rv, res)</code> + <code>json/text/html/status/header/redirect</code></td>
+<td>unchanged authoring API</td>
+</tr>
+<tr>
+<td><code>App.withDispatch</code></td>
+<td><code>(d: GenDispatch) =&gt; App</code></td>
+<td>last-wins, tried first per request</td>
+</tr>
+<tr>
+<td><code>_buffer</code></td>
+<td><code>(req, res, c, k: () =&gt; void) =&gt; void</code></td>
+<td>data/end + <code>_setBody</code> + guarded <code>k</code></td>
+</tr>
+<tr>
+<td><code>_guard</code></td>
+<td><code>(res, k: () =&gt; void) =&gt; void</code></td>
+<td><code>try { k() } catch → send500</code></td>
+</tr>
+<tr>
+<td><code>dec</code></td>
+<td><code>(s: string) =&gt; string</code></td>
+<td><code>+</code>→space then <code>decodeURIComponent</code>, fallback raw</td>
+</tr>
+</tbody>
+</table>
+</div><h2 id="ch3-generated-dispatch-contract-srcgents-body-buffering-declared-body-rule" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-body-buffering-declared-body-rule" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Body buffering — declared-body rule</h2>
+<p>The request body is buffered <strong>only</strong> when the route declared body use at<br>
+registration. This is a hard contract, not a hint:</p>
+<pre class="hljs"><code class="language-ts">app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#039;/echo&#039;</span>, (c) <span class="hljs-operator">=&gt;</span> c.<span class="hljs-title function_">text</span>(c.<span class="hljs-attr">req</span>.<span class="hljs-title function_">body</span>()), { body<span class="hljs-operator">:</span> <span class="hljs-literal">true</span> })
+</code></pre>
+<ul>
+<li><code>body: true</code> + a body-carrying method (<code>POST</code>/<code>PUT</code>/<code>PATCH</code>/<code>DELETE</code>) →<br>
+body is buffered before the handler chain runs; <code>c.req.body()</code> returns it.</li>
+<li><code>body: true</code> + <code>GET</code>/<code>HEAD</code>/etc → no buffering (flag ignored for<br>
+non-carrying methods).</li>
+<li>No declaration → <strong>no buffering, <code>c.req.body()</code> returns <code>''</code></strong> — on<br>
+generated and internal dispatch alike. 404/notFound paths never buffer.</li>
+<li>A call-site marker (<code>ctx.body()</code> auto-detection) is <strong>rejected</strong>: handler<br>
+introspection is impossible inside the subset (<code>fn.toString</code>/<code>fn.length</code><br>
+are SC2020) and would be non-deterministic across the two runtimes. The<br>
+registration flag is the one way to do it.</li>
+<li><code>maxBodyBytes</code> is <strong>not</strong> implemented in v0.2 — document if needed later.</li>
+</ul>
+<h2 id="ch3-generated-dispatch-contract-srcgents-rules-for-emitted-code-scriptc-subset-same-as-package-internals" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-rules-for-emitted-code-scriptc-subset-same-as-package-internals" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Rules for emitted code (scriptc subset — same as package internals)</h2>
+<p>The emitted module compiles into the user’s program, so it lives under the<br>
+same subset rules as <code>src/</code>:</p>
+<ul>
+<li>Sync only. No <code>Promise</code>/<code>async</code> on the dispatch path.</li>
+<li><code>null</code>, never <code>undefined</code>, in every union and return position.</li>
+<li>Class instances (not object literals) for <code>GenDispatch</code> impls.</li>
+<li>No function values inside records — generated tables hold <code>number</code><br>
+indices into a class-side <code>Handler[]</code> or emit static <code>if</code>/<code>switch</code><br>
+dispatch (both compile; <code>switch</code> on method strings and flat <code>if</code> chains<br>
+are the recommended emit shapes).</li>
+<li>Indexed <code>for</code> loops; no <code>for…in</code>; no <code>?.</code> (use <code>&amp;&amp;</code>/<code>=== null</code>); no<br>
+spread calls; no <code>new Function</code>/<code>eval</code>/<code>Object.create</code>.</li>
+<li><code>String(x)</code>/<code>Number(x)</code> coercion at function entry for <code>unknown</code> params.</li>
+<li><code>res.end(...)</code> statement-called. Body accumulation via<br>
+<code>req.on('data', (c: Buffer) =&gt; …)</code> + <code>toString()</code> + <code>join</code>, or just call<br>
+<code>_buffer</code>.</li>
+<li><code>import type</code> / <code>.ts</code> specifiers / <code>for…of</code> over arrays / <code>instanceof</code><br>
+vs program classes / class getters / default params all compile clean.</li>
+</ul>
+<h2 id="ch3-generated-dispatch-contract-srcgents-versioning" class="docmd-heading"><a href="#ch3-generated-dispatch-contract-srcgents-versioning" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Versioning</h2>
+<p>The contract majors with the package: any change to a member listed in the<br>
+stable-surface table bumps minor at minimum and is recorded here. The<br>
+unplugin agent should pin <code>ch3</code> peer ranges accordingly.</p>
+
+                
+                  <div class="page-navigation">
+                    
+                      <a href="../benchmarks/" class="prev-page">
+                        
+<svg class="lucide-icon icon-arrow-left page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m12 19-7-7 7-7" />
+  <path d="M19 12H5" />
+</svg>
+
+                        <span><small>Previous</small><strong>
+                            Benchmarks
+                          </strong></span>
+                      </a>
+                    
+                    
+                      <a href="../errors/" class="next-page">
+                        <span><small>Next</small>
+                          <strong>
+                            Errors
+                          </strong></span>
+                        
+<svg class="lucide-icon icon-arrow-right page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg>
+
+                      </a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+              <div class="toc-sidebar">
+                
+                
+                  
+
+
+  <div class="toc-container">
+    <h2 class="toc-title">On This Page<span class="mobile-view toc-menu-button float-right">
+<svg class="lucide-icon icon-chevron-down " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m6 9 6 6 6-6" />
+</svg>
+</span></h2>
+    <ul class="toc-list">
+      
+        <li class="toc-item toc-level-1">
+          <a href="#ch3-generated-dispatch-contract-srcgents" class="toc-link">ch3 generated-dispatch contract (src/gen.ts)</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-the-seam-in-one-paragraph" class="toc-link">The seam in one paragraph</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-module-shape" class="toc-link">Module shape</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-dispatch-precedence-deterministic" class="toc-link">Dispatch precedence — deterministic</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-what-generated-code-may-use-the-stable-surface" class="toc-link">What generated code may use (the stable surface)</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-body-buffering-declared-body-rule" class="toc-link">Body buffering — declared-body rule</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-rules-for-emitted-code-scriptc-subset-same-as-package-internals" class="toc-link">Rules for emitted code (scriptc subset — same as package internals)</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#ch3-generated-dispatch-contract-srcgents-versioning" class="toc-link">Versioning</a>
+        </li>
+      
+    </ul>
+  </div>
+
+                
+                
+              </div>
+              
+            </div>
+            <div class="page-footer-actions">
+              
+              
+                <span class="git-last-updated" data-timestamp="1791845187000">
+                  <svg class="git-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="git-label">Last updated:</span>
+                  <span class="git-time" data-timestamp="1791845187000"></span>
+                  
+                  <div class="git-commit-tooltip" role="tooltip">
+                    <div class="git-tooltip-title">Recent commits</div>
+                    <ul class="git-commit-list">
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="Joaquin Terrasa">
+                            
+                              <img src="https://www.gravatar.com/avatar/4a251eec163ac7c6903836d37769d03e?d=mp&amp;s=64" alt="Joaquin Terrasa">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="refactor: restructure into pnpm workspace (packages/ch3 + packages/unplugin), ESM-only exports, drop CJS build">refactor: restructure into pnpm works...</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">Joaquin Terrasa</span>
+                              <span class="git-commit-date" data-timestamp="1791845187000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="Quim T">
+                            
+                              <img src="https://www.gravatar.com/avatar/4a251eec163ac7c6903836d37769d03e?d=mp&amp;s=64" alt="Quim T">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="bench: credible-baseline v2 — fastify, wf 3-route suite, wrk2 + Raygun mirror, docker repro, full percentiles">bench: credible-baseline v2 — fastify...</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">Quim T</span>
+                              <span class="git-commit-date" data-timestamp="1791753119000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="Quim T">
+                            
+                              <img src="https://www.gravatar.com/avatar/4a251eec163ac7c6903836d37769d03e?d=mp&amp;s=64" alt="Quim T">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="feat: generated-dispatch seam — src/gen.ts, withDispatch, contract docs">feat: generated-dispatch seam — src/g...</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">Quim T</span>
+                              <span class="git-commit-date" data-timestamp="1791741063000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  
+                </span>
+              
+              <span class="git-spacer"></span>
+              
+            </div>
+          </main>
+          
+
+
+<footer class="page-footer">
+  <div class="footer-content">
+    <div class="user-footer">© 2026</div>
+    
+      <div class="branding-footer">
+        Built with <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"></path><path d="m18 15-2-2"></path><path d="m15 18-2-2"></path></svg> <a href="https://docmd.io" target="_blank" rel="noopener">docmd.</a>
+      </div>
+    
+  </div>
+</footer>
+
+        </div>
+      </div>
+      
+      <script src="../assets/js/docmd-main.js?v=mv5uinlg"></script>
+      
+      <script src="../assets/js/docmd-git.js?v=mv5uinlg"></script>
+      <script src="../assets/js/docmd-image-lightbox.js?v=mv5uinlg" ></script>
+<script src="../assets/js/vendor/minisearch.js?v=mv5uinlg" ></script>
+<script src="../assets/js/docmd-search.js?v=mv5uinlg" ></script>
+<script src="../assets/js/docmd-git.js?v=mv5uinlg" ></script>
+<script src="../assets/js/docmd-ai.js?v=mv5uinlg" ></script>
+
+  <!-- Search Modal (Injected by @docmd/plugin-search) -->
+  <div id="docmd-search-modal" class="docmd-search-modal" style="display: none;" data-show-confidence="false" data-show-filters="true"
+       data-search-placeholder="Search documentation..."
+       data-search-no-results="No results found."
+       data-search-error="Failed to load search index."
+       data-search-offline="Search requires a web server. Open this site via http://localhost instead of file:// to enable search."
+       data-search-offline-build="Search is disabled because these docs were built with the --offline flag. Rebuild the site without the flag to enable search."
+       data-search-initial="Type to start searching..."
+       data-search-navigate="to navigate"
+       data-search-escape="to close">
+      <div class="docmd-search-box">
+          <div class="docmd-search-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" id="docmd-search-input" placeholder="Search documentation..." autocomplete="off" spellcheck="false">
+              <button onclick="window.closeDocmdSearch()" class="docmd-search-close" aria-label="Close search">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+          </div>
+          <div id="docmd-search-results" class="docmd-search-results"></div>
+          <div class="docmd-search-footer">
+              <span><kbd class="docmd-kbd">↑</kbd> <kbd class="docmd-kbd">↓</kbd> to navigate</span>
+              <span><kbd class="docmd-kbd">ESC</kbd> to close</span>
+          </div>
+      </div>
+  </div>
+
+    <script>
+      (function() {
+        var searchDebounceTimer;
+
+        document.addEventListener('click', function(e) {
+          var link = e.target.closest('a');
+          if (!link || !window.gtag) return;
+          
+          var url = link.href;
+          var hostname = window.location.hostname;
+          var isExternal = link.hostname && link.hostname !== hostname;
+          var isDownload = link.hasAttribute('download') || url.match(/\.(pdf|zip|tar|gz|exe|pkg)$/i);
+          
+          if (isExternal) {
+            gtag('event', 'click_external', { 'url': url, 'link_text': link.innerText.trim() });
+          } else if (isDownload) {
+            gtag('event', 'download', { 'file_name': url.split('/').pop(), 'url': url });
+          }
+
+          // TOC tracking
+          if (link.classList.contains('toc-link')) {
+            gtag('event', 'toc_click', { 'target_id': link.getAttribute('href'), 'title': link.innerText.trim() });
+          }
+
+          // Permalink tracking
+          if (link.classList.contains('heading-anchor')) {
+            gtag('event', 'permalink_click', { 'url': url });
+          }
+        });
+
+        
+        // Search Keyword Tracking
+        document.addEventListener('input', function(e) {
+          if (e.target.id === 'docmd-search-input' && window.gtag) {
+            var query = e.target.value.trim();
+            if (query.length < 3) return;
+            
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+              gtag('event', 'search', { 'search_term': query });
+            }, 1000);
+          }
+        });
+        
+      })();
+    </script>
+
+<script>window.__git_config={"repo":null,"branch":"main","editLink":false,"lastUpdated":true,"commitHistory":true,"maxCommits":5,"dateFormat":"relative"};window.__git_i18n={"lastUpdated":"Last updated","recentCommits":"Recent commits","viewCommitHistory":"View commit history","editOnGitHub":"Edit on GitHub","editOnGitLab":"Edit on GitLab","editOnBitbucket":"Edit on Bitbucket","editThisPage":"Edit this page","justNow":"just now","minutesAgo":"{n}m ago","hoursAgo":"{n}h ago","daysAgo":"{n}d ago"}</script>
+<div id="docmd-ai-root"></div><script>window.__docmd_ai_config={"endpoint":"","cloud":{},"captcha":true,"position":"bottom-center","siteTitle":".","siteBase":"/","siteUrl":"","versions":null,"i18n":null,"navigation":[{"title":"ch3","path":"/"},{"title":"Architecture","path":"/architecture/"},{"title":"Benchmarks","path":"/benchmarks/"},{"title":"ch3 generated-dispatch contract (`src/gen.ts`)","path":"/route-contract/"},{"title":"Errors","path":"/errors/"},{"title":"Middleware","path":"/middleware/"},{"title":"Routing","path":"/routing/"},{"title":"unplugin-ch3","path":"/unplugin/"}],"searchCapabilities":{"keyword":true,"semantic":false},"isWorkspace":false,"workspaceProjects":[],"messageActions":false,"contextLimit":5};</script>
+      
+      
+      
+  </body>
+</html>

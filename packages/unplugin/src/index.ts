@@ -15,100 +15,100 @@
 // array — the same table the internal dispatch calls — so it stays
 // scriptc-subset-clean and never copies handler source.
 
-import * as fs from 'node:fs'
-import * as path from 'node:path'
-import picomatch from 'picomatch'
-import { createUnplugin } from 'unplugin'
-import { emitGenModule, genFileName } from './emit.ts'
-import { extractModule } from './extract.ts'
+import * as fs from "node:fs";
+import * as path from "node:path";
+import picomatch from "picomatch";
+import { createUnplugin } from "unplugin";
+import { emitGenModule, genFileName } from "./emit.ts";
+import { extractModule } from "./extract.ts";
 
 export interface Ch3PluginOptions {
   // Globs (relative to root) marking route-registration modules.
   // Default: ['**\/*.ch3.ts', '**\/*.ch3.js']
-  include?: string[]
+  include?: string[];
   // Project root to scan. Default: vite config.root, else process.cwd().
-  root?: string
+  root?: string;
   // Import specifier emitted in the gen file for `import type { App }`.
   // Default: 'ch3'
-  importFrom?: string
+  importFrom?: string;
   // Exported binding carrying the router instance: a name, or 'default'.
   // Default: auto-detect.
-  appExport?: string
+  appExport?: string;
   // Extra module specifiers treated as ch3 imports (in addition to
   // 'ch3' and 'ch3').
-  imports?: string[]
+  imports?: string[];
 }
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.ch3', '.vite'])
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".ch3", ".vite"]);
 
 function walk(dir: string, out: string[]): void {
-  let ents: fs.Dirent[]
+  let ents: fs.Dirent[];
   try {
-    ents = fs.readdirSync(dir, { withFileTypes: true })
-  } catch (e) {
-    return
+    ents = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
   }
   for (const e of ents) {
-    const p = path.join(dir, e.name)
+    const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (!SKIP_DIRS.has(e.name)) {
-        walk(p, out)
+        walk(p, out);
       }
     } else if (e.isFile()) {
-      out.push(p)
+      out.push(p);
     }
   }
 }
 
 export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
-  const include = options?.include ?? ['**/*.ch3.ts', '**/*.ch3.js']
-  const importFrom = options?.importFrom ?? 'ch3'
-  let root = options?.root ?? process.cwd()
+  const include = options?.include ?? ["**/*.ch3.ts", "**/*.ch3.js"];
+  const importFrom = options?.importFrom ?? "ch3";
+  let root = options?.root ?? process.cwd();
 
   const matches = (id: string): boolean => {
-    const rel = path.isAbsolute(id) ? path.relative(root, id) : id
-    return picomatch.isMatch(rel, include, { dot: true })
-  }
+    const rel = path.isAbsolute(id) ? path.relative(root, id) : id;
+    return picomatch.isMatch(rel, include, { dot: true });
+  };
 
   const generate = (id: string, warn: (m: string) => void): void => {
-    const code = fs.readFileSync(id, 'utf8')
+    const code = fs.readFileSync(id, "utf8");
     const model = extractModule(id, code, {
       appExport: options?.appExport,
       imports: options?.imports,
-    })
-    const gen = emitGenModule(model, { importFrom: importFrom, modulePath: id })
-    const out = path.join(path.dirname(id), '.ch3', genFileName(id))
-    let prev = ''
+    });
+    const gen = emitGenModule(model, { importFrom: importFrom, modulePath: id });
+    const out = path.join(path.dirname(id), ".ch3", genFileName(id));
+    let prev = "";
     try {
-      prev = fs.readFileSync(out, 'utf8')
-    } catch (e) {
-      prev = ''
+      prev = fs.readFileSync(out, "utf8");
+    } catch {
+      prev = "";
     }
     if (prev !== gen) {
-      fs.mkdirSync(path.dirname(out), { recursive: true })
-      fs.writeFileSync(out, gen)
+      fs.mkdirSync(path.dirname(out), { recursive: true });
+      fs.writeFileSync(out, gen);
     }
     for (const w of model.warnings) {
-      warn(w)
+      warn(w);
     }
-  }
+  };
 
   return {
-    name: 'unplugin-ch3',
-    enforce: 'pre',
+    name: "unplugin-ch3",
+    enforce: "pre",
     vite: {
       configResolved(config: { root: string }): void {
-        root = options?.root ?? config.root
+        root = options?.root ?? config.root;
       },
     },
     buildStart(): void {
       // UnpluginContext.warn only exists on transform/load — outside those
       // hooks, console.warn is the honest channel.
-      const files: string[] = []
-      walk(root, files)
+      const files: string[] = [];
+      walk(root, files);
       for (const f of files) {
         if (matches(f)) {
-          generate(f, (m) => console.warn('[unplugin-ch3] ' + m))
+          generate(f, (m) => console.warn("[unplugin-ch3] " + m));
         }
       }
     },
@@ -117,23 +117,23 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
       // routes module — covers watch mode on bundlers without watchChange.
       if (matches(id)) {
         try {
-          generate(id, (m) => this.warn(m))
-        } catch (e) {
-          this.warn('unplugin-ch3: failed to generate for ' + id + ': ' + String(e))
+          generate(id, (m) => this.warn(m));
+        } catch {
+          this.warn("unplugin-ch3: failed to generate for " + id + ": " + String(e));
         }
       }
-      return null
+      return null;
     },
     watchChange(id: string): void {
       if (matches(id)) {
         try {
-          generate(id, (m) => console.warn('[unplugin-ch3] ' + m))
-        } catch (e) {
+          generate(id, (m) => console.warn("[unplugin-ch3] " + m));
+        } catch {
           // leave the previous gen file in place
         }
       }
     },
-  }
-})
+  };
+});
 
-export default ch3Plugin
+export default ch3Plugin;

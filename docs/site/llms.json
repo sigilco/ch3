@@ -1,0 +1,54 @@
+{
+  "title": ".",
+  "description": "",
+  "pages": [
+    {
+      "title": "Architecture",
+      "url": "/architecture/",
+      "description": "",
+      "priority": "medium"
+    },
+    {
+      "title": "Benchmarks",
+      "url": "/benchmarks/",
+      "description": "",
+      "priority": "medium"
+    },
+    {
+      "title": "Errors",
+      "url": "/errors/",
+      "description": "",
+      "priority": "medium"
+    },
+    {
+      "title": "ch3",
+      "url": "/",
+      "description": "",
+      "priority": "high"
+    },
+    {
+      "title": "Middleware",
+      "url": "/middleware/",
+      "description": "",
+      "priority": "medium"
+    },
+    {
+      "title": "ch3 generated-dispatch contract (\\`src/gen.ts\\`)",
+      "url": "/route-contract/",
+      "description": "",
+      "priority": "medium"
+    },
+    {
+      "title": "Routing",
+      "url": "/routing/",
+      "description": "",
+      "priority": "medium"
+    },
+    {
+      "title": "unplugin-ch3",
+      "url": "/unplugin/",
+      "description": "",
+      "priority": "medium"
+    }
+  ]
+}

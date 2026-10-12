@@ -14,12 +14,12 @@ npm i -D unplugin-ch3
 
 ```ts
 // vite.config.ts
-import { defineConfig } from 'vite'
-import { ch3Plugin } from 'unplugin-ch3'
+import { defineConfig } from "vite";
+import { ch3Plugin } from "unplugin-ch3";
 
 export default defineConfig({
   plugins: [ch3Plugin.vite()],
-})
+});
 ```
 
 The factory is unplugin-based, so `ch3Plugin.rollup()`, `ch3Plugin.webpack()`, and `ch3Plugin.esbuild()` also work with their bundlers' plugin arrays.
@@ -31,14 +31,14 @@ A file is a route-registration module when its name matches the `include` globs 
 
 ```ts
 // src/routes.ch3.ts
-import { createRouter } from 'ch3'
+import { createRouter } from "ch3";
 
-export const app = createRouter()
+export const app = createRouter();
 
-app.get('/json', (c) => c.json({ hello: 'world' }))
-app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
-app.post('/echo', (c) => c.text(c.req.body()), { body: true })
-app.get('/files/*', (c) => c.text(c.req.param('*')))
+app.get("/json", (c) => c.json({ hello: "world" }));
+app.get("/user/:id", (c) => c.json({ id: c.req.param("id") }));
+app.post("/echo", (c) => c.text(c.req.body()), { body: true });
+app.get("/files/*", (c) => c.text(c.req.param("*")));
 ```
 
 At `buildStart` (and on each transform/watch event for the file) the plugin writes `src/.ch3/routes.gen.ts` satisfying `docs/route-contract.md`:
@@ -52,11 +52,11 @@ At `buildStart` (and on each transform/watch event for the file) the plugin writ
 
 ```ts
 // src/main.ts
-import { app } from './routes.ch3.ts'
-import { CompiledRoutes } from './.ch3/routes.gen.ts'
+import { app } from "./routes.ch3.ts";
+import { CompiledRoutes } from "./.ch3/routes.gen.ts";
 
-app.withDispatch(new CompiledRoutes(app))
-app.serve({ port: 3000 })
+app.withDispatch(new CompiledRoutes(app));
+app.serve({ port: 3000 });
 ```
 
 `app.serve()`/`app.handler()` call the generated dispatch FIRST on every request; `false` declines to the internal dispatch, which covers non-literal registrations, notFound, and misses.
@@ -84,13 +84,13 @@ The plugin never silently produces wrong routes: uncertainty means bail, not gue
 
 ## Options
 
-| Option       | Default                          | Purpose                                                          |
-| ------------ | -------------------------------- | ---------------------------------------------------------------- |
-| `include`    | `['**/*.ch3.ts','**/*.ch3.js']` | Globs (relative to root) marking routes modules                  |
-| `root`       | vite `config.root`, else `cwd()` | Project root scanned at `buildStart`                             |
-| `appExport`  | auto-detect                      | Exported binding carrying the router (`name` or `'default'`)     |
-| `imports`    | `['ch3','ch3']`         | Extra specifiers treated as ch3 imports                          |
-| `importFrom` | `'ch3'`                 | Specifier emitted for `import type { App }` in the gen file      |
+| Option       | Default                          | Purpose                                                      |
+| ------------ | -------------------------------- | ------------------------------------------------------------ |
+| `include`    | `['**/*.ch3.ts','**/*.ch3.js']`  | Globs (relative to root) marking routes modules              |
+| `root`       | vite `config.root`, else `cwd()` | Project root scanned at `buildStart`                         |
+| `appExport`  | auto-detect                      | Exported binding carrying the router (`name` or `'default'`) |
+| `imports`    | `['ch3','ch3']`                  | Extra specifiers treated as ch3 imports                      |
+| `importFrom` | `'ch3'`                          | Specifier emitted for `import type { App }` in the gen file  |
 
 ## Compiling with scriptc
 

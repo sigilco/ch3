@@ -1,17 +1,18 @@
 {
   "name": "@ch3/unplugin",
   "version": "0.1.0",
-  "description": "Build-time route lowering for ch3 \u2014 emits a specialized, scriptc-clean dispatch module per routes file",
+  "description": "Build-time route lowering for ch3 — emits a specialized, scriptc-clean dispatch module per routes file",
+  "license": "Apache-2.0",
+  "files": [
+    "src",
+    "PLUGIN.md"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
-  "files": [
-    "src",
-    "PLUGIN.md"
-  ],
   "scripts": {
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -20,16 +21,15 @@
     "picomatch": "^4.0.7",
     "unplugin": "^3.4.0"
   },
-  "peerDependencies": {
-    "typescript": ">=5.0.0"
-  },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/picomatch": "^4.0.3",
     "typescript": "^5.9.0"
   },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
   "engines": {
     "node": ">=22"
-  },
-  "license": "Apache-2.0"
+  }
 }

@@ -18,9 +18,15 @@
       ]
     },
     {
+      "title": "Build-Time",
+      "pages": [
+        { "title": "unplugin-ch3", "route": "unplugin" },
+        { "title": "Route Contract", "route": "route-contract" }
+      ]
+    },
+    {
       "title": "Advanced",
       "pages": [
-        { "title": "Route Contract", "route": "route-contract" },
         { "title": "Architecture", "route": "architecture" },
         { "title": "Benchmarks", "route": "benchmarks" }
       ]
