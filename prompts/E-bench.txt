@@ -1,0 +1,21 @@
+# Task: ch3 benchmark suite — implement + run everything except the ch3 row (pending)
+
+You are building the canonical bench harness for `@sigilco/ch3` inside repo `sigilco/ch3` on branch `devin/bench-suite`. The library core is being implemented in parallel; your suite must be complete and produce every comparison number WITHOUT waiting for it — leave a clearly-marked `ch3` row that plugs in when `src/` lands (wire it against the frozen `createRouter` contract in DESIGN.md; if the package can't resolve locally yet, point the ch3 app at `../../src/index.ts` and leave it ready-to-run).
+
+## Setup
+- node via `export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"` (or `source ~/.nvm/nvm.sh`)
+- `npm i -g scriptc autocannon`; `sudo -n apt-get update && sudo -n apt-get install -y clang`
+- bun: `curl -fsSL https://bun.sh/install | bash`; go: `sudo -n apt-get install -y golang-go`; rust: use `cargo` if present else `apt install cargo` (or static musl if faster); C: gcc/clang + single-file mongoose.c (https://github.com/cesanta/mongoose — vendor the two source files)
+
+## Deliverables (all in `bench/` on your branch)
+1. `bench/apps/<framework>.{js,ts}` — canonical app per framework implementing the 6 routes in DESIGN.md §5 exactly: GET /json `{"hello":"world"}`, GET /user/:id `{"id":"<v>"}`, POST /echo (echo body), GET /deep/a/b/c/d/e, GET /files/*, plus the 100-route mixed table (60 static/30 param/10 wildcard). Frameworks: ch3 (stub-import), h3(+node adapter), hono(+@hono/node-server), find-my-way, express, raw node:http; bun variants where the framework supports Bun.serve (hono at minimum; h3 if trivial).
+2. Ceiling apps: go `net/http`+chi, rust `axum`, C `mongoose` — routes 1-3 only.
+3. `bench/run.sh` — warmup `-c16 -d2` discarded, measure `-c64 -d6` ×3 median per cell; record rps, p50/p99, MB/s; also binary size + `hyperfine --warmup 3` cold start + RSS after 100k reqs where applicable.
+4. `bench/ENV.md` — `nproc`, CPU model, `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor`, kernel, RAM.
+5. `bench/RESULTS-baseline.md` — the FULL matrix minus the ch3 row: node24 / bun / (scriptc where a subject can compile — raw node:http baseline app compiled under scriptc counts) + go/rust/C ceilings. Report RATIOS against same-VM raw-node-http cell (absolutes carry ±50% shared-VM noise).
+6. `scriptc` column: the raw-baseline app MUST compile statically (no --dynamic) and serve — verified with curl before benching. Foreign frameworks will NOT compile (documented finding — don't burn hours retrying h3/hono; one coverage attempt per framework suffices as evidence).
+
+Commit+push `devin/bench-suite`; attach RESULTS-baseline.md + run.sh + note any framework that surprised you by compiling.
+
+ATTACHMENT:"https://app.devin.ai/attachments/75545ccc-e753-4937-a000-43c6c4f03860/DESIGN.md"
+ATTACHMENT:"https://app.devin.ai/attachments/d6838a59-c4d7-46e7-8d3b-0406b22de98c/REPORT.md"

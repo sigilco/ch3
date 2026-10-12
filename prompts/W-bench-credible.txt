@@ -1,0 +1,22 @@
+# Task: extend ch3 bench to reputable baselines + credible methodology, branch devin/bench-credible
+
+`sigilco/ch3` `devin/bench-suite` already has run.sh + apps for ch3/h3/hono/fmw/express/raw-node + go-chi/rust-axum/c-mongoose + scriptc/node/bun matrix (autocannon -c64 -d6 x3 median). Extend it so the numbers survive public scrutiny.
+
+## New subjects (reputable baselines — owner's list)
+1. **fastify** — canonical app reusing fmw as its router (it does natively) + its own /json & /user/:id & POST echo; also check https://github.com/fastify/benchmarks methodology and mirror its workload shapes where sensible.
+2. **the-benchmarker/web-frameworks conventions** — read https://github.com/the-benchmarker/web-frameworks: mirror its route set (GET /, GET /user/:id, POST /user) AND its measurement methodology where applicable (wrk2-based, latency-first). Report ch3 on BOTH our canonical suite AND their canonical 3-route suite so numbers are cross-comparable to their published tables.
+3. **Raygun HTTP Benchmarks** — find their methodology/workload (raygun.com blog benchmark series / github raygun repo if it exists); adopt their reported metrics (they emphasize p99 + memory). If no public harness exists, document that and mirror their workload description from the posts.
+
+## Methodology upgrades (credibility checklist — all required)
+- **Repro script**: `bench/docker-compose.yml` (or single Dockerfile) that builds the whole suite + runs it — anyone reproduces with one command. Also keep run.sh runnable bare-metal.
+- **Two measurement tools**: autocannon AND wrk2 (apt install or static binary); cross-validate headline cells — if they disagree >20%, investigate and report why. Add k6 if wrk2 is painful.
+- **Metrics per cell**: rps, p50, p95, p99, max latency, MB/s, errors/timeouts. Report percentiles at fixed concurrency — no rps-only cells.
+- **Workload**: plaintext is never the sole metric — JSON serialization, route-param extraction, POST echo are already canonical; make sure web-frameworks' 3-route suite is covered too.
+- **ENV.md upgrade**: full disclosure — CPU model/arch, core count, cgroup limits (`nproc`, /sys/fs/cgroup), kernel, governor, turbo state, whether client+server share cores (they do — say so) or are pinned disjoint (`taskset`/`cset` if feasible), VM vs bare metal, noise disclaimer (±50% shared-VM variance observed — mitigate with x5 medians on headline cells).
+- **Ch3 numbers**: use the compiled-mode branch build for ch3 (program-code build, NOT --npm-static — documented 40-70% cliff). If devin/compiled-mode has merged to main use main.
+- Update RESULTS-baseline.md → RESULTS-v2.md with the full matrix incl. percentiles + both tools + ceilings, plus a REPRODUCE.md.
+
+Verify every new subject serves via curl before benching. `node --test` any harness code you add. Push branch; no PR. Report deltas + any subject that surprises.
+
+ATTACHMENT:"https://app.devin.ai/attachments/9d015c4b-18f6-4ad8-b6eb-db5d312650bc/RESULTS-baseline.md"
+ATTACHMENT:"https://app.devin.ai/attachments/052bc87a-655d-4599-ac20-4763de0cc550/run.sh"

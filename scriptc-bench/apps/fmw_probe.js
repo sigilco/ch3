@@ -1,0 +1,13 @@
+import findMyWay from 'find-my-way'
+console.log('P1: require ok')
+const router = findMyWay()
+console.log('P2: router created')
+router.on('GET', '/json', (req, res, params) => { console.log('handler hit', JSON.stringify(params)) })
+router.on('GET', '/user/:id', (req, res, params) => { console.log('param id=' + params.id) })
+console.log('P3: routes registered')
+router.lookup({ method: 'GET', url: '/json', headers: {} }, {})
+console.log('P4: /json lookup done')
+router.lookup({ method: 'GET', url: '/user/q7', headers: {} }, {})
+console.log('P5: /user/:id lookup done')
+router.lookup({ method: 'POST', url: '/json', headers: {} }, {})
+console.log('P6: 404 done')

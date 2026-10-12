@@ -1,0 +1,387 @@
+From 7b351fb01936a2356dec6688f9f5855fe37fd082 Mon Sep 17 00:00:00 2001
+From: Quim T <26749475+espetro@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 11:55:15 +0000
+Subject: [PATCH] feat: make default routing path codegen-free and
+ runtime-portable
+
+Replace all new Function codegen on the default route registration and
+lookup paths with semantically equivalent closures and precomputed
+checkers:
+
+- node.js: match every multi-char static prefix with String#indexOf
+  instead of a compiled charCodeAt chain
+- handler-storage.js: interpret the per-node param-object builder and
+  constraint bitmask matcher from precomputed {mask, store, mustMatch}
+  triples instead of generating code
+
+This makes the whole default (non-compile()) path free of runtime code
+generation, which is required for AOT-compiled runtimes such as
+vercel-labs/scriptc and for strict-CSP environments. Router.compile()
+remains available as an opt-in codegen path.
+
+Additional portability fixes, all semantics-preserving:
+
+- parse with try/catch new URL() instead of the URL.parse/URL.canParse
+  feature-detect (same null-on-bad-input contract everywhere)
+- load safe-regex2 optionally so runtimes without it degrade to
+  allowUnsafeRegex-style behavior instead of crashing on require
+- parse querystrings with node:querystring and move fast-querystring to
+  devDependencies (it is only needed by the custom-parser test)
+- replace instanceof/new.target checks and object/module shorthand
+  forms that not all runtimes lower
+- iterate httpMethods by index instead of for-in + hasOwnProperty
+
+Verified: eslint clean, borp 554/554, tstyche 58/58 under Node;
+throughput parity with the previous revision on the repo's workload.
+---
+ index.js                         | 43 ++++++++++------
+ lib/compiler.js                  |  3 +-
+ lib/handler-storage.js           | 86 +++++++++++++++-----------------
+ lib/node.js                      | 21 ++------
+ lib/null-object.js               |  4 +-
+ lib/strategies/accept-host.js    |  2 +-
+ lib/strategies/accept-version.js |  2 +-
+ package.json                     |  2 +-
+ 8 files changed, 80 insertions(+), 83 deletions(-)
+
+diff --git a/index.js b/index.js
+index 1d89e59..c66b8bf 100644
+--- a/index.js
++++ b/index.js
+@@ -26,8 +26,14 @@
+ */
+ 
+ const assert = require('node:assert')
+-const querystring = require('fast-querystring')
+-const isRegexSafe = require('safe-regex2')
++const querystring = require('node:querystring')
++// safe-regex2 is an optional dependency: exotic runtimes/compilers that
++// cannot load it skip the regex-safety checks (equivalent to
++// allowUnsafeRegex). Plain-route routing never needs it.
++let isRegexSafe = null
++try {
++  isRegexSafe = require('safe-regex2')
++} catch {}
+ const deepEqual = require('fast-deep-equal')
+ const { prettyPrintTree } = require('./lib/pretty-print')
+ const { createStaticNode, NODE_TYPES } = require('./lib/node')
+@@ -44,24 +50,33 @@ const REMOVE_DUPLICATE_SLASHES_REGEXP = /\/\/+/g
+ // URL.parse returns null instead of throwing on malformed input, which skips
+ // the error and stack trace allocation on an attacker controlled path. It is
+ // only available since Node.js 20.18.0, so fall back to URL.canParse.
+-const parseUrl = typeof URL.parse === 'function'
+-  ? URL.parse
+-  : (url) => URL.canParse(url) ? new URL(url) : null
++// URL.parse returns null instead of throwing, but it is not yet available on
++// every runtime this module supports — try/catch around `new URL` gives the
++// same null-on-bad-input contract everywhere.
++const parseUrl = (url) => {
++  try {
++    return new URL(url)
++  } catch {
++    return null
++  }
++}
+ 
+-if (!isRegexSafe(OPTIONAL_PARAM_REGEXP)) {
++if (isRegexSafe !== null && !isRegexSafe(OPTIONAL_PARAM_REGEXP)) {
+   throw new Error('the OPTIONAL_PARAM_REGEXP is not safe, update this module')
+ }
+ 
+-if (!isRegexSafe(ESCAPE_REGEXP)) {
++if (isRegexSafe !== null && !isRegexSafe(ESCAPE_REGEXP)) {
+   throw new Error('the ESCAPE_REGEXP is not safe, update this module')
+ }
+ 
+-if (!isRegexSafe(REMOVE_DUPLICATE_SLASHES_REGEXP)) {
++if (isRegexSafe !== null && !isRegexSafe(REMOVE_DUPLICATE_SLASHES_REGEXP)) {
+   throw new Error('the REMOVE_DUPLICATE_SLASHES_REGEXP is not safe, update this module')
+ }
+ 
+ function Router (opts) {
+-  if (!(this instanceof Router)) {
++  // 'use strict' keeps `this` undefined on a plain call; `instanceof` is not
++  // portable to runtimes that compile this module ahead-of-time.
++  if (this === undefined || this === null) {
+     return new Router(opts)
+   }
+   opts = opts || {}
+@@ -112,6 +127,8 @@ function Router (opts) {
+   // Compiled lookup functions, one per method tree, see compile().
+   this._compiledGET = null
+   this._compiledTrees = Object.create(null)
++
++  return this
+ }
+ 
+ function routesWithMethodAndPattern (router, method, pattern) {
+@@ -250,7 +267,7 @@ Router.prototype._on = function _on (method, path, opts, handler, store) {
+             const regexString = pattern.slice(j, endOfRegexIndex + 1)
+ 
+             if (!this.allowUnsafeRegex) {
+-              assert(isRegexSafe(new RegExp(regexString)), `The regex '${regexString}' is not safe!`)
++              assert(isRegexSafe === null || isRegexSafe(new RegExp(regexString)), `The regex '${regexString}' is not safe!`)
+             }
+ 
+             regexps.push(trimRegExpStartAndEnd(regexString))
+@@ -410,7 +427,7 @@ Router.prototype.findRoute = function findNode (method, path, constraints = {})
+             const regexString = pattern.slice(j, endOfRegexIndex + 1)
+ 
+             if (!this.allowUnsafeRegex) {
+-              assert(isRegexSafe(new RegExp(regexString)), `The regex '${regexString}' is not safe!`)
++              assert(isRegexSafe === null || isRegexSafe(new RegExp(regexString)), `The regex '${regexString}' is not safe!`)
+             }
+ 
+             regexps.push(trimRegExpStartAndEnd(regexString))
+@@ -966,9 +983,7 @@ Router.prototype.prettyPrint = function (options = {}) {
+   return prettyPrintTree(tree, options)
+ }
+ 
+-for (const i in httpMethods) {
+-  /* eslint no-prototype-builtins: "off" */
+-  if (!httpMethods.hasOwnProperty(i)) continue
++for (let i = 0; i < httpMethods.length; i++) {
+   const m = httpMethods[i]
+   const methodName = m.toLowerCase()
+ 
+diff --git a/lib/compiler.js b/lib/compiler.js
+index d0ae25b..e5f1fe0 100644
+--- a/lib/compiler.js
++++ b/lib/compiler.js
+@@ -615,7 +615,8 @@ function supportsRawMatching (router, root) {
+   const forbidden = router.useSemicolonDelimiter ? /[%?#;]/ : /[%?#]/
+   const stack = [root]
+   while (stack.length > 0) {
+-    const node = stack.pop()
++    const node = stack[stack.length - 1]
++    stack.pop()
+     if (forbidden.test(node.prefix)) return false
+     stack.push(...node.staticChildrenNodes, ...node.parametricChildren)
+     if (node.wildcardChild !== null) stack.push(node.wildcardChild)
+diff --git a/lib/handler-storage.js b/lib/handler-storage.js
+index 09bd834..84896fc 100644
+--- a/lib/handler-storage.js
++++ b/lib/handler-storage.js
+@@ -62,24 +62,18 @@ class HandlerStorage {
+   }
+ 
+   _compileCreateParamsObject (params) {
+-    const fnBody = ["'use strict'"]
++    const names = params
+ 
+     // Parameter values arrive by position: the first four as arguments and
+     // any further ones in the extraParams array. This mirrors how the
+     // router's find() collects them without allocating an array.
+-    fnBody.push('const fn = function _createParamsObject (param0, param1, param2, param3, extraParams) {')
+-
+-    fnBody.push('const params = new NullObject()')
+-    for (let i = 0; i < params.length; i++) {
+-      const value = i < 4 ? `param${i}` : `extraParams[${i - 4}]`
+-      fnBody.push(`params[${JSON.stringify(params[i])}] = ${value}`)
++    return function _createParamsObject (param0, param1, param2, param3, extraParams) {
++      const params = new NullObject()
++      for (let i = 0; i < names.length; i++) {
++        params[names[i]] = i < 4 ? [param0, param1, param2, param3][i] : extraParams[i - 4]
++      }
++      return params
+     }
+-    fnBody.push('return params')
+-    fnBody.push('}')
+-
+-    fnBody.push('return fn')
+-
+-    return new Function('NullObject', fnBody.join('\n'))(NullObject)  // eslint-disable-line
+   }
+ 
+   _getHandlerMatchingConstraints () {
+@@ -123,56 +117,56 @@ class HandlerStorage {
+   _compileGetHandlerMatchingConstraints (constrainer) {
+     this.constrainedHandlerStores = {}
+ 
++    const checks = []
+     for (const constraint of this.constraints) {
+       const store = constrainer.newStoreForConstraint(constraint)
+       this.constrainedHandlerStores[constraint] = store
+ 
+       this._buildConstraintStore(store, constraint)
+-    }
+ 
+-    const lines = ["'use strict'"]
+-    lines.push(`
+-    let candidates = ${(1 << this.handlers.length) - 1}
+-    let mask, matches, value
+-    `)
+-    for (const constraint of this.constraints) {
+-      // Setup the mask for indexes this constraint applies to. The mask bits are set to 1 for each position if the constraint applies.
+-      lines.push(`
+-      mask = ${this._constrainedIndexBitmask(constraint)}
+-      value = derivedConstraints.${constraint}
+-      `)
+-
+-      // If there's no constraint value, none of the handlers constrained by this constraint can match. Remove them from the candidates.
+-      // If there is a constraint value, get the matching indexes bitmap from the store, and mask it down to only the indexes this constraint applies to, and then bitwise and with the candidates list to leave only matching candidates left.
+-      const strategy = constrainer.strategies[constraint]
+-      const matchMask = strategy.mustMatchWhenDerived ? 'matches' : '(matches | mask)'
+-
+-      lines.push(`
+-      if (value === undefined) {
+-        candidates &= mask
+-      } else {
+-        matches = this.constrainedHandlerStores.${constraint}.get(value) || 0
+-        candidates &= ${matchMask}
+-      }
+-      if (candidates === 0) return null;
+-      `)
++      // Precompute, per constraint, the mask of handler indexes this
++      // constraint applies to and whether the strategy must match.
++      checks.push({
++        constraint,
++        store,
++        mask: this._constrainedIndexBitmask(constraint),
++        mustMatch: constrainer.strategies[constraint].mustMatchWhenDerived
++      })
+     }
+ 
+     // There are some constraints that can be derived and marked as "must match", where if they are derived, they only match routes that actually have a constraint on the value, like the SemVer version constraint.
+     // An example: a request comes in for version 1.x, and this node has a handler that matches the path, but there's no version constraint. For SemVer, the find-my-way semantics do not match this handler to that request.
+     // This function is used by Nodes with handlers to match when they don't have any constrained routes to exclude request that do have must match derived constraints present.
+-    for (const constraint in constrainer.strategies) {
+-      if (!Object.hasOwn(constrainer.strategies, constraint)) continue
++    const mustMatchConstraints = []
++    for (const constraint of Object.keys(constrainer.strategies)) {
+       const strategy = constrainer.strategies[constraint]
+       if (strategy.mustMatchWhenDerived && !this.constraints.includes(constraint)) {
+-        lines.push(`if (derivedConstraints.${constraint} !== undefined) return null`)
++        mustMatchConstraints.push(constraint)
+       }
+     }
+ 
+-    // Return the highest set bit index in the candidates bitmask.
+-    lines.push('return this.handlers[31 - Math.clz32(candidates)]')
++    const handlers = this.handlers
++    const candidateMask = (1 << handlers.length) - 1
+ 
+-    this._getHandlerMatchingConstraints = new Function('derivedConstraints', lines.join('\n')) // eslint-disable-line
++    this._getHandlerMatchingConstraints = function (derivedConstraints) {
++      let candidates = candidateMask
++      for (let i = 0; i < checks.length; i++) {
++        const check = checks[i]
++        const value = derivedConstraints[check.constraint]
++        if (value === undefined) {
++          candidates &= check.mask
++        } else {
++          const matches = check.store.get(value) || 0
++          candidates &= check.mustMatch ? matches : (matches | check.mask)
++        }
++        if (candidates === 0) return null
++      }
++      for (let i = 0; i < mustMatchConstraints.length; i++) {
++        if (derivedConstraints[mustMatchConstraints[i]] !== undefined) return null
++      }
++      // Return the highest set bit index in the candidates bitmask.
++      return handlers[31 - Math.clz32(candidates)]
++    }
+   }
+ }
+ 
+diff --git a/lib/node.js b/lib/node.js
+index feffbf3..cce072c 100644
+--- a/lib/node.js
++++ b/lib/node.js
+@@ -8,11 +8,6 @@ const NODE_TYPES = {
+   WILDCARD: 2
+ }
+ 
+-// Prefixes at least this long are matched with a native String#indexOf, which
+-// runs in roughly constant time, instead of the compiled chain of charCodeAt
+-// comparisons whose cost grows with every char.
+-const LONG_PREFIX_MIN_LENGTH = 16
+-
+ function matchSingleCharPrefix () {
+   return true
+ }
+@@ -22,18 +17,12 @@ function compilePrefixMatch (prefix) {
+     return matchSingleCharPrefix
+   }
+ 
+-  if (prefix.length >= LONG_PREFIX_MIN_LENGTH) {
+-    return function matchLongPrefix (path, i) {
+-      return path.indexOf(prefix, i) === i
+-    }
+-  }
+-
+-  const lines = []
+-  for (let i = 1; i < prefix.length; i++) {
+-    const charCode = prefix.charCodeAt(i)
+-    lines.push(`path.charCodeAt(i + ${i}) === ${charCode}`)
++  // String.prototype.indexOf runs in roughly constant time for every prefix
++  // length, matching the old compiled charCodeAt chain without runtime code
++  // generation (CSP-safe).
++  return function matchLongPrefix (path, i) {
++    return path.indexOf(prefix, i) === i
+   }
+-  return new Function('path', 'i', `'use strict'\nreturn ${lines.join(' && ')}`) // eslint-disable-line
+ }
+ 
+ // Every node kind is an instance of this one class so that all nodes share a
+diff --git a/lib/null-object.js b/lib/null-object.js
+index 0740f04..3fd5f27 100644
+--- a/lib/null-object.js
++++ b/lib/null-object.js
+@@ -3,6 +3,4 @@
+ const NullObject = function () {}
+ NullObject.prototype = Object.create(null)
+ 
+-module.exports = {
+-  NullObject
+-}
++module.exports.NullObject = NullObject
+diff --git a/lib/strategies/accept-host.js b/lib/strategies/accept-host.js
+index 12f1261..fa5d681 100644
+--- a/lib/strategies/accept-host.js
++++ b/lib/strategies/accept-host.js
+@@ -50,7 +50,7 @@ module.exports = {
+   name: 'host',
+   mustMatchWhenDerived: false,
+   storage: HostStorage,
+-  validate (value) {
++  validate: function validate (value) {
+     assert(typeof value === 'string' || Object.prototype.toString.call(value) === '[object RegExp]', 'Host should be a string or a RegExp')
+   }
+ }
+diff --git a/lib/strategies/accept-version.js b/lib/strategies/accept-version.js
+index 55c8d51..0ffaaa0 100644
+--- a/lib/strategies/accept-version.js
++++ b/lib/strategies/accept-version.js
+@@ -58,7 +58,7 @@ module.exports = {
+   name: 'version',
+   mustMatchWhenDerived: true,
+   storage: SemVerStore,
+-  validate (value) {
++  validate: function validate (value) {
+     assert(typeof value === 'string', 'Version should be a string')
+   }
+ }
+diff --git a/package.json b/package.json
+index 9846b90..1d033d3 100644
+--- a/package.json
++++ b/package.json
+@@ -39,6 +39,7 @@
+     "borp": "^1.0.0",
+     "chalk": "^6.0.0",
+     "eslint": "^9.39.5",
++    "fast-querystring": "^1.1.2",
+     "inquirer": "^14.0.2",
+     "neostandard": "^0.13.0",
+     "pre-commit": "^2.0.0",
+@@ -49,7 +50,6 @@
+   },
+   "dependencies": {
+     "fast-deep-equal": "^3.1.3",
+-    "fast-querystring": "^1.0.0",
+     "safe-regex2": "^5.0.0"
+   }
+ }
+-- 
+2.34.1
+

@@ -1,0 +1,26 @@
+## Shared context — ch3 shim implementation
+
+You are implementing ONE API-compat shim for `@sigilco/ch3` — a minimal typed Node-HTTP router authored inside the "scriptc subset" (rules below are law). The shim lets users keep their handler signatures: a pure re-mapping layer, zero code from the real framework.
+
+**Repo**: `sigilco/ch3` — clone it. Work on YOUR OWN branch named below; implement ONLY your shim file(s), your tests, and your own local core stub if the core hasn't landed yet. The core is being built in parallel on branch `devin/core-v0` by another agent — do NOT implement or modify core files yourself.
+
+**If core is missing**: create `test/stub-<yourshim>.ts` implementing the frozen `Ch3Core`/`Context`/`createRouter` contract from DESIGN.md — minimal in-memory implementation good enough to run your shim's unit tests under `node --test`. Write `MERGE-NOTE-<yourshim>.md` stating exactly what the stub fakes so the real core can replace it. Never put stub code in `src/`.
+
+**Verification**: `node --test` on your shim tests + a scriptc compile smoke of `import ... from '../shims/<x>'` → `scriptc build` WITHOUT --dynamic must produce a serving binary (your shim + the stub must both be subset-clean; stub is test-only, but keep it compilable anyway). Report any subset-rule deviation you were forced into.
+
+**Scriptc subset (verified rules — violations fail CI)**: sync handlers only; `null` not `undefined` in unions/returns; plain `({})` records (no Map/Set/Object.create(null)/freeze/class-as-dict/namespace-values); indexed `for` only, `for…of` on arrays OK, `for…in` never; `String(x)`/`Number(x)` entry-coercion for `unknown` params; NO `new Function`/`eval`; no `instanceof` vs non-program classes; no `new.target`; `try/catch new URL` not `URL.parse`; no object/method/module-exports shorthand forms; `import * as http from 'node:http'`; concretely-typed tables (no `any[]`/`unknown[]` — a ServerResponse can't cross an any-typed call); `res.end` as statement; body via `req.on('data')` collect + join; plain ESM only; `.d.ts` = concrete types + `| null` unions + zero DOM symbols.
+
+**Docs promise**: every shim states its coverage target, its divergences list, and throws `"async handlers unsupported under ch3"` when `h.constructor.name === 'AsyncFunction'` at wrap time.
+
+**Deliverables**: commit + push your branch; attach your shim source files, tests, MERGE-NOTE (if stubbed), and a 10-line summary listing exact divergences you implemented vs DESIGN.md's promise.
+
+ATTACHMENT:"https://app.devin.ai/attachments/75545ccc-e753-4937-a000-43c6c4f03860/DESIGN.md"
+ATTACHMENT:"https://app.devin.ai/attachments/d6838a59-c4d7-46e7-8d3b-0406b22de98c/REPORT.md"
+
+# Your shim: `ch3/hono` — branch `devin/shim-hono`
+
+Implement `src/shims/hono.ts` per DESIGN.md §4 (target ~75% of route-file code):
+- `new Hono()` facade over `createRouter`: `app.get/post/put/delete/patch/options/head`, `app.use`, `app.route`, `app.notFound`, `app.onError`, `app.fire()` no-op-parity; NO `app.fetch` — expose `app.request`/`serve`
+- `c` IS ch3's `Context` (one-line facade): `c.req.param|query|header`, `c.req.parseBody()`≈`bodyJson`, `c.json|text|html|redirect`, `c.status`, `c.set/get`, `c.env`
+- Divergences to document: handlers return `void | Context` NOT `Response` — `c.json()` buffers straight to `res.end`; a handler returning a foreign object gets JSON-serialized at the edge as last resort; fetch-typed middleware imports don't port; no `c.executionCtx`, no SSE/streaming
+Tests: route-file-shaped cases — app.get with c.json/c.param, use-middleware set/get, notFound/onError, route mount.

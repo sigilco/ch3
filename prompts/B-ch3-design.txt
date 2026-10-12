@@ -1,0 +1,57 @@
+## Shared context — scriptc subset playbook (verified, do NOT re-derive)
+
+`scriptc` 0.2.8 compiles TS/JS to a native ELF. Facts proven on 2026-10-11:
+- The `--dynamic` QuickJS island has NO `createServer`/`node:http2`; native req/res handles cannot enter island code. **The only viable topology: everything compiles statically as program modules via `--npm-static <pkg>` or as authored source.**
+- Build probe recipe: `scriptc build <app> --npm-static <pkg...> --optimization=speed -o bin/app` — `--dynamic` is needed only if the app deliberately uses island code.
+- Deferred-site debugging: build WITHOUT `--dynamic` — fences throw named errors at the exact line (`SC#### at file:line`); with `--dynamic` they die with an opaque "runtime handle" TypeError.
+- Fenced bare `require()` calls ARE catchable (`try { x = require('p') } catch {}`).
+
+### Authoring rules that compile (the "scriptc subset")
+1. Sync handlers only. `null`, never `undefined`, in unions/returns (`X | undefined` unrepresentable — SC3004).
+2. Plain `({})` records; no `Object.create(null)`, `Object.freeze`, class-instances-as-dicts, or module-namespace values.
+3. Indexed `for` loops only (no `for…in`/`for…of` on user objects — `for of` over arrays IS fine; `for…in`+`hasOwnProperty` is not). No `stack.pop()` in expression position — peek then pop.
+4. `String(x)`/`Number(x)` coercion at function entry for params arriving `unknown`.
+5. No `new Function`/`eval` anywhere on the shipped path (SC2020, unlowerable).
+6. No `instanceof` against non-program classes; no `new.target`; no `URL.parse`/`URL.canParse` (use `try/catch new URL`); no object-shorthand/method-shorthand/module.exports-shorthand forms.
+7. `import * as http from 'node:http'` style; `req.url`/`req.method` non-optional `string`.
+8. No function values stored in route tables if the handler signature crosses 'any'-typed dispatch — store compiled dispatch or keep handler types concrete (`(req,res,params)=>void`).
+9. Body read: `req.on('data',(c)=>buf+=c.toString())` + `req.on('end',...)` — `Buffer.concat`/`req.pipe` unlowered.
+10. `.d.ts` for the package: concrete types, `| null` unions only, zero DOM symbols, no generics resolving to `unknown` at the boundary.
+11. tsc-emit CJS boilerplate (`exports.X = void 0`, `__importStar`) is uncompileable — author plain ESM, let the bundler emit CJS if needed.
+
+### Verified numbers for calibration (autocannon -c64 -d6, shared VM ±50% noise)
+- scriptc/fmw-fork: ~60-92k rps (best 92.4k) · node/fmw-fork ~60-95k → **parity**
+- scriptc/mini-router: 79.7k · node/hono 69k · node/fastify-class ~45-70k · bun/hono 94k
+- Survey-VM (faster): baseline 109.7k, memoirist-fork 104.9k (3 patches), rou3-fork 95.6k (~10 patches)
+
+### ch3 API contract (frozen sketch — implement/shim against THIS)
+```ts
+// @sigilco/ch3 — ESM-first, zero deps, subset-authored
+import { createRouter } from '@sigilco/ch3'
+const app = createRouter()
+app.get('/json', (c) => c.json({ hello: 'world' }))        // c.json sets headers+res.end
+app.get('/user/:id', (c) => c.json({ id: c.req.param('id') })) // params typed from path literal where feasible
+app.post('/echo', (c) => c.text(c.req.body()))              // body() sync-collects req data → string
+app.notFound((c) => c.status(404).text('not found'))
+app.serve({ port: 3000 })   // sugar over node:http createServer(app.handler())
+```
+Context `c`: `c.req.param(name)`, `c.req.query(name|all)`, `c.req.header(name)`, `c.req.body()`; `c.json(obj)`, `c.text(s)`, `c.html(s)`, `c.status(n)`, `c.header(k,v)`, `c.redirect(url,code)`. Handlers are SYNC `(c) => void | c` — body() is the sync-collect abstraction over req 'data'/'end' (design may revise its exact shape; keep the sketch's semantics).
+
+ATTACHMENT:"https://app.devin.ai/attachments/d6838a59-c4d7-46e7-8d3b-0406b22de98c/REPORT.md"
+
+# Task: ch3 architecture + design document
+
+Write the authoritative DESIGN.md for `@sigilco/ch3` — a minimal, first-class-typed Node-HTTP router that (a) compiles statically under scriptc to a single ELF at ~Node-native speed, (b) is a drop-in-friendly replacement surface for h3/hono/fmw-style code, (c) ships API-compat shim entrypoints (`ch3/h3`, `ch3/fmw`, `ch3/hono`, `ch3/express`) so users keep their handler signatures.
+
+You do NOT implement; you design so 4 parallel implementation agents can work independently afterward. Repo: `sigilco/ch3` (exists, likely empty — clone it; design files may be committed on branch `devin/design` and pushed).
+
+## Must cover
+1. **Router core choice** — compare three matching cores for the subset: memoirist-style inert-table, rou3 radix, find-my-way radix+compiled-lookup. Pick one as ch3's internal model and justify (wildcard + regex-param + host/version-constraint ambitions vs code size vs subset-fit). Note our fmw fork proved a full radix router serves at Node parity — borrowing semantics (not vendoring) is allowed.
+2. **API surface freeze** — the contract sketch above plus: route groups/`app.route` mount, wildcard syntax, optional params, head-of-line decisions on middleware (sync chain model — onion vs linear; pick and justify under subset rules), error handler, body/query typed accessors, streaming story (or explicit non-goal), `c.env`/`c.set` context state for middleware handoff, and how `params` types derive from path literals (template-literal type machinery — runtime-free, so only needs to typecheck under TS; flag anything exotic scriptc's checker may reject).
+3. **Package topology** — src layout (core/, context.ts, adapters/, shims/), build (tsdown or tsc dual ESM+CJS — but ESM is the scriptc entry), exports map, versioning, and how `ch3/h3` etc. compile as pure re-export shims.
+4. **Adapter contract** — precise mapping per shim (h3 event→c, express (req,res,next)→c, hono context→c, fmw register→core.on): which APIs are faithful, which are documented divergences (e.g. Response-return at the edge, async middleware unsupported), coverage targets (~80% of h3 handler usage etc. per REPORT.md shim table).
+5. **Bench spec** — exact workload definitions for the bench suite (route shapes, payload sizes, autocannon params, warm-up) so the separate bench agent can build it blind; include the comparison matrix targets: ch3 vs h3/hono/fmw/express/node-http under node AND bun AND scriptc binary, plus one go/rust/c lib.
+6. **Risks/decisions register** — each rejected alternative + why (esp. async handlers — the subset's sync constraint; document the workaround story for users who need async).
+7. **Implementation work-breakdown** — ordered task list with file-level interfaces so shim agents and the bench agent can run fully parallel: define `Ch3Core` internal interface (addRoute/find/dispatch), `Context` class surface, and `ShimAdapter` signature exactly.
+
+Deliverable: `DESIGN.md` committed+pushed on `devin/design` in sigilco/ch3 AND attached to your final message, plus a ~20-line summary of the key decisions in the message itself. Keep it decisive — one recommended answer per open question, no "TBD".

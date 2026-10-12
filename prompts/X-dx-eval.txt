@@ -1,0 +1,28 @@
+# Task: DX evaluation harness for ch3 — LLM-as-a-Judge suite, on branch devin/dx-eval
+
+Build `eval/dx/` in `sigilco/ch3`: a repeatable suite measuring authoring ergonomics + type-safety + determinism for ch3 vs hono vs express (and h3 if cheap). This is an agent-runnable eval, not a benchmark.
+
+## Owner's rubric (weights in this order — law)
+1. **Type-safety** (heaviest): does a wrong `ctx.param('nam')` fail at typecheck? are params/query literal-typed? does `ctx.json()` infer response shape? does route path typing propagate?
+2. **Determinism**: is there ONE obvious way to do each task (penalize flexible/multi-path APIs)? can a coding agent predict the correct implementation without docs? low implementation variance across equivalent attempts.
+3. **Ergonomics**: LOC, imports needed, concepts learned, error-message quality when you get it wrong.
+
+## Tasks (canonical authoring scenarios — implement in all subjects)
+- REST resource CRUD with typed params + JSON body validation
+- Route mounting / nested routers + path-prefix middleware
+- Versioned routes + 405/Allow behavior
+- Error middleware vs thrown-error path
+- Query parsing incl. arrays + defaults
+- Static + param + wildcard route mix with correct precedence
+- "Agent trap" cases: wrong param name, missing await, async handler (should fail loudly under ch3), response after send
+
+## Mechanics
+- `eval/dx/tasks/*.task.md` — task specs an agent can execute cold.
+- `eval/dx/judge.ts` — runs `tsc --noEmit` probes (type-error tests: expect-error assertions on wrong code), counts LOC/imports, checks each task's "single-way" property (script: does the public API expose >1 way to express the pattern? flag it), emits JSON scorecard.
+- `eval/dx/RUBRIC.md` + `eval/dx/RESULTS.md` — rubric + current scores per framework.
+- Where LLM judging is needed (error-message quality, "one obvious way"), structure it as a `JUDGE-PROMPT.md` template + captured model output — deterministic parts must be script-verified, not vibes.
+- ch3 evaluation runs against `devin/core-v0` API (App/Ctx/ReqView); if main is up use that. Honest scoring — ch3 WILL lose some ergonomics rounds to hono; report it, don't sandbag.
+
+Deliverables: eval harness + first scorecard on `devin/dx-eval`. Push branch; no PR.
+
+ATTACHMENT:"https://app.devin.ai/attachments/75545ccc-e753-4937-a000-43c6c4f03860/DESIGN.md"

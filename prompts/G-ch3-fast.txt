@@ -1,0 +1,24 @@
+# Task: ch3 compiled-mode spike — specialized dispatch on branch devin/compiled-mode
+
+`@sigilco/ch3` v0.1.0 core lands on `main`/`devin/core-v0` (App/Ctx/ReqView API; the C agent is seeding main — branch from `devin/core-v0` if main isn't up yet). Your job: implement the **two-layer architecture** — same typed authoring API, but requests run through a specialized hot path instead of the generic route walker + per-request Context.
+
+## Architecture contract (from the owner — law)
+- Authoring stays Hono-flavored typed (`app.get('/users/:id', (ctx)=>ctx.json(...))`), type-safety first, raw perf over exact semantics, deterministic one-way-to-do-it (no flexible multi-path APIs).
+- Request hot path must NOT allocate the generic `{req,res,params,query,env,responseState}` record for every request. Lazy accessors: params/query/body extracted only when the handler reads them.
+- Per-route specialized dispatch: registration builds a compact route table; dispatch resolves to the fastest applicable shape — static routes → direct fn call with minimal req view; param routes → param extraction on demand; middleware flattened per-route (no generic chain walker).
+- Body buffered ONLY for body-carrying methods AND only when the route declares body use (registration-time flag `body: true` or first-class `ctx.body()` call-site marker — pick the deterministic design, document it).
+- All new code must be **scriptc-subset-clean** (rules in PATCH-AUDIT + shared memory: full-shape literals, no func-in-record-fields — index arrays + explicit stacks, no spread calls, no `| undefined`, sync only, concrete types).
+- **The generated-code contract**: define `src/gen.ts` accepting a generated dispatch module `{ dispatch(req,res): boolean }` — `app.serve()` prefers it when registered via `app.withDispatch(d)`. This is the seam the Vite/unplugin transform (parallel agent) emits. Publish the contract as `docs/route-contract.md` FIRST so the plugin agent can build against it.
+
+## Methodology
+- Baseline: core-v0 numbers (~68k scriptc / ~71-74k node on /json; ~18% router overhead vs raw ceiling ~83k). Target: close most of the gap — measure each optimization separately (lazy ctx, flattened mw, specialized param path).
+- Use `sigilco/ch3` `devin/bench-suite` `bench/run.sh` harness for consistency; add `apps/ch3-fast.ts` comparing v0.1.0 semantics vs compiled path on the same canonical routes.
+- Check vercel-labs/scriptc's own benchmark methodology (benchmarks/runtime/workloads — clone read-only if needed) and note alignment.
+- Iterate: spike → measure → optimize → measure. Report per-optimization deltas, not just final.
+- Verify under BOTH runtimes: `node --test` suite green + `scriptc build` (program-code AND --npm-static) serving, 100% static coverage.
+
+Deliverables on `devin/compiled-mode`: `src/fast/*` (or integrated design), `docs/route-contract.md`, `SPIKE.md` (design + per-opt numbers + what didn't work), updated bench results, tests. Push branch; no PR (GitHub unlinked).
+
+ATTACHMENT:"https://app.devin.ai/attachments/75545ccc-e753-4937-a000-43c6c4f03860/DESIGN.md"
+ATTACHMENT:"https://app.devin.ai/attachments/c87a0803-1cad-4a51-8066-6bbaf8beadc5/PATCH-AUDIT.md"
+ATTACHMENT:"https://app.devin.ai/attachments/d6838a59-c4d7-46e7-8d3b-0406b22de98c/REPORT.md"

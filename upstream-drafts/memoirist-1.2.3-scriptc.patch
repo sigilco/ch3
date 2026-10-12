@@ -1,0 +1,11 @@
+--- /tmp/mem-index.mjs.orig	2026-10-11 16:18:40.091186235 +0000
++++ probe/node_modules/memoirist/dist/index.mjs	2026-10-11 16:23:10.935936913 +0000
+@@ -143,7 +143,7 @@
+ 		else if (path[0] !== "/") path = `/${path}`;
+ 		const isWildcard = path[path.length - 1] === "*";
+ 		if (path.indexOf("?") !== -1 ? path.match(optionalParamsRegex) : null) {
+-			const segments = path.slice(1).split("/");
++			const segments = String(path).slice(1).split("/");
+ 			const isOptional = (s) => s.length > 1 && s.charCodeAt(0) === 58 && s.charCodeAt(s.length - 1) === 63;
+ 			let tailStart = segments.length;
+ 			while (tailStart > 0 && isOptional(segments[tailStart - 1])) tailStart--;

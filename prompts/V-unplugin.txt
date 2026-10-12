@@ -1,0 +1,20 @@
+# Task: unplugin-ch3 — build-time route lowering, vite-first, on branch devin/unplugin-ch3
+
+`@sigilco/ch3` compiles typed router apps to native ELFs via scriptc. A parallel agent (branch `devin/compiled-mode`) is building the runtime fast path; its contract is `docs/route-contract.md` — a generated module exporting `dispatch(req,res): boolean` consumed via `app.withDispatch(d)`. If that file isn't published yet, implement against this sketch and reconcile later: emitted `src/.ch3/routes.gen.ts` — static route table + specialized per-route handler functions + `dispatch` switch tree, NO per-request context object for routes that don't need one.
+
+## Deliverables on `devin/unplugin-ch3`
+1. `packages/unplugin-ch3/` (or `unplugin/` top-level — match repo layout): unplugin-based transform `ch3Plugin()` usable as `ch3Plugin.vite()` / `.rollup()` / `.webpack()` / `.esbuild()`. Vite is the primary target — full support + fixture; the others get the factory for free.
+2. Transform semantics: find the app's ch3 route-registration module (mark with a comment directive `/* ch3:routes */` or a designated file name e.g. `routes.ch3.ts` — pick the deterministic option, document it), statically extract `app.<method>(path, handler)` registrations, and emit `routes.gen.ts` containing:
+   - a literal route table `{method,path,kind:'static'|'param'|'wildcard',handlerIdx,needsBody}[]` (full-shape literals!),
+   - per-route specialized dispatch code,
+   - the `dispatch(req,res)` entry the runtime consumes.
+3. Everything emitted must be **scriptc-subset-clean** (see PATCH-AUDIT rules: no func-in-record-fields — handlers in an index array, no spread calls, no `|undefined`, indexed loops, concrete types) since the emitted file is what scriptc compiles.
+4. `fixtures/vite-app/` — minimal vite app using ch3 + the plugin; prove `vite build` output contains the generated dispatch AND `scriptc build` on the built graph produces a serving ELF (curl-verify). Also prove the non-plugin path still works (runtime fallback).
+5. Handle the hard cases explicitly and document limits: non-literal paths (variables/function calls in registration args) → bail to runtime registration for that route, emit a build warning listing it. Dynamic conditional registration → same. Never silently produce wrong routes.
+6. `node --test` suite for the transform (AST extraction on fixtures) + `PLUGIN.md` usage doc.
+
+Verify under node first, then scriptc. Push branch; no PR.
+
+ATTACHMENT:"https://app.devin.ai/attachments/75545ccc-e753-4937-a000-43c6c4f03860/DESIGN.md"
+ATTACHMENT:"https://app.devin.ai/attachments/c87a0803-1cad-4a51-8066-6bbaf8beadc5/PATCH-AUDIT.md"
+ATTACHMENT:"https://app.devin.ai/attachments/d6838a59-c4d7-46e7-8d3b-0406b22de98c/REPORT.md"

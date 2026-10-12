@@ -1,0 +1,100 @@
+--- /tmp/rou3-index.mjs.orig	2026-10-11 16:18:40.089186234 +0000
++++ probe/node_modules/rou3/dist/index.mjs	2026-10-11 16:20:38.403191413 +0000
+@@ -6,9 +6,19 @@
+ /**
+ * Create a new router context.
+ */
++function createNode(key) {
++	return {
++		key,
++		methods: key === "\0" ? new NullProtoObj() : null,
++		static: key === "\0" ? new NullProtoObj() : null,
++		param: key === "\0" ? createNode("") : null,
++		wildcard: key === "\0" ? createNode("") : null,
++		hasRegexParam: false
++	};
++}
+ function createRouter() {
+ 	return {
+-		root: { key: "" },
++		root: createNode(""),
+ 		static: new NullProtoObj()
+ 	};
+ }
+@@ -45,7 +55,7 @@
+ 	for (let i = 0; i < segments.length; i++) {
+ 		let segment = segments[i];
+ 		if (segment.startsWith("**")) {
+-			if (!node.wildcard) node.wildcard = { key: "**" };
++			if (!node.wildcard) node.wildcard = createNode("**");
+ 			node = node.wildcard;
+ 			paramsMap.push([
+ 				-(i + 1),
+@@ -55,7 +65,7 @@
+ 			break;
+ 		}
+ 		if (segment === "*" || segment.includes(":")) {
+-			if (!node.param) node.param = { key: "*" };
++			if (!node.param) node.param = createNode("*");
+ 			node = node.param;
+ 			if (segment === "*") paramsMap.push([
+ 				i,
+@@ -83,7 +93,7 @@
+ 		const child = node.static?.[segment];
+ 		if (child) node = child;
+ 		else {
+-			const staticNode = { key: segment };
++			const staticNode = createNode(segment);
+ 			if (!node.static) node.static = new NullProtoObj();
+ 			node.static[segment] = staticNode;
+ 			node = staticNode;
+@@ -93,7 +103,7 @@
+ 	if (!node.methods) node.methods = new NullProtoObj();
+ 	node.methods[method] ??= [];
+ 	node.methods[method].push({
+-		data: data || null,
++		data: data ? data : null,
+ 		paramsRegexp,
+ 		paramsMap: hasParams ? paramsMap : void 0
+ 	});
+@@ -177,7 +187,7 @@
+ 	if (index === segments.length) {
+ 		if (node.methods && method in node.methods) {
+ 			delete node.methods[method];
+-			if (Object.keys(node.methods).length === 0) node.methods = void 0;
++			if (Object.keys(node.methods).length === 0) node.methods = null;
+ 		}
+ 		return;
+ 	}
+@@ -185,14 +195,14 @@
+ 	if (segment === "*") {
+ 		if (node.param) {
+ 			_remove(node.param, method, segments, index + 1);
+-			if (_isEmptyNode(node.param)) node.param = void 0;
++			if (_isEmptyNode(node.param)) node.param = null;
+ 		}
+ 		return;
+ 	}
+ 	if (segment.startsWith("**")) {
+ 		if (node.wildcard) {
+ 			_remove(node.wildcard, method, segments, index + 1);
+-			if (_isEmptyNode(node.wildcard)) node.wildcard = void 0;
++			if (_isEmptyNode(node.wildcard)) node.wildcard = null;
+ 		}
+ 		return;
+ 	}
+@@ -201,12 +211,12 @@
+ 		_remove(childNode, method, segments, index + 1);
+ 		if (_isEmptyNode(childNode)) {
+ 			delete node.static[segment];
+-			if (Object.keys(node.static).length === 0) node.static = void 0;
++			if (Object.keys(node.static).length === 0) node.static = null;
+ 		}
+ 	}
+ }
+ function _isEmptyNode(node) {
+-	return node.methods === void 0 && node.static === void 0 && node.param === void 0 && node.wildcard === void 0;
++	return node.methods === null && node.static === null && node.param === null && node.wildcard === null;
+ }
+ 
+ /**
