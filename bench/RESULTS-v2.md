@@ -421,3 +421,20 @@ past an SC0001 never-narrow on `string | string[] | undefined`.
 as an empty body (upstream returns 411 / stalls). Environment, cgroup
 disclosure, and per-tool methodology mapping in `ENV.md`; reproduction in
 `REPRODUCE.md`.
+
+## Post-async A/B (2026-10-13)
+
+Async support landed (Handler/Middleware widened to `void | Promise<void>`; dispatch
+attaches then/catch to thenable chain results). Sync-path cost verified with
+autocannon -c64 -d3, same machine, back-to-back runs (pre = stash of 15e32ec^):
+
+| cell | pre-async | post-async |
+|---|---|---|
+| json | 293k | 302k |
+| mixed | 309k | 315k |
+
+Post-async within noise (slightly ahead on both cells). The one return slot +
+one branch per composed layer is free. Note: earlier ch3-node rows in this file
+(79k json) were measured through the old bench app that imported src directly;
+the current app runs against the workspace-linked `ch3` package. Do not compare
+rows across that boundary.
