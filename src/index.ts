@@ -567,7 +567,12 @@ export function _buffer(
 // 405 Method Not Allowed with an Allow header built from the matched
 // node's registered methods. `*` (all) expands to every standard verb so
 // the header stays spec-true; GET implies HEAD.
-function allow405(node: RouteNode, res: ServerResponse, oef: ((err: unknown, c: Ctx) => void) | null): void {
+function allow405(
+  node: RouteNode,
+  req: IncomingMessage,
+  res: ServerResponse,
+  oef: ((err: unknown, c: Ctx) => void) | null,
+): void {
   const hm = node.hm
   const seen: { [k: string]: number } = {}
   const out: string[] = []
@@ -589,10 +594,19 @@ function allow405(node: RouteNode, res: ServerResponse, oef: ((err: unknown, c: 
     }
   }
   if (oef !== null) {
-    // 405 surfaced through onError as a non-Error throw is over-engineering;
-    // the built-in path is deterministic and spec-shaped. Users wanting
-    // custom 405 bodies can pre-register app.all fallbacks.
-    oef(new MethodNotAllowedError(out.join(',')), new Ctx(new ReqView(_NULL_REQ, '', '/'), res))
+    // The synthetic Ctx wraps the REAL request (path/qs from its url) so an
+    // onError handler can inspect it; params are unbound (no match was
+    // made for this method) and body is ''. scriptc rejects constructing
+    // external classes or widened literals, so no placeholder object here.
+    const url = String(req.url || '/')
+    let path = url
+    let qs = ''
+    const qi = url.indexOf('?')
+    if (qi >= 0) {
+      path = String(url.slice(0, qi))
+      qs = String(url.slice(qi + 1))
+    }
+    oef(new MethodNotAllowedError(out.join(',')), new Ctx(new ReqView(req, qs, path), res))
     if (res.headersSent) {
       return
     }
@@ -621,14 +635,6 @@ class MethodNotAllowedError extends Error {
   }
 }
 
-// Header-only placeholder request for the synthetic 405 Ctx (queries,
-// params and body are all empty; handlers only touch c.res there).
-const _NULL_REQ = {
-  method: '',
-  url: '/',
-  headers: {},
-  on: function (): void {},
-} as unknown as IncomingMessage
 
 function send500(res: ServerResponse): void {
   try {
@@ -982,7 +988,7 @@ export class App {
       } else if (node.hf.length > 0) {
         // Path matched, method didn't: 405 + Allow from the node's method
         // table (computed only on this miss path — zero hot-path cost).
-        allow405(node, res, oef)
+        allow405(node, req, res, oef)
         return
       }
     }
