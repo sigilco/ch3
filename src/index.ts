@@ -141,6 +141,26 @@ export class ReqView<P extends string = string> {
     return out
   }
 
+  // All values for a repeated query key, first-seen order. Returns the
+  // shared empty array when absent — read-only, never mutated.
+  queries(name: string): string[] {
+    const n = String(name)
+    const qp = this._parsed()
+    let out: string[] | null = null
+    for (let i = 0; i < qp.length; i += 2) {
+      if (qp[i] === n) {
+        if (out === null) {
+          out = []
+        }
+        out.push(String(qp[i + 1]))
+      }
+    }
+    if (out === null) {
+      return EMPTY_S
+    }
+    return out
+  }
+
   header(name: string): string | null {
     const key = String(name).toLowerCase()
     const v = this.raw.headers[key]
@@ -194,11 +214,16 @@ export class Ctx<P extends string = string> {
   req: ReqView<P>
   res: ServerResponse
   _status: number
+  // True once a body-carrying helper (_send/redirect) flushed the response.
+  // runOnError reads it: an onError that already answered must not get a
+  // second 500 write.
+  sent: boolean
 
   constructor(req: ReqView<P>, res: ServerResponse) {
     this.req = req
     this.res = res
     this._status = 200
+    this.sent = false
   }
 
   status(n: number): Ctx<P> {
@@ -237,6 +262,7 @@ export class Ctx<P extends string = string> {
     this.status(n)
     this.res.setHeader('location', String(url))
     this.res.end()
+    this.sent = true
     return this
   }
 
@@ -246,6 +272,7 @@ export class Ctx<P extends string = string> {
     this.res.setHeader('content-type', ct)
     this.res.setHeader('content-length', String(utf8len(b)))
     this.res.end(b)
+    this.sent = true
     return this
   }
 }
@@ -537,6 +564,78 @@ export function _buffer(
   })
 }
 
+// 405 Method Not Allowed with an Allow header built from the matched
+// node's registered methods. `*` (all) expands to every standard verb so
+// the header stays spec-true; GET implies HEAD.
+function allow405(
+  node: RouteNode,
+  req: IncomingMessage,
+  res: ServerResponse,
+  oef: ((err: unknown, c: Ctx) => void) | null,
+): void {
+  const hm = node.hm
+  const seen: { [k: string]: number } = {}
+  const out: string[] = []
+  for (let i = 0; i < hm.length; i++) {
+    let m = String(hm[i])
+    if (m === '*') {
+      m = 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS'
+    } else if (m === 'GET' && seen['HEAD'] === undefined) {
+      // GET implies HEAD; both names end up in the header
+      if (seen['GET'] === undefined) {
+        seen['GET'] = 1
+        out.push('GET')
+      }
+      m = 'HEAD'
+    }
+    if (seen[m] === undefined) {
+      seen[m] = 1
+      out.push(m)
+    }
+  }
+  if (oef !== null) {
+    // The synthetic Ctx wraps the REAL request (path/qs from its url) so an
+    // onError handler can inspect it; params are unbound (no match was
+    // made for this method) and body is ''. scriptc rejects constructing
+    // external classes or widened literals, so no placeholder object here.
+    const url = String(req.url || '/')
+    let path = url
+    let qs = ''
+    const qi = url.indexOf('?')
+    if (qi >= 0) {
+      path = String(url.slice(0, qi))
+      qs = String(url.slice(qi + 1))
+    }
+    oef(new MethodNotAllowedError(out.join(',')), new Ctx(new ReqView(req, qs, path), res))
+    if (res.headersSent) {
+      return
+    }
+  }
+  try {
+    res.statusCode = 405
+    res.setHeader('allow', out.join(', '))
+    res.setHeader('content-type', 'text/plain; charset=utf-8')
+    res.setHeader('content-length', '18')
+    res.end('Method Not Allowed')
+  } catch (e) {
+    try {
+      res.destroy()
+    } catch (e2) {
+      // socket already gone
+    }
+  }
+}
+
+class MethodNotAllowedError extends Error {
+  allow: string
+  constructor(allow: string) {
+    super('Method Not Allowed')
+    this.name = 'MethodNotAllowedError'
+    this.allow = String(allow)
+  }
+}
+
+
 function send500(res: ServerResponse): void {
   try {
     if (res.headersSent) {
@@ -705,6 +804,8 @@ export class App {
   _mws: Middleware[][]
   _nf: Handler
   _nfmw: Middleware[]
+  // onError handler: (err, c) => void. null = unset (default send500 path).
+  _oef: ((err: unknown, c: Ctx) => void) | null
   // _chains[i] is _mws[i] + _fns[i] flattened into one Handler — dispatch
   // calls it directly; there is no runtime chain walker.
   _chains: Handler[]
@@ -729,6 +830,7 @@ export class App {
     this._mws = []
     this._nf = defaultNotFound
     this._nfmw = []
+    this._oef = null
     this._chains = []
     this._nfchain = defaultNotFound
     this._pn = []
@@ -794,6 +896,14 @@ export class App {
     return this
   }
 
+  // Single catch-all around the whole chain. Honored by both dispatch
+  // paths (immediate + buffered-body). Rethrow/throw inside the handler
+  // falls back to the built-in 500 — onError must not loop.
+  onError(h: (err: unknown, c: Ctx) => void): App {
+    this._oef = h
+    return this
+  }
+
   route(prefix: string, sub: App): App {
     let p = String(prefix)
     if (p.length > 1 && p.charAt(p.length - 1) === '/') {
@@ -855,6 +965,7 @@ export class App {
     if (this._gen(req, res)) {
       return
     }
+    const oef = this._oef
     const method: string = String(req.method || '')
     const url: string = String(req.url || '/')
     let path = url
@@ -874,6 +985,11 @@ export class App {
         idx = node.hf[j]
         chain = this._chains[idx]
         body = this._bodyF[idx]
+      } else if (node.hf.length > 0) {
+        // Path matched, method didn't: 405 + Allow from the node's method
+        // table (computed only on this miss path — zero hot-path cost).
+        allow405(node, req, res, oef)
+        return
       }
     }
     const rv = new ReqView(req, qs, path)
@@ -896,14 +1012,53 @@ export class App {
         try {
           chain(c)
         } catch (e) {
-          send500(res)
+          if (oef !== null) {
+            runOnError(oef, e, res, c)
+          } else {
+            send500(res)
+          }
         }
       })
     } else {
       try {
         chain(c)
       } catch (e) {
-        send500(res)
+        if (oef !== null) {
+          runOnError(oef, e, res, c)
+        } else {
+          send500(res)
+        }
+      }
+    }
+  }
+}
+
+// Run the user onError handler; anything it throws (or a response it never
+// writes) falls back to the built-in 500 path so the socket always gets
+// exactly one terminal outcome.
+function runOnError(
+  oef: (err: unknown, c: Ctx) => void,
+  e: unknown,
+  res: ServerResponse,
+  c: Ctx,
+): void {
+  try {
+    if (res.headersSent) {
+      res.destroy()
+      return
+    }
+    oef(e, c)
+    if (!c.sent) {
+      send500(res)
+    }
+  } catch (e2) {
+    if (!res.headersSent) {
+      send500(res)
+    } else {
+      try {
+        res.destroy()
+      } catch (e3) {
+        // socket already gone
       }
     }
   }

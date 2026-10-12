@@ -162,7 +162,10 @@ test('method dispatch is strict per method', () => {
   assert.equal(call(app, { method: 'GET', url: '/r' }).body, 'get')
   const res = call(app, { method: 'POST', url: '/r' }, 'hi')
   assert.equal(res.body, 'post:hi')
-  assert.equal(call(app, { method: 'DELETE', url: '/r' }).statusCode, 404)
+  const del = call(app, { method: 'DELETE', url: '/r' })
+  assert.equal(del.statusCode, 405)
+  assert.equal(del.headers['allow'], 'GET, HEAD, POST')
+  assert.equal(del.headers['head'], undefined)
 })
 
 test('body buffers before handler only when route declares body: true', () => {
@@ -384,4 +387,65 @@ test('generated dispatch can spawn ctx + seed params + buffer via helpers', () =
     // unknown → internal → 404
     assert.equal(call(app, { url: '/zzz' }).statusCode, 404)
   })
+})
+
+test('queries() returns all values for a repeated key in order', () => {
+  const app = createRouter()
+  app.get('/q', (c) => c.text(c.req.queries('tag').join(',')))
+  const res = call(app, { url: '/q?tag=a&x=1&tag=b&tag=c' })
+  assert.equal(res.body, 'a,b,c')
+})
+
+test('queries() on absent key returns empty array', () => {
+  const app = createRouter()
+  app.get('/q', (c) => c.text(String(c.req.queries('nope').length)))
+  const res = call(app, { url: '/q?x=1' })
+  assert.equal(res.body, '0')
+})
+
+test('onError handles thrown errors and writes the response', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('kaboom') })
+  app.onError((err, c) => c.status(503).json({ error: String((err).message) }))
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 503)
+  assert.equal(res.body, '{"error":"kaboom"}')
+})
+
+test('onError that never responds falls back to built-in 500', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('x') })
+  app.onError(() => { /* writes nothing */ })
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 500)
+  assert.equal(res.body, 'Internal Server Error')
+})
+
+test('onError that throws still yields a single 500', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('x') })
+  app.onError(() => { throw new Error('handler bug') })
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 500)
+})
+
+test('no onError registered: default 500 behavior unchanged', () => {
+  const app = createRouter()
+  app.get('/boom', () => { throw new Error('x') })
+  const res = call(app, { url: '/boom' })
+  assert.equal(res.statusCode, 500)
+})
+
+test('405 surfaces through onError with allow list on the error', () => {
+  const app = createRouter()
+  app.get('/r', (c) => c.text('get'))
+  app.onError((err, c) => {
+    c.status(405)
+    c.header('allow', String((err).allow))
+    c.text('custom 405')
+  })
+  const res = call(app, { method: 'DELETE', url: '/r' })
+  assert.equal(res.statusCode, 405)
+  assert.equal(res.body, 'custom 405')
+  assert.equal(res.headers['allow'], 'GET,HEAD')
 })
