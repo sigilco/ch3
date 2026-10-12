@@ -1,73 +1,26 @@
 {
-  "name": "ch3",
+  "name": "ch3-monorepo",
+  "private": true,
   "version": "0.1.0",
-  "description": "Minimal synchronous HTTP router authored inside the scriptc compilable subset",
   "type": "module",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/esm/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    },
-    "./h3": {
-      "types": "./dist/esm/shims/h3.d.ts",
-      "import": "./dist/esm/shims/h3.js",
-      "require": "./dist/cjs/shims/h3.js"
-    },
-    "./fmw": {
-      "types": "./dist/esm/shims/fmw.d.ts",
-      "import": "./dist/esm/shims/fmw.js",
-      "require": "./dist/cjs/shims/fmw.js"
-    },
-    "./hono": {
-      "types": "./dist/esm/shims/hono.d.ts",
-      "import": "./dist/esm/shims/hono.js",
-      "require": "./dist/cjs/shims/hono.js"
-    },
-    "./express": {
-      "types": "./dist/esm/shims/express.d.ts",
-      "import": "./dist/esm/shims/express.js",
-      "require": "./dist/cjs/shims/express.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/postbuild.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/router.test.js test/server.test.js",
-    "docs:build": "docmd build --cwd site",
-    "docs:dev": "docmd dev --cwd site"
-  },
-  "engines": {
-    "node": ">=18"
+    "build": "pnpm --filter ch3 build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "oxlint packages demo --type-aware",
+    "fmt": "oxfmt packages demo",
+    "fmt:check": "oxfmt --check packages demo",
+    "docs:build": "docmd build --cwd docs",
+    "docs:dev": "docmd dev --cwd docs"
   },
   "devDependencies": {
     "@docmd/core": "^0.9.7",
-    "@types/node": "^24.0.0",
+    "oxfmt": "^0.17.0",
+    "oxlint": "^1.36.0",
     "typescript": "^5.9.0"
   },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sigilco/ch3.git"
-  },
-  "bugs": {
-    "url": "https://github.com/sigilco/ch3/issues"
-  },
-  "homepage": "https://github.com/sigilco/ch3#readme",
-  "keywords": [
-    "http",
-    "router",
-    "router-http",
-    "native",
-    "aot",
-    "scriptc",
-    "node"
-  ]
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=22"
+  }
 }

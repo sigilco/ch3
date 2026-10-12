@@ -4,6 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@sigilco/ch3": "file:.."
+    "ch3": "workspace:*"
   }
 }

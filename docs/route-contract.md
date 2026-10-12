@@ -1,6 +1,6 @@
 # ch3 generated-dispatch contract (`src/gen.ts`)
 
-Status: **frozen** — this is the seam between `@sigilco/ch3` (route table +
+Status: **frozen** — this is the seam between `ch3` (route table +
 ctx machinery) and build-time code generators (the Vite/unplugin transform
 agent emits modules satisfying this contract). v0.2.0, 2026-10-11.
 
@@ -16,7 +16,7 @@ is a pure accelerator overlay, never a replacement for the route table.
 ## Module shape
 
 ```ts
-import { GenDispatch } from '@sigilco/ch3'
+import { GenDispatch } from 'ch3'
 
 // Emit a CLASS, not an object literal. Under scriptc's eager
 // program-code instantiation a function value inside a record
@@ -149,4 +149,4 @@ same subset rules as `src/`:
 
 The contract majors with the package: any change to a member listed in the
 stable-surface table bumps minor at minimum and is recorded here. The
-unplugin agent should pin `@sigilco/ch3` peer ranges accordingly.
+unplugin agent should pin `ch3` peer ranges accordingly.

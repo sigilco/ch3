@@ -1,4 +1,4 @@
-// @sigilco/ch3 — minimal synchronous HTTP router for node:http.
+// ch3 — minimal synchronous HTTP router for node:http.
 // Authored inside the scriptc compilable subset so `scriptc build` can
 // statically lower the whole package into a native binary:
 //   - sync handlers only; `| null` unions, never `| undefined`

@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - demo
+  - bench
+  - fixtures/*
+onlyBuiltDependencies:
+  - esbuild
+  - '@docmd/engine-rust'

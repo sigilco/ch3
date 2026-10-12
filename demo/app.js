@@ -1,6 +1,6 @@
 // ch3 demo — same file runs under node, bun, and `scriptc build`.
 // Usage: <runtime> app.js [port]   (default 3000)
-import { createRouter } from '@sigilco/ch3'
+import { createRouter } from 'ch3'
 
 const app = createRouter()
 

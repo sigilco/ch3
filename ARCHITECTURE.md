@@ -1,6 +1,6 @@
 # ch3 — Design
 
-`@sigilco/ch3`: a minimal, first-class-typed Node-HTTP router authored inside the **scriptc subset** so it compiles statically to a single ELF at ~Node-native speed, while remaining an ordinary zero-dependency npm package under Node and Bun. Ships API-compat shim entrypoints (`ch3/h3`, `ch3/fmw`, `ch3/hono`, `ch3/express`) that reuse handler signatures — pure re-mapping surfaces, not runtime bridges.
+`ch3`: a minimal, first-class-typed Node-HTTP router authored inside the **scriptc subset** so it compiles statically to a single ELF at ~Node-native speed, while remaining an ordinary zero-dependency npm package under Node and Bun. Ships API-compat shim entrypoints (`ch3/h3`, `ch3/fmw`, `ch3/hono`, `ch3/express`) that reuse handler signatures — pure re-mapping surfaces, not runtime bridges.
 
 Status: frozen design contract for the 4-agent implementation fan-out. Every open question below has exactly one recommended answer.
 
@@ -10,7 +10,7 @@ Sources: `REPORT.md` (npm-router survey under scriptc 0.2.8, 2026-10-11), script
 
 ## 0. Non-negotiables (scriptc subset)
 
-The whole package — core and shims — compiles statically under `scriptc build <app> --npm-static @sigilco/ch3 --optimization=speed`. That constraint dictates:
+The whole package — core and shims — compiles statically under `scriptc build <app> --npm-static ch3 --optimization=speed`. That constraint dictates:
 
 - Sync handlers only. No `Promise`/`async`/`await`/`then` anywhere on the request path.
 - `null`, never `undefined`, in every union and return (`X | undefined` → SC3004).
@@ -54,7 +54,7 @@ Rejected: rou3 (more patches for fewer features we need), vendored fmw (patch fr
 ## 2. API surface freeze
 
 ```ts
-import { createRouter } from '@sigilco/ch3'
+import { createRouter } from 'ch3'
 
 const app = createRouter()
 
@@ -154,7 +154,7 @@ bench/              # bench agent's workspace (§5)
 
 - **Zero runtime dependencies.** `tsdown`, `typescript`, test runners are devDeps only.
 - **Versioning**: `0.x` semver, `0.1.0` first publish, manual bumps; `engines.node >= 18`.
-- **CI gates** (each is a scriptc command, run in CI): `scriptc coverage test/smoke.ts --npm-static @sigilco/ch3` must report **100% static**; `scriptc build` of the smoke app must succeed and serve `/json`/`/user/:id` under autocannon ≥1 sanity run; `tsc --noEmit` + `node --test`.
+- **CI gates** (each is a scriptc command, run in CI): `scriptc coverage test/smoke.ts --npm-static ch3` must report **100% static**; `scriptc build` of the smoke app must succeed and serve `/json`/`/user/:id` under autocannon ≥1 sanity run; `tsc --noEmit` + `node --test`.
 - Shims are **pure re-mapping code**: each `shims/*.ts` imports only from `../index.ts` (`createRouter`, `Context`, `Ch3Core` types) and exports the foreign factory signatures. No framework code is bundled or referenced — that is the whole point (the real packages cannot compile at all).
 
 ---
