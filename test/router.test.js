@@ -162,7 +162,10 @@ test('method dispatch is strict per method', () => {
   assert.equal(call(app, { method: 'GET', url: '/r' }).body, 'get')
   const res = call(app, { method: 'POST', url: '/r' }, 'hi')
   assert.equal(res.body, 'post:hi')
-  assert.equal(call(app, { method: 'DELETE', url: '/r' }).statusCode, 404)
+  const del = call(app, { method: 'DELETE', url: '/r' })
+  assert.equal(del.statusCode, 405)
+  assert.equal(del.headers['allow'], 'GET, HEAD, POST')
+  assert.equal(del.headers['head'], undefined)
 })
 
 test('body buffers before handler only when route declares body: true', () => {
@@ -431,4 +434,18 @@ test('no onError registered: default 500 behavior unchanged', () => {
   app.get('/boom', () => { throw new Error('x') })
   const res = call(app, { url: '/boom' })
   assert.equal(res.statusCode, 500)
+})
+
+test('405 surfaces through onError with allow list on the error', () => {
+  const app = createRouter()
+  app.get('/r', (c) => c.text('get'))
+  app.onError((err, c) => {
+    c.status(405)
+    c.header('allow', String((err).allow))
+    c.text('custom 405')
+  })
+  const res = call(app, { method: 'DELETE', url: '/r' })
+  assert.equal(res.statusCode, 405)
+  assert.equal(res.body, 'custom 405')
+  assert.equal(res.headers['allow'], 'GET, HEAD')
 })

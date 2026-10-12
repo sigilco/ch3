@@ -564,6 +564,72 @@ export function _buffer(
   })
 }
 
+// 405 Method Not Allowed with an Allow header built from the matched
+// node's registered methods. `*` (all) expands to every standard verb so
+// the header stays spec-true; GET implies HEAD.
+function allow405(node: RouteNode, res: ServerResponse, oef: ((err: unknown, c: Ctx) => void) | null): void {
+  const hm = node.hm
+  const seen: { [k: string]: number } = {}
+  const out: string[] = []
+  for (let i = 0; i < hm.length; i++) {
+    let m = String(hm[i])
+    if (m === '*') {
+      m = 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS'
+    } else if (m === 'GET' && seen['HEAD'] === undefined) {
+      // GET implies HEAD; both names end up in the header
+      if (seen['GET'] === undefined) {
+        seen['GET'] = 1
+        out.push('GET')
+      }
+      m = 'HEAD'
+    }
+    if (seen[m] === undefined) {
+      seen[m] = 1
+      out.push(m)
+    }
+  }
+  if (oef !== null) {
+    // 405 surfaced through onError as a non-Error throw is over-engineering;
+    // the built-in path is deterministic and spec-shaped. Users wanting
+    // custom 405 bodies can pre-register app.all fallbacks.
+    oef(new MethodNotAllowedError(out.join(',')), new Ctx(new ReqView(_NULL_REQ, '', '/'), res))
+    if (res.headersSent) {
+      return
+    }
+  }
+  try {
+    res.statusCode = 405
+    res.setHeader('allow', out.join(', '))
+    res.setHeader('content-type', 'text/plain; charset=utf-8')
+    res.setHeader('content-length', '18')
+    res.end('Method Not Allowed')
+  } catch (e) {
+    try {
+      res.destroy()
+    } catch (e2) {
+      // socket already gone
+    }
+  }
+}
+
+class MethodNotAllowedError extends Error {
+  allow: string
+  constructor(allow: string) {
+    super('Method Not Allowed')
+    this.name = 'MethodNotAllowedError'
+    this.allow = String(allow)
+  }
+}
+
+// Header-only placeholder request for the synthetic 405 Ctx (queries,
+// params and body are all empty; handlers only touch c.res there).
+const _NULL_REQ = {
+  method: '',
+  url: '/',
+  headers: {},
+  on: function (): void {},
+} as unknown as IncomingMessage
+
 function send500(res: ServerResponse): void {
   try {
     if (res.headersSent) {
@@ -913,6 +979,11 @@ export class App {
         idx = node.hf[j]
         chain = this._chains[idx]
         body = this._bodyF[idx]
+      } else if (node.hf.length > 0) {
+        // Path matched, method didn't: 405 + Allow from the node's method
+        // table (computed only on this miss path — zero hot-path cost).
+        allow405(node, res, oef)
+        return
       }
     }
     const rv = new ReqView(req, qs, path)
