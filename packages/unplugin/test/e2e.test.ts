@@ -119,14 +119,18 @@ describe("e2e: generated dispatch executes against the real App", () => {
   before(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), "unplugin-ch3-e2e-"));
     const modPath = path.join(dir, "routes.ch3.ts");
-    const relCh3 = "./" + path.relative(fs.realpathSync(dir), fs.realpathSync(CH3_SRC)).split(path.sep).join("/");
+    const relCh3 =
+      "./" +
+      path.relative(fs.realpathSync(dir), fs.realpathSync(CH3_SRC)).split(path.sep).join("/");
     fs.writeFileSync(modPath, ROUTES_SRC.replace(/'ch3'/g, "'" + relCh3 + "'"));
     const model = extractModule(modPath, fs.readFileSync(modPath, "utf8"), {
       imports: [relCh3],
     });
     const genDir = path.join(dir, ".ch3");
     fs.mkdirSync(genDir, { recursive: true });
-    const relCh3FromGen = "./" + path.relative(fs.realpathSync(genDir), fs.realpathSync(CH3_SRC)).split(path.sep).join("/");
+    const relCh3FromGen =
+      "./" +
+      path.relative(fs.realpathSync(genDir), fs.realpathSync(CH3_SRC)).split(path.sep).join("/");
     const genSrc = emitGenModule(model, {
       importFrom: relCh3FromGen,
       modulePath: modPath,

@@ -295,9 +295,9 @@ export type ParamKey<P extends string> = string extends P
       ? "*"
       : string;
 
-export type Handler = (c: Ctx) => void;
-export type Next = () => void;
-export type Middleware = (c: Ctx, next: Next) => void;
+export type Handler = (c: Ctx) => void | Promise<void>;
+export type Next = () => void | Promise<void>;
+export type Middleware = (c: Ctx, next: Next) => void | Promise<void>;
 
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
@@ -695,14 +695,17 @@ function copyMw(mw: Middleware[]): Middleware[] {
 // closures (the previous `_chain` cursor allocated one closure per mw per
 // request). Linear semantics are identical: next() resumes the tail, and a
 // mw calling next() twice re-runs the tail twice — same as the cursor.
+// Wrappers return fn(c, next) so an async tail's promise propagates to
+// dispatch's thenable check. Sync fast path: one return slot + one branch
+// per layer, zero microtask ticks.
 function compose(mw: Middleware[], h: Handler): Handler {
   let chain: Handler = h;
   for (let i = mw.length - 1; i >= 0; i--) {
     const fn = mw[i];
     const inner = chain;
-    chain = function (c: Ctx): void {
-      fn(c, function (): void {
-        inner(c);
+    chain = function (c: Ctx): void | Promise<void> {
+      return fn(c, function (): void | Promise<void> {
+        return inner(c);
       });
     };
   }
@@ -1004,7 +1007,25 @@ export class App {
       req.on("end", function (): void {
         rv._setBody(buf);
         try {
-          chain(c);
+          const r = chain(c);
+          if (r !== null && r !== undefined && typeof r.then === "function") {
+            r.then(
+              function (): void {
+                if (c.sent === false && res.headersSent === false) {
+                  send500(res);
+                }
+              },
+              function (e: unknown): void {
+                if (oef !== null) {
+                  runOnError(oef, e, res, c);
+                } else {
+                  send500(res);
+                }
+              },
+            );
+          } else if (c.sent === false && res.headersSent === false) {
+            send500(res);
+          }
         } catch (e) {
           if (oef !== null) {
             runOnError(oef, e, res, c);
@@ -1015,7 +1036,25 @@ export class App {
       });
     } else {
       try {
-        chain(c);
+        const r = chain(c);
+        if (r !== null && r !== undefined && typeof r.then === "function") {
+          r.then(
+            function (): void {
+              if (c.sent === false && res.headersSent === false) {
+                send500(res);
+              }
+            },
+            function (e: unknown): void {
+              if (oef !== null) {
+                runOnError(oef, e, res, c);
+              } else {
+                send500(res);
+              }
+            },
+          );
+        } else if (c.sent === false && res.headersSent === false) {
+          send500(res);
+        }
       } catch (e) {
         if (oef !== null) {
           runOnError(oef, e, res, c);
