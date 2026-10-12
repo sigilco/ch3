@@ -1,34 +1,3 @@
-<<<<<<< HEAD
-// Ceiling reference: go net/http + chi — routes 1-3 only (DESIGN.md §5).
-package main
-
-import (
-	"fmt"
-	"io"
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
-)
-
-func main() {
-	r := chi.NewRouter()
-	r.Get("/json", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"hello":"world"}`)
-	})
-	r.Get("/user/{id}", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"id":"%s"}`, chi.URLParam(req, "id"))
-	})
-	r.Post("/echo", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		io.Copy(w, req.Body)
-	})
-	fmt.Println("go-chi listening on :3000")
-	http.ListenAndServe(":3000", r)
-}
-||||||| empty tree
-=======
 // Ceiling reference: go net/http + chi — routes 1-3 only (DESIGN.md §5).
 package main
 
@@ -67,4 +36,3 @@ func main() {
 	fmt.Println("go-chi listening on :3000")
 	http.ListenAndServe(":3000", r)
 }
->>>>>>> origin/devin/bench-credible

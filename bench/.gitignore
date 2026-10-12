@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-node_modules/
-results/
-logs/
-bin/
-ceilings/bin/
-ceilings/rust-axum/target/
-.scriptc/
-||||||| empty tree
-=======
 node_modules/
 results/
 results-wrk2/
@@ -16,4 +6,3 @@ bin/
 ceilings/bin/
 ceilings/rust-axum/target/
 .scriptc/
->>>>>>> origin/devin/bench-credible
