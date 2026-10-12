@@ -118,7 +118,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
       if (matches(id)) {
         try {
           generate(id, (m) => this.warn(m));
-        } catch {
+        } catch (e) {
           this.warn("unplugin-ch3: failed to generate for " + id + ": " + String(e));
         }
       }
