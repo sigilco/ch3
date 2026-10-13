@@ -7,10 +7,14 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Tag pushes queue here until a required reviewer approves the
+    # npm-publish environment (repo Settings > Environments).
+    environment: npm-publish
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,7 +28,6 @@ jobs:
       - run: pnpm -r test
       - run: |
           pnpm --dir packages/ch3 publish --access public --no-git-checks
-          pnpm --dir packages/unplugin publish --access public --no-git-checks
           pnpm --dir packages/val publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
