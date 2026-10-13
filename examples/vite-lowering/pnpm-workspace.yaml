@@ -1,0 +1,6 @@
+packages: []
+overrides:
+  ch3: link:../../packages/ch3
+  '@ch3/unplugin': link:../../packages/unplugin
+allowBuilds:
+  esbuild: true

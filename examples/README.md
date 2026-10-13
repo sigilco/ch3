@@ -9,6 +9,7 @@ Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i
 | `json-api` | POST body (`{ body: true }`), `onError`, `notFound` |
 | `router-mount` | `app.route` sub-router mounting |
 | `vite-elf` | Vite + `unplugin-scriptc` bundler pipeline |
+| `vite-lowering` | Vite + `@ch3/unplugin` build-time route lowering, JS dist |
 
 ```sh
 cd examples/hello
@@ -17,4 +18,4 @@ npm run build        # scriptc build src/main.ts -o app
 ./app                # ELF listening on :3000
 ```
 
-For build-time route lowering (compiled dispatch) add `@ch3/unplugin` and a `.ch3.ts` routes module; under scriptc that path needs ch3 as program code (vendored `ch3/src` or workspace source). See `docs/unplugin.md` → "Compiling with scriptc" for the two tiers.
+For build-time route lowering (compiled dispatch) with a plain JS dist, see `examples/vite-lowering`: `@ch3/unplugin` + a `.ch3.ts` routes module, no scriptc involved. Under scriptc that path needs ch3 as program code (vendored `ch3/src` or workspace source). See `docs/unplugin.md` → "Compiling with scriptc" for the two tiers.
