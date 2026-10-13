@@ -21,11 +21,12 @@
 
 import * as http from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
-import { GenDispatch } from "./gen.ts";
+import { GenDispatch, ROUTE_CONTRACT_VERSION } from "./gen.ts";
 import type { DispatchFn } from "./gen.ts";
 
 export { GenDispatch };
 export type { DispatchFn };
+export { ROUTE_CONTRACT_VERSION };
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -941,6 +942,20 @@ export class App {
   // class shape at the call site — subclasses, duck-typed objects, and the
   // emitted `class X extends GenDispatch` all work.
   withDispatch(d: GenDispatch): App {
+    // Contract-version drift guard. The field read is guarded before any
+    // use (headersDistinct lesson: reading a member scriptc leaves absent
+    // must come after an existence check, decisions.md line 6). A missing
+    // stamp is accepted — dispatches without one predate versioning.
+    const stamped = d.ROUTE_CONTRACT_VERSION;
+    if (typeof stamped === "number" && stamped !== ROUTE_CONTRACT_VERSION) {
+      throw new Error(
+        "ch3: route contract version mismatch — dispatch was generated against contract v" +
+          String(stamped) +
+          ", runtime implements v" +
+          String(ROUTE_CONTRACT_VERSION) +
+          ". Regenerate .ch3/*.gen.ts (upgrade @ch3/unplugin to match ch3) or align ch3.",
+      );
+    }
     const g = d;
     this._gen = function (rq: IncomingMessage, rs: ServerResponse): boolean {
       return g.dispatch(rq, rs);
