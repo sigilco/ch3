@@ -1,13 +1,16 @@
 # @ch3/val
 
-Minimal [Standard Schema](https://standardschema.dev) validation library authored inside the scriptc compilable subset. It is the only way to run schema validation inside a ch3 binary compiled to a native ELF. In Node mode it performs in the same band as valibot.
+Minimal [Standard Schema](https://standardschema.dev) validation library authored inside the scriptc compilable subset. It is the only way to run schema validation inside a ch3 binary compiled to a native ELF. In Node mode it performs in the same band as [valibot](https://github.com/open-circle/valibot).
 
 ```ts
 import * as v from "@ch3/val";
 
 const Order = v.strictObject({
   id: v.pipe(v.string(), v.uuid()),
-  items: v.pipe(v.array(v.strictObject({ qty: v.pipe(v.number(), v.integer()) })), v.minLength(1)),
+  items: v.pipe(
+    v.array(v.strictObject({ qty: v.pipe(v.number(), v.integer()) })),
+    v.minLength(1),
+  ),
 });
 
 const r = v.safeParse(Order, JSON.parse(body));

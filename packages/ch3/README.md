@@ -9,7 +9,13 @@ const app = createRouter();
 
 app.get("/", (c) => c.text("hi"));
 app.get("/user/:id", (c) => c.json({ id: c.req.param("id") }));
-app.post("/echo", (c) => c.text(c.req.body()), { body: true });
+app.post("/echo", (c) => c.text(c.req.body()));
+
+app.get("/slow", async (c) => {
+  const user = await fetchUser(c.req.param("id"));
+  return c.json(user);
+});
+
 app.notFound((c) => c.status(404).text("not found"));
 
 app.serve({ port: 3000 });

@@ -19,7 +19,7 @@ Runtime validation at the edge. In Node mode any [Standard Schema](https://stand
 
 `packages/val` is a minimal Standard Schema v1 library written inside the same compilable subset as ch3. `scriptc coverage` on a ch3 app using it: **100% static**.
 
-API mirrors valibot where the subset allows:
+API mirrors [valibot](https://github.com/open-circle/valibot) where the subset allows:
 
 ```ts
 import * as v from "@ch3/val";
