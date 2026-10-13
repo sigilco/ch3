@@ -7,9 +7,9 @@
     "build": "pnpm --filter ch3 build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "lint": "oxlint packages demo bench/lib bench/apps",
-    "fmt": "oxfmt packages demo bench/lib bench/apps",
-    "fmt:check": "oxfmt --check packages demo bench/lib bench/apps",
+    "lint": "oxlint packages examples/demo bench/lib bench/apps",
+    "fmt": "oxfmt packages examples/demo bench/lib bench/apps",
+    "fmt:check": "oxfmt --check packages examples/demo bench/lib bench/apps",
     "docs:build": "docmd build --cwd docs",
     "docs:dev": "docmd dev --cwd docs"
   },

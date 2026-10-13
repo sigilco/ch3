@@ -1,8 +1,13 @@
 packages:
   - packages/*
-  - demo
+  - examples/demo
   - bench
   - fixtures/*
 allowBuilds:
   esbuild: true
   '@docmd/engine-rust': true
+  scriptc: true
+minimumReleaseAgeExclude:
+  - scriptc
+  - '@scriptc/*'
+  - unplugin-scriptc
