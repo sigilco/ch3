@@ -55,5 +55,6 @@
   "engines": {
     "node": ">=22"
   },
-  "author": "Joaquin Terrasa & contributors"
+  "author": "Joaquin Terrasa & contributors",
+  "sideEffects": false
 }

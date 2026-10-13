@@ -54,13 +54,15 @@ synchronous: dispatch pre-buffers the body for POST/PUT/PATCH/DELETE, so
 handlers never await on `c.req`.
 
 ```ts
-c.req.param("id");    // string | null, percent-decoded
-c.req.query("q");     // string | null
+c.req.param("id"); // string | null, percent-decoded
+c.req.query("q"); // string | null
 c.req.queries("tag"); // string[], all values for a repeated key
-c.req.queryAll();     // Record<string, string>
+c.req.queryAll(); // Record<string, string>
 c.req.header("x-foo");
-c.req.body();         // string
-c.req.method; c.req.path; c.req.raw;
+c.req.body(); // string
+c.req.method;
+c.req.path;
+c.req.raw;
 ```
 
 ## ✔️ Responses
@@ -121,11 +123,11 @@ scriptc build app.js --npm-static ch3 --optimization=speed -o app-bin
 Numbers (shared VM, compare ratios not absolutes; full matrix in
 [bench/RESULTS-v2.md](bench/RESULTS-v2.md)):
 
-| subject | json | pipelined (-c100 -p10) | cold start | RSS after 100k req |
+| subject                | json               | pipelined (-c100 -p10) | cold start | RSS after 100k req |
 | ---------------------- | ------------------ | ---------------------- | ---------- | ------------------ |
-| ch3 on node | 0.87× raw-node | 0.95× | 83 ms | 116 MB |
-| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)** | **3 ms** | **4 MB** |
-| fastify on node | 0.69× | 0.65× | 111 ms | 108 MB |
+| ch3 on node            | 0.87× raw-node     | 0.95×                  | 83 ms      | 116 MB             |
+| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)**   | **3 ms**   | **4 MB**           |
+| fastify on node        | 0.69×              | 0.65×                  | 111 ms     | 108 MB             |
 
 The compiled build sits at ≥96% of a bare compiled `node:http` server on
 every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
@@ -143,7 +145,10 @@ import { ch3Plugin } from "@ch3/unplugin";
 import { scriptcPlugin } from "unplugin-scriptc";
 
 export default defineConfig({
-  plugins: [ch3Plugin.vite(), scriptcPlugin.vite({ entry: "src/main.ts", out: "dist/app" })],
+  plugins: [
+    ch3Plugin.vite(),
+    scriptcPlugin.vite({ entry: "src/main.ts", out: "dist/app" }),
+  ],
 });
 ```
 
@@ -153,7 +158,7 @@ export default defineConfig({
 inside the same subset — the only way to run schema validation inside a
 compiled ch3 ELF (npm validators can't compile alongside it — see
 [docs/validation.md](docs/validation.md)). In Node mode it performs in the
-same band as valibot.
+same band as [valibot](https://github.com/open-circle/valibot).
 
 ```ts
 import * as v from "@ch3/val";
@@ -161,7 +166,9 @@ import * as v from "@ch3/val";
 const Order = v.strictObject({ id: v.pipe(v.string(), v.uuid()) });
 app.post("/order", (c) => {
   const r = v.safeParse(Order, JSON.parse(c.req.body()));
-  return r.success ? c.json({ ok: true }) : c.status(400).json({ issues: r.issues });
+  return r.success
+    ? c.json({ ok: true })
+    : c.status(400).json({ issues: r.issues });
 });
 ```
 

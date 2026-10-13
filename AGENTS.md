@@ -11,6 +11,14 @@ ch3 is a minimal HTTP router for `node:http`, async-first, zero dependencies, au
 - `pnpm --filter @ch3/unplugin test` - plugin tests
 - `pnpm docs:build` - build docs site
 
+## Releases
+
+All `packages/*` publish at one shared version via pnpm native versioning (`versioning.fixed` in `pnpm-workspace.yaml`; `pnpm change check` guards drift in CI).
+
+1. `pnpm change` per logical change, commit the intent file with the change.
+2. At release: `pnpm version -r` (bumps the fixed group, consumes intents, writes CHANGELOGs), commit, tag `v<version>`.
+3. Tag push triggers `.github/workflows/release.yml`: verifies every package.json matches the tag, publishes all three.
+
 ## Scriptc subset rules (packages/ch3/src)
 
 These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.

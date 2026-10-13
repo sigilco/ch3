@@ -26,8 +26,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
       - run: pnpm -r test
-      - run: |
-          pnpm --dir packages/ch3 publish --access public --no-git-checks
-          pnpm --dir packages/val publish --access public --no-git-checks
+      # Versioning is fixed-group (pnpm-workspace.yaml versioning.fixed):
+      # all three packages share one version. The release tag must match
+      # the version pnpm version -r wrote into every package.json.
+      - name: Verify tag matches package versions
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          for pkg in ch3 @ch3/val @ch3/unplugin; do
+            V=$(node -p "require('./packages/${pkg#@ch3/}/package.json').version")
+            [ "$V" = "$TAG" ] || { echo "version mismatch: $pkg at $V, tag $TAG"; exit 1; }
+          done
+      - name: Publish all workspace packages
+        run: pnpm -r --filter "./packages/*" publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
