@@ -567,12 +567,7 @@ export function _guard(res: ServerResponse, c: Ctx, k: () => unknown): void {
   );
 }
 
-export function _buffer(
-  req: IncomingMessage,
-  res: ServerResponse,
-  c: Ctx,
-  k: () => unknown,
-): void {
+export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: () => unknown): void {
   const rv = c.req;
   let buf = "";
   req.on("data", function (chunk: Buffer): void {
