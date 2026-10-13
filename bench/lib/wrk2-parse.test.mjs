@@ -1,7 +1,7 @@
 // node --test lib/wrk2-parse.test.mjs
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
-import { parseWrk2 } from './wrk2-parse.mjs'
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { parseWrk2 } from "./wrk2-parse.mjs";
 
 const SAMPLE = `
 Running 10s test @ http://127.0.0.1:3000/json
@@ -32,37 +32,43 @@ Running 10s test @ http://127.0.0.1:3000/json
   178378 requests in 3.00s, 29.25MB read
 Requests/sec:  59428.83
 Transfer/sec:      9.75MB
-`
+`;
 
-test('parses spectrum percentiles', () => {
-  const r = parseWrk2(SAMPLE)
-  assert.equal(r.rps, 59428.83)
-  assert.equal(r.p50, 1.018)
-  assert.equal(r.p95, 2.5)
-  assert.equal(r.p99, 4.527)
-  assert.equal(r.max, 11.679)
-  assert.equal(r.mbps, 9.75)
-  assert.equal(r.errors, 0)
-  assert.equal(r.non2xx, 0)
-})
+test("parses spectrum percentiles", () => {
+  const r = parseWrk2(SAMPLE);
+  assert.equal(r.rps, 59428.83);
+  assert.equal(r.p50, 1.018);
+  assert.equal(r.p95, 2.5);
+  assert.equal(r.p99, 4.527);
+  assert.equal(r.max, 11.679);
+  assert.equal(r.mbps, 9.75);
+  assert.equal(r.errors, 0);
+  assert.equal(r.non2xx, 0);
+});
 
-test('parses socket errors and non-2xx', () => {
-  const r = parseWrk2(SAMPLE + 'Socket errors: connect 3, read 1, write 2, timeout 7\nNon-2xx or 3xx responses: 4242\n')
-  assert.equal(r.errors, 6)
-  assert.equal(r.timeouts, 7)
-  assert.equal(r.non2xx, 4242)
-})
+test("parses socket errors and non-2xx", () => {
+  const r = parseWrk2(
+    SAMPLE +
+      "Socket errors: connect 3, read 1, write 2, timeout 7\nNon-2xx or 3xx responses: 4242\n",
+  );
+  assert.equal(r.errors, 6);
+  assert.equal(r.timeouts, 7);
+  assert.equal(r.non2xx, 4242);
+});
 
-test('falls back to Latency Distribution when spectrum absent', () => {
-  const noSpectrum = SAMPLE.replace(/  Detailed Percentile spectrum:[\s\S]*?requests in/, 'requests in')
-  const r = parseWrk2(noSpectrum)
-  assert.equal(r.p50, 1.30)
-  assert.equal(r.p99, 17.25)
-  assert.equal(r.max, 56.58)
-  assert.equal(r.p95, null)
-})
+test("falls back to Latency Distribution when spectrum absent", () => {
+  const noSpectrum = SAMPLE.replace(
+    /  Detailed Percentile spectrum:[\s\S]*?requests in/,
+    "requests in",
+  );
+  const r = parseWrk2(noSpectrum);
+  assert.equal(r.p50, 1.3);
+  assert.equal(r.p99, 17.25);
+  assert.equal(r.max, 56.58);
+  assert.equal(r.p95, null);
+});
 
-test('KB/GB transfer units', () => {
-  const r = parseWrk2(SAMPLE.replace('9.75MB', '512KB').replace('59428.83', '100'))
-  assert.equal(r.mbps, 0.5)
-})
+test("KB/GB transfer units", () => {
+  const r = parseWrk2(SAMPLE.replace("9.75MB", "512KB").replace("59428.83", "100"));
+  assert.equal(r.mbps, 0.5);
+});

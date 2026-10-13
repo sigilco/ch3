@@ -1,0 +1,9 @@
+{
+  "name": "ch3-demo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "ch3": "workspace:*"
+  }
+}

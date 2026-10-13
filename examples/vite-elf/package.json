@@ -1,0 +1,18 @@
+{
+  "name": "ch3-example-vite-elf",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "start": "./dist/app"
+  },
+  "dependencies": {
+    "ch3": "0.1.0"
+  },
+  "devDependencies": {
+    "unplugin-scriptc": "0.1.0",
+    "scriptc": "0.3.0",
+    "vite": "^7.0.0"
+  }
+}

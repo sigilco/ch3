@@ -1,0 +1,17 @@
+{
+  "name": "ch3-example-hello",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "scriptc build src/main.ts -o app",
+    "start": "./app",
+    "start:node": "node --experimental-strip-types src/main.ts"
+  },
+  "dependencies": {
+    "ch3": "0.1.0"
+  },
+  "devDependencies": {
+    "scriptc": "0.3.0"
+  }
+}
