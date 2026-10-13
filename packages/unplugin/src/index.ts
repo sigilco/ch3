@@ -21,6 +21,7 @@ import picomatch from "picomatch";
 import { createUnplugin } from "unplugin";
 import { emitGenModule, genFileName } from "./emit.ts";
 import { extractModule } from "./extract.ts";
+import { tsgoAvailable } from "./parse/index.ts";
 
 export interface Ch3PluginOptions {
   // Globs (relative to root) marking route-registration modules.
@@ -37,6 +38,11 @@ export interface Ch3PluginOptions {
   // Extra module specifiers treated as ch3 imports (in addition to
   // 'ch3' and 'ch3').
   imports?: string[];
+  // Parser backend: 'classic' (default, the tsc 5.x/6.x API) or 'tsgo'
+  // (experimental; requires a typescript 7.x nightly providing the
+  // 'typescript/sync' subpath). Selecting 'tsgo' without the nightly
+  // installed warns and falls back to classic.
+  parser?: "classic" | "tsgo";
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".ch3", ".vite"]);
@@ -65,6 +71,21 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
   const importFrom = options?.importFrom ?? "ch3";
   let root = options?.root ?? process.cwd();
 
+  let parserName = options?.parser ?? "classic";
+  if (parserName === "tsgo") {
+    console.warn(
+      "[unplugin-ch3] parser 'tsgo' is experimental: it requires a typescript 7.x nightly " +
+        "(typescript@next) whose sync API breaks between nightlies, so pin the exact version " +
+        "you tested. " +
+        (tsgoAvailable()
+          ? "Nightly detected."
+          : "No 'typescript/sync' resolvable here: falling back to classic."),
+    );
+    if (!tsgoAvailable()) {
+      parserName = "classic";
+    }
+  }
+
   const matches = (id: string): boolean => {
     const rel = path.isAbsolute(id) ? path.relative(root, id) : id;
     return picomatch.isMatch(rel, include, { dot: true });
@@ -75,6 +96,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
     const model = extractModule(id, code, {
       appExport: options?.appExport,
       imports: options?.imports,
+      parser: parserName,
     });
     const gen = emitGenModule(model, { importFrom: importFrom, modulePath: id });
     const out = path.join(path.dirname(id), ".ch3", genFileName(id));

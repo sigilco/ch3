@@ -62,3 +62,7 @@ app.serve({ port: 3000 })
 `app.serve()` calls the generated dispatch first; `false` declines to the internal dispatch, which covers bails, `notFound`, and misses. Body buffering is opt-in per the contract: a handler reading `c.req.body()` must register with `{ body: true }` or it receives `''`.
 
 The factory is unplugin-based, so `ch3Plugin.rollup()`, `ch3Plugin.webpack()`, and `ch3Plugin.esbuild()` work too. Only vite is verified by a fixture (`fixtures/vite-app/`): run `npm i && npm run build` there, then `node dist/main.js 3100` to hit static, param, middleware, wildcard, bailed, POST-body, and miss routes.
+
+## Parser option (experimental)
+
+By default extraction parses route modules with the `typescript` package's tsc API. `parser: "tsgo"` switches to the typescript-go native compiler's client API (`typescript/sync`, available on `typescript@next` 7.x nightlies): parsing runs in a spawned native server process and the client decodes the binary AST into classic-shaped node objects. It is experimental: the nightly API breaks between versions, so pin the exact nightly you test. Without a resolvable nightly the plugin warns and falls back to `classic`, so a classic-only install never loads tsgo code. Option reference (including `include`, `root`, `appExport`) is in [PLUGIN.md](https://github.com/sigilco/ch3/blob/main/packages/unplugin/PLUGIN.md).

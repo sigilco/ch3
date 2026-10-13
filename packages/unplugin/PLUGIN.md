@@ -84,13 +84,29 @@ The plugin never silently produces wrong routes: uncertainty means bail, not gue
 
 ## Options
 
-| Option       | Default                          | Purpose                                                      |
-| ------------ | -------------------------------- | ------------------------------------------------------------ |
-| `include`    | `['**/*.ch3.ts','**/*.ch3.js']`  | Globs (relative to root) marking routes modules              |
-| `root`       | vite `config.root`, else `cwd()` | Project root scanned at `buildStart`                         |
-| `appExport`  | auto-detect                      | Exported binding carrying the router (`name` or `'default'`) |
-| `imports`    | `['ch3']`                        | Extra specifiers treated as ch3 imports                      |
-| `importFrom` | `'ch3'`                          | Specifier emitted for `import type { App }` in the gen file  |
+| Option       | Default                          | Purpose                                                                     |
+| ------------ | -------------------------------- | --------------------------------------------------------------------------- |
+| `include`    | `['**/*.ch3.ts','**/*.ch3.js']`  | Globs (relative to root) marking routes modules                             |
+| `root`       | vite `config.root`, else `cwd()` | Project root scanned at `buildStart`                                        |
+| `appExport`  | auto-detect                      | Exported binding carrying the router (`name` or `'default'`)                |
+| `imports`    | `['ch3']`                        | Extra specifiers treated as ch3 imports                                     |
+| `importFrom` | `'ch3'`                          | Specifier emitted for `import type { App }` in the gen file                 |
+| `parser`     | `'classic'`                      | Parser backend: `'classic'` (tsc API) or `'tsgo'` (experimental, see below) |
+
+## Experimental: `parser: "tsgo"`
+
+The parser seam behind extraction is pluggable. `classic` (default) uses the `typescript` package's tsc API. `tsgo` uses the typescript-go native compiler's client API (`typescript/sync` on a `typescript@next` 7.x nightly), where parsing runs in a spawned native server process and the client decodes the binary AST into node objects shaped like the classic ones.
+
+Status and caveats:
+
+- The nightly sync API is explicitly unstable and breaks between nightlies. If you use `tsgo`, pin the exact nightly version you tested.
+- Requires Node >= 22.12 (synchronous `require()` of ESM is how the sync client loads).
+- Without a resolvable `typescript/sync`, selecting `tsgo` prints a warning and falls back to `classic`; a classic-only install never loads tsgo code.
+- The default will only be reconsidered once the API is stable (TS 7.1+) and the plugin bench (task 4) justifies it.
+
+```ts
+ch3Plugin.vite({ parser: "tsgo" });
+```
 
 ## Compiling with scriptc
 

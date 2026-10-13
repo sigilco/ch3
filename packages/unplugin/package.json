@@ -49,6 +49,7 @@
     "@types/node": "^24.0.0",
     "@types/picomatch": "^4.0.3",
     "typescript": "^5.9.0",
+    "typescript-next": "npm:typescript@next",
     "ch3": "workspace:^"
   },
   "engines": {

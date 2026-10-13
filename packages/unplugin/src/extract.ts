@@ -12,12 +12,14 @@ import type { ModuleModel, RouteSpec, SegSpec, StaticSend } from "./model.ts";
 import { ROUTE_METHODS } from "./model.ts";
 
 export interface ExtractOptions {
+  // Exported binding carrying the router instance: a name, or 'default'.
+  appExport?: string;
   // Extra module specifiers to treat as ch3 imports (default
   // ['ch3'] plus '<pkg>/*' subpaths).
   imports?: string[];
-  // Exported binding carrying the router: a name, or 'default'.
-  // Default: auto-detect (default export, then 'app', then first export).
-  appExport?: string;
+  // Parser backend name; resolved through the registry in ./parse/.
+  // Default 'classic'. 'tsgo' is experimental.
+  parser?: string;
 }
 
 interface PendingRoute {
@@ -382,7 +384,7 @@ function detectStaticSend(p: Parser, h: Expression): StaticSend | null {
 // ---------------------------------------------------------------------------
 
 export function extractModule(fileName: string, code: string, opts?: ExtractOptions): ModuleModel {
-  const p = getParser();
+  const p = getParser(opts?.parser);
   const extraImports = opts?.imports ?? [];
   const warnings: string[] = [];
   const model: ModuleModel = {
