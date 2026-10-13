@@ -14,7 +14,7 @@ import { emitGenModule, genFileName } from "../../src/unplugin/emit.ts";
 
 const CH3_SRC = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
-  "../../ch3/src/index.ts",
+  "../../src/index.ts",
 );
 
 interface FakeRes {
