@@ -6,7 +6,8 @@
 // app.on) is a compile-time string literal. Anything else is left to the
 // runtime router and reported as a warning, never silently dropped.
 
-import ts from "typescript";
+import type { AstSource, CallExpression, Expression, Node, Parser } from "./parse/index.ts";
+import { getParser } from "./parse/index.ts";
 import type { ModuleModel, RouteSpec, SegSpec, StaticSend } from "./model.ts";
 import { ROUTE_METHODS } from "./model.ts";
 
@@ -26,8 +27,8 @@ interface PendingRoute {
   hasMw: boolean;
   mwUnsafe: boolean;
   declaredBody: boolean; // opts.body === true at registration (contract)
-  handlerNode: ts.Expression | null;
-  node: ts.Node;
+  handlerNode: Expression | null;
+  node: Node;
 }
 
 interface VarState {
@@ -133,46 +134,47 @@ function isCh3Specifier(spec: string, extra: string[]): boolean {
 }
 
 // Evaluate a compile-time literal. Returns {ok:false} for anything else.
-function evalLiteral(e: ts.Expression): { ok: boolean; v: unknown } {
-  if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) {
+// `p` (the active parser) is threaded through: predicates are per-parser.
+function evalLiteral(p: Parser, e: Expression): { ok: boolean; v: unknown } {
+  if (p.isStringLiteral(e) || p.isNoSubstitutionTemplateLiteral(e)) {
     return { ok: true, v: e.text };
   }
-  if (ts.isNumericLiteral(e)) {
+  if (p.isNumericLiteral(e)) {
     return { ok: true, v: Number(e.text) };
   }
-  if (e.kind === ts.SyntaxKind.TrueKeyword) {
+  if (e.kind === p.k.TrueKeyword) {
     return { ok: true, v: true };
   }
-  if (e.kind === ts.SyntaxKind.FalseKeyword) {
+  if (e.kind === p.k.FalseKeyword) {
     return { ok: true, v: false };
   }
-  if (e.kind === ts.SyntaxKind.NullKeyword) {
+  if (e.kind === p.k.NullKeyword) {
     return { ok: true, v: null };
   }
-  if (ts.isPrefixUnaryExpression(e)) {
-    const inner = evalLiteral(e.operand);
+  if (p.isPrefixUnaryExpression(e)) {
+    const inner = evalLiteral(p, e.operand);
     if (inner.ok && typeof inner.v === "number") {
-      if (e.operator === ts.SyntaxKind.MinusToken) {
+      if (e.operator === p.k.MinusToken) {
         return { ok: true, v: -inner.v };
       }
-      if (e.operator === ts.SyntaxKind.PlusToken) {
+      if (e.operator === p.k.PlusToken) {
         return { ok: true, v: inner.v };
       }
     }
     return { ok: false, v: null };
   }
-  if (ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-    const l = evalLiteral(e.left);
-    const r = evalLiteral(e.right);
+  if (p.isBinaryExpression(e) && e.operatorToken.kind === p.k.PlusToken) {
+    const l = evalLiteral(p, e.left);
+    const r = evalLiteral(p, e.right);
     if (l.ok && r.ok && typeof l.v === "string" && typeof r.v === "string") {
       return { ok: true, v: String(l.v) + String(r.v) };
     }
     return { ok: false, v: null };
   }
-  if (ts.isArrayLiteralExpression(e)) {
+  if (p.isArrayLiteralExpression(e)) {
     const out: unknown[] = [];
     for (const el of e.elements) {
-      const v = evalLiteral(el);
+      const v = evalLiteral(p, el);
       if (!v.ok) {
         return { ok: false, v: null };
       }
@@ -180,17 +182,17 @@ function evalLiteral(e: ts.Expression): { ok: boolean; v: unknown } {
     }
     return { ok: true, v: out };
   }
-  if (ts.isObjectLiteralExpression(e)) {
+  if (p.isObjectLiteralExpression(e)) {
     const out: { [k: string]: unknown } = {};
-    for (const p of e.properties) {
-      if (!ts.isPropertyAssignment(p)) {
+    for (const prop of e.properties) {
+      if (!p.isPropertyAssignment(prop)) {
         return { ok: false, v: null };
       }
-      const n = p.name;
-      if (!ts.isIdentifier(n) && !ts.isStringLiteral(n) && !ts.isNumericLiteral(n)) {
+      const n = prop.name;
+      if (!p.isIdentifier(n) && !p.isStringLiteral(n) && !p.isNumericLiteral(n)) {
         return { ok: false, v: null };
       }
-      const v = evalLiteral(p.initializer);
+      const v = evalLiteral(p, prop.initializer);
       if (!v.ok) {
         return { ok: false, v: null };
       }
@@ -198,14 +200,14 @@ function evalLiteral(e: ts.Expression): { ok: boolean; v: unknown } {
     }
     return { ok: true, v: out };
   }
-  if (ts.isParenthesizedExpression(e)) {
-    return evalLiteral(e.expression);
+  if (p.isParenthesizedExpression(e)) {
+    return evalLiteral(p, e.expression);
   }
   return { ok: false, v: null };
 }
 
-function evalString(e: ts.Expression): { ok: boolean; v: string } {
-  const r = evalLiteral(e);
+function evalString(p: Parser, e: Expression): { ok: boolean; v: string } {
+  const r = evalLiteral(p, e);
   if (r.ok && typeof r.v === "string") {
     return { ok: true, v: r.v };
   }
@@ -242,16 +244,16 @@ function parsePath(p: string): { segs: SegSpec[] | null; err: string } {
 
 interface ChainCall {
   name: string;
-  args: ts.NodeArray<ts.Expression>;
-  node: ts.CallExpression;
+  args: Expression[];
+  node: CallExpression;
 }
 
 // Decompose a fluent chain `app.get('/a', h).post('/b', h2)` into the
 // sequence of member calls rooted at a bare identifier.
-function decomposeChain(e: ts.Expression): { root: string; calls: ChainCall[] } | null {
+function decomposeChain(p: Parser, e: Expression): { root: string; calls: ChainCall[] } | null {
   const calls: ChainCall[] = [];
   let cur = e;
-  while (ts.isCallExpression(cur) && ts.isPropertyAccessExpression(cur.expression)) {
+  while (p.isCallExpression(cur) && p.isPropertyAccessExpression(cur.expression)) {
     calls.unshift({
       name: cur.expression.name.text,
       args: cur.arguments,
@@ -259,7 +261,7 @@ function decomposeChain(e: ts.Expression): { root: string; calls: ChainCall[] } 
     });
     cur = cur.expression.expression;
   }
-  if (calls.length > 0 && ts.isIdentifier(cur)) {
+  if (calls.length > 0 && p.isIdentifier(cur)) {
     return { root: cur.text, calls: calls };
   }
   return null;
@@ -271,40 +273,40 @@ function decomposeChain(e: ts.Expression): { root: string; calls: ChainCall[] } 
 // json(lit)/text(lit)/html(lit)/redirect(str[,num]) can be answered without
 // building a Ctx at all.
 
-function detectStaticSend(h: ts.Expression): StaticSend | null {
-  if (!ts.isArrowFunction(h) && !ts.isFunctionExpression(h)) {
+function detectStaticSend(p: Parser, h: Expression): StaticSend | null {
+  if (!p.isArrowFunction(h) && !p.isFunctionExpression(h)) {
     return null;
   }
   if (h.parameters.length !== 1) {
     return null;
   }
-  const p = h.parameters[0];
-  if (!ts.isIdentifier(p.name)) {
+  const param = h.parameters[0];
+  if (!p.isIdentifier(param.name)) {
     return null;
   }
-  const cname = p.name.text;
-  let body: ts.Expression | null = null;
-  if (ts.isBlock(h.body)) {
+  const cname = param.name.text;
+  let body: Expression | null = null;
+  if (p.isBlock(h.body)) {
     if (h.body.statements.length === 1) {
       const s = h.body.statements[0];
-      if (ts.isReturnStatement(s) && s.expression !== undefined) {
+      if (p.isReturnStatement(s) && s.expression !== undefined) {
         body = s.expression;
       }
     }
   } else {
-    body = h.body as ts.Expression;
+    body = h.body as Expression;
   }
   if (body === null) {
     return null;
   }
   // peel the call chain innermost-first
-  const ops: { name: string; args: ts.NodeArray<ts.Expression> }[] = [];
-  let cur: ts.Expression = body;
-  while (ts.isCallExpression(cur) && ts.isPropertyAccessExpression(cur.expression)) {
+  const ops: { name: string; args: Expression[] }[] = [];
+  let cur: Expression = body;
+  while (p.isCallExpression(cur) && p.isPropertyAccessExpression(cur.expression)) {
     ops.unshift({ name: cur.expression.name.text, args: cur.arguments });
     cur = cur.expression.expression;
   }
-  if (ops.length === 0 || !ts.isIdentifier(cur) || cur.text !== cname) {
+  if (ops.length === 0 || !p.isIdentifier(cur) || cur.text !== cname) {
     return null;
   }
   const send: StaticSend = {
@@ -319,14 +321,14 @@ function detectStaticSend(h: ts.Expression): StaticSend | null {
     const last = i === ops.length - 1;
     if (!last) {
       if (op.name === "status" && op.args.length === 1) {
-        const v = evalLiteral(op.args[0]);
+        const v = evalLiteral(p, op.args[0]);
         if (!v.ok || typeof v.v !== "number") {
           return null;
         }
         send.status = v.v;
       } else if (op.name === "header" && op.args.length === 2) {
-        const k = evalString(op.args[0]);
-        const v = evalString(op.args[1]);
+        const k = evalString(p, op.args[0]);
+        const v = evalString(p, op.args[1]);
         if (!k.ok || !v.ok) {
           return null;
         }
@@ -337,7 +339,7 @@ function detectStaticSend(h: ts.Expression): StaticSend | null {
       continue;
     }
     if (op.name === "json" && op.args.length === 1) {
-      const v = evalLiteral(op.args[0]);
+      const v = evalLiteral(p, op.args[0]);
       if (!v.ok) {
         return null;
       }
@@ -348,7 +350,7 @@ function detectStaticSend(h: ts.Expression): StaticSend | null {
       send.contentType = "application/json; charset=utf-8";
       send.body = t;
     } else if ((op.name === "text" || op.name === "html") && op.args.length === 1) {
-      const v = evalString(op.args[0]);
+      const v = evalString(p, op.args[0]);
       if (!v.ok) {
         return null;
       }
@@ -356,13 +358,13 @@ function detectStaticSend(h: ts.Expression): StaticSend | null {
         op.name === "text" ? "text/plain; charset=utf-8" : "text/html; charset=utf-8";
       send.body = v.v;
     } else if (op.name === "redirect" && op.args.length >= 1 && op.args.length <= 2) {
-      const u = evalString(op.args[0]);
+      const u = evalString(p, op.args[0]);
       if (!u.ok) {
         return null;
       }
       send.location = u.v;
       if (op.args.length === 2) {
-        const code = evalLiteral(op.args[1]);
+        const code = evalLiteral(p, op.args[1]);
         if (!code.ok || typeof code.v !== "number") {
           return null;
         }
@@ -380,6 +382,7 @@ function detectStaticSend(h: ts.Expression): StaticSend | null {
 // ---------------------------------------------------------------------------
 
 export function extractModule(fileName: string, code: string, opts?: ExtractOptions): ModuleModel {
+  const p = getParser();
   const extraImports = opts?.imports ?? [];
   const warnings: string[] = [];
   const model: ModuleModel = {
@@ -389,48 +392,47 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
     warnings: warnings,
     fatal: "",
   };
-  const sk = /\.m?js$/i.test(fileName) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
-  const sf = ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, sk);
-  const line = (n: ts.Node): number => sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
-  const warn = (n: ts.Node, msg: string): void => {
-    warnings.push("unplugin-ch3: " + fileName + ":" + line(n) + " " + msg);
+  const sf: AstSource = p.parse(fileName, code);
+  const line = (n: Node): number => sf.lineOf(n);
+  const warn = (n: Node, msg: string): void => {
+    warnings.push("unplugin-ch3: " + fileName + ":" + String(line(n)) + " " + msg);
   };
 
   // 1. createRouter bindings from ch3 imports
   const factories = new Set<string>();
   const namespaces = new Set<string>();
   for (const st of sf.statements) {
-    if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier)) {
+    if (p.isImportDeclaration(st) && p.isStringLiteral(st.moduleSpecifier)) {
       if (!isCh3Specifier(st.moduleSpecifier.text, extraImports)) {
         continue;
       }
       const clause = st.importClause;
-      if (clause && clause.namedBindings) {
-        if (ts.isNamedImports(clause.namedBindings)) {
+      if (clause !== undefined && clause.namedBindings !== undefined) {
+        if (p.isNamedImports(clause.namedBindings)) {
           for (const el of clause.namedBindings.elements) {
-            const imported = el.propertyName ? el.propertyName.text : el.name.text;
+            const imported = el.propertyName !== undefined ? el.propertyName.text : el.name.text;
             if (imported === "createRouter") {
               factories.add(el.name.text);
             }
           }
-        } else if (ts.isNamespaceImport(clause.namedBindings)) {
+        } else if (p.isNamespaceImport(clause.namedBindings)) {
           namespaces.add(clause.namedBindings.name.text);
         }
       }
     }
   }
 
-  const isCreateCall = (e: ts.Expression | undefined): boolean => {
-    if (e === undefined || !ts.isCallExpression(e)) {
+  const isCreateCall = (e: Expression | undefined): boolean => {
+    if (e === undefined || !p.isCallExpression(e)) {
       return false;
     }
     const c = e.expression;
-    if (ts.isIdentifier(c) && factories.has(c.text)) {
+    if (p.isIdentifier(c) && factories.has(c.text)) {
       return true;
     }
     if (
-      ts.isPropertyAccessExpression(c) &&
-      ts.isIdentifier(c.expression) &&
+      p.isPropertyAccessExpression(c) &&
+      p.isIdentifier(c.expression) &&
       namespaces.has(c.expression.text) &&
       c.name.text === "createRouter"
     ) {
@@ -459,22 +461,22 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
     return v;
   };
   const directExportedVars = new Set<string>();
-  const namedExports: { local: string; exported: string; pos: number }[] = [];
-  let defaultExport: { local: string; pos: number } | null = null;
+  const namedExports: { local: string; exported: string }[] = [];
+  let defaultExport: { local: string } | null = null;
 
   for (const st of sf.statements) {
-    if (ts.isVariableStatement(st)) {
+    if (p.isVariableStatement(st)) {
       let exported = false;
       const mods = st.modifiers;
-      if (mods) {
+      if (mods !== undefined) {
         for (const m of mods) {
-          if (m.kind === ts.SyntaxKind.ExportKeyword) {
+          if (m.kind === p.k.ExportKeyword) {
             exported = true;
           }
         }
       }
       for (const d of st.declarationList.declarations) {
-        if (ts.isIdentifier(d.name)) {
+        if (p.isIdentifier(d.name)) {
           if (isCreateCall(d.initializer)) {
             getVar(d.name.text);
           }
@@ -484,19 +486,19 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
         }
       }
     }
-    if (ts.isExportAssignment(st) && st.isExportEquals !== true) {
-      if (ts.isIdentifier(st.expression)) {
-        defaultExport = { local: st.expression.text, pos: st.getStart() };
+    if (p.isExportAssignment(st) && st.isExportEquals !== true) {
+      if (p.isIdentifier(st.expression)) {
+        defaultExport = { local: st.expression.text };
       }
     }
     if (
-      ts.isExportDeclaration(st) &&
+      p.isExportDeclaration(st) &&
       st.exportClause !== undefined &&
-      ts.isNamedExports(st.exportClause)
+      p.isNamedExports(st.exportClause)
     ) {
       for (const el of st.exportClause.elements) {
-        const local = el.propertyName ? el.propertyName.text : el.name.text;
-        namedExports.push({ local: local, exported: el.name.text, pos: st.getStart() });
+        const local = el.propertyName !== undefined ? el.propertyName.text : el.name.text;
+        namedExports.push({ local: local, exported: el.name.text });
       }
     }
   }
@@ -602,14 +604,11 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
 
   // Third-arg options on verb/on registrations: { body: true } declares
   // body use (docs/route-contract.md). Non-literal opts bail the route.
-  const optsBody = (
-    optArg: ts.Expression | undefined,
-    node: ts.Node,
-  ): { ok: boolean; body: boolean } => {
+  const optsBody = (optArg: Expression | undefined, node: Node): { ok: boolean; body: boolean } => {
     if (optArg === undefined) {
       return { ok: true, body: false };
     }
-    const v = evalLiteral(optArg);
+    const v = evalLiteral(p, optArg);
     if (!v.ok || typeof v.v !== "object" || v.v === null || Array.isArray(v.v)) {
       warn(node, "non-literal options object — this route stays runtime-only");
       return { ok: false, body: false };
@@ -623,8 +622,8 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
     isApp: boolean,
     method: string,
     path: string,
-    node: ts.Node,
-    handlerNode: ts.Expression | null,
+    node: Node,
+    handlerNode: Expression | null,
     declaredBody: boolean,
   ): void => {
     const parsed = parsePath(path);
@@ -668,7 +667,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
       return;
     }
     if (name === "route") {
-      const sub = args.length >= 2 && ts.isIdentifier(args[1]) ? args[1].text : "";
+      const sub = args.length >= 2 && p.isIdentifier(args[1]) ? args[1].text : "";
       const subVar = sub !== "" && sub !== varName ? vars.get(sub) : undefined;
       if (subVar === undefined) {
         warn(
@@ -680,7 +679,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
         }
         return;
       }
-      const pre = args.length >= 1 ? evalString(args[0]) : { ok: false, v: "" };
+      const pre = args.length >= 1 ? evalString(p, args[0]) : { ok: false, v: "" };
       if (!pre.ok) {
         warn(call.node, "route() with a non-literal prefix — mounted routes stay runtime-only");
         // the runtime still mounts every sub handler — consume their
@@ -739,9 +738,9 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
       return;
     }
     if (name === "on") {
-      const m = args.length >= 1 ? evalString(args[0]) : { ok: false, v: "" };
-      const p = args.length >= 2 ? evalString(args[1]) : { ok: false, v: "" };
-      if ((args.length !== 3 && args.length !== 4) || !m.ok || !p.ok) {
+      const m = args.length >= 1 ? evalString(p, args[0]) : { ok: false, v: "" };
+      const path = args.length >= 2 ? evalString(p, args[1]) : { ok: false, v: "" };
+      if ((args.length !== 3 && args.length !== 4) || !m.ok || !path.ok) {
         warn(
           call.node,
           "on() expects (method: literal, path: literal, handler[, opts]) — left to runtime",
@@ -754,11 +753,11 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
         consumeFnsSlot(v);
         return;
       }
-      pushRoute(v, isApp, m.v.toUpperCase(), p.v, call.node, args[2], ob.body);
+      pushRoute(v, isApp, m.v.toUpperCase(), path.v, call.node, args[2], ob.body);
       return;
     }
     if (Object.prototype.hasOwnProperty.call(ROUTE_METHODS, name)) {
-      const p = args.length >= 1 ? evalString(args[0]) : { ok: false, v: "" };
+      const path = args.length >= 1 ? evalString(p, args[0]) : { ok: false, v: "" };
       if (args.length !== 2 && args.length !== 3) {
         warn(
           call.node,
@@ -767,7 +766,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
         consumeFnsSlot(v);
         return;
       }
-      if (!p.ok) {
+      if (!path.ok) {
         warn(call.node, name + "() with a non-literal path — this route stays runtime-only");
         consumeFnsSlot(v);
         return;
@@ -777,28 +776,28 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
         consumeFnsSlot(v);
         return;
       }
-      pushRoute(v, isApp, ROUTE_METHODS[name], p.v, call.node, args[1], ob.body);
+      pushRoute(v, isApp, ROUTE_METHODS[name], path.v, call.node, args[1], ob.body);
       return;
     }
     // notFound/serve/handler/request — runtime surface, nothing to extract
   };
 
-  const callsIn = (root: ts.Node): ts.CallExpression[] => {
-    const out: ts.CallExpression[] = [];
-    const visit = (n: ts.Node): void => {
-      if (ts.isCallExpression(n)) {
+  const callsIn = (root: Node): CallExpression[] => {
+    const out: CallExpression[] = [];
+    const visit = (n: Node): void => {
+      if (p.isCallExpression(n)) {
         out.push(n);
       }
-      ts.forEachChild(n, visit);
+      p.forEachChild(n, visit);
     };
     visit(root);
     return out;
   };
 
   for (const st of sf.statements) {
-    const consumed = new Set<ts.Node>();
-    if (ts.isExpressionStatement(st)) {
-      const chain = decomposeChain(st.expression);
+    const consumed = new Set<Node>();
+    if (p.isExpressionStatement(st)) {
+      const chain = decomposeChain(p, st.expression);
       if (chain !== null && vars.has(chain.root)) {
         for (const c of chain.calls) {
           consumed.add(c.node);
@@ -813,7 +812,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
         continue;
       }
       const callee = callNode.expression;
-      if (!ts.isPropertyAccessExpression(callee) || !ts.isIdentifier(callee.expression)) {
+      if (!p.isPropertyAccessExpression(callee) || !p.isIdentifier(callee.expression)) {
         continue;
       }
       const vn = callee.expression.text;
@@ -849,7 +848,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
   // 5. specialization + needsBody + emit eligibility
   for (const r of model.routes) {
     if (r.handlerNode !== undefined && !r.hasMw && !r.mwUnsafe) {
-      const s = detectStaticSend(r.handlerNode);
+      const s = detectStaticSend(p, r.handlerNode);
       if (s !== null) {
         r.staticSend = s;
       }

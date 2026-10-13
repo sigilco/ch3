@@ -1,6 +1,6 @@
 // Shared model between extract.ts (AST -> routes) and emit.ts (routes -> code).
 
-import type ts from "typescript";
+import type { Expression } from "./parse/index.ts";
 
 export interface SegSpec {
   // 0 static, 1 :param, 2 tail-* wildcard — mirrors ch3's RouteNode.kind
@@ -24,7 +24,7 @@ export interface RouteSpec {
   path: string; // canonical registration pattern e.g. '/user/:id'
   segs: SegSpec[]; // path segments (leading '' segment of split('/') omitted)
   handlerIdx: number; // index into App._fns, or -1 when unknown (post-uncertainty)
-  handlerNode?: ts.Expression; // inline handler AST (for specialization)
+  handlerNode?: Expression; // inline handler AST (for specialization)
   hasMw: boolean; // middleware snapshot may be non-empty
   mwUnsafe: boolean; // a nested use() makes the snapshot uncertain — no specialization
   declaredBody: boolean; // `{ body: true }` at registration (declared-body rule)

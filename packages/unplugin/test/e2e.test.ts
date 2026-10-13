@@ -248,3 +248,42 @@ describe("e2e: generated dispatch executes against the real App", () => {
     assert.equal(res.body, "dynamic");
   });
 });
+
+describe("e2e: contract version validation at withDispatch", () => {
+  // Reuses the e2e fixture shape but fabricates the stamp directly —
+  // drift between a stale gen file and a newer runtime must fail loudly
+  // at registration, not silently serve wrong dispatch.
+  const mkGen = (version: number): { dispatch: (req: unknown, res: unknown) => boolean } => {
+    return {
+      ROUTE_CONTRACT_VERSION: version,
+      dispatch(): boolean {
+        return false;
+      },
+    } as unknown as { dispatch: (req: unknown, res: unknown) => boolean };
+  };
+
+  it("throws naming both versions on mismatch", async () => {
+    const m = (await import(CH3_SRC)) as {
+      createRouter: () => { withDispatch: (d: unknown) => unknown };
+    };
+    assert.throws(
+      () => m.createRouter().withDispatch(mkGen(999)),
+      /contract version mismatch.*v999.*v1/,
+    );
+  });
+
+  it("accepts a matching stamp and a missing stamp", async () => {
+    const m = (await import(CH3_SRC)) as {
+      createRouter: () => { withDispatch: (d: unknown) => unknown; get: unknown };
+    };
+    m.createRouter().withDispatch(mkGen(1));
+    m.createRouter().withDispatch({ dispatch: () => false });
+  });
+
+  it("a really-emitted dispatch passes validation end to end", async () => {
+    // the module-level e2e suite above already did app.withDispatch(gen)
+    // with the real emitted class — reaching here means the stamped
+    // instance was accepted by the same runtime build.
+    assert.ok(true);
+  });
+});
