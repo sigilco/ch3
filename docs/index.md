@@ -24,9 +24,27 @@ Two reasons:
 
 ## Install
 
-```bash
+::: tabs
+
+== tab "npm"
+
+```sh
 npm i ch3
 ```
+
+== tab "pnpm"
+
+```sh
+pnpm add ch3
+```
+
+== tab "bun"
+
+```sh
+bun add ch3
+```
+
+:::
 
 Next: [Routing](routing.md).
 
