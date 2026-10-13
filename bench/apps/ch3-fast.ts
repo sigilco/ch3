@@ -2,7 +2,15 @@
 // generated dispatch module (what the Vite/unplugin transform will emit,
 // per docs/route-contract.md). The same handler functions back both the
 // registered table and the generated matcher.
-import { createRouter, GenDispatch, ReqView, Ctx, dec, _guard, _buffer } from "../../src/index.ts";
+import {
+  createRouter,
+  GenDispatch,
+  ReqView,
+  Ctx,
+  dec,
+  _guard,
+  _buffer,
+} from "../../packages/ch3/src/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from "./common.mjs";
 
@@ -25,48 +33,48 @@ class CompiledRoutes extends GenDispatch {
     const c = new Ctx(rv, res);
     if (method === "GET" || method === "HEAD") {
       if (path === "/") {
-        _guard(res, function (): void {
-          c.text("");
+        _guard(res, c, function (): unknown {
+          return c.text("");
         });
         return true;
       }
       if (path === "/hello") {
-        _guard(res, function (): void {
-          c.text("Hello World!");
+        _guard(res, c, function (): unknown {
+          return c.text("Hello World!");
         });
         return true;
       }
       if (path === "/json") {
-        _guard(res, function (): void {
-          c.json({ hello: "world" });
+        _guard(res, c, function (): unknown {
+          return c.json({ hello: "world" });
         });
         return true;
       }
       if (path === "/deep/a/b/c/d/e") {
-        _guard(res, function (): void {
-          okJson(c);
+        _guard(res, c, function (): unknown {
+          return okJson(c);
         });
         return true;
       }
       if (path.indexOf("/user/") === 0) {
         rv._seedPm(["id", dec(path.slice(6))]);
-        _guard(res, function (): void {
-          c.json({ id: c.req.param("id") });
+        _guard(res, c, function (): unknown {
+          return c.json({ id: c.req.param("id") });
         });
         return true;
       }
       if (path.indexOf("/files/") === 0) {
         rv._seedPm(["*", dec(path.slice(7))]);
-        _guard(res, function (): void {
-          c.text(c.req.param("*") || "");
+        _guard(res, c, function (): unknown {
+          return c.text(c.req.param("*") || "");
         });
         return true;
       }
       // mixed table: '/m/s<i>/detail' statics, '/m/p<i>/<v>' params,
       // '/m/w<i>/<rest>' wildcards.
       if (path.indexOf("/m/s") === 0 && path.indexOf("/detail") > 4) {
-        _guard(res, function (): void {
-          okJson(c);
+        _guard(res, c, function (): unknown {
+          return okJson(c);
         });
         return true;
       }
@@ -75,8 +83,8 @@ class CompiledRoutes extends GenDispatch {
         const slash = rest.indexOf("/");
         if (slash > 0) {
           rv._seedPm(["id", dec(rest.slice(slash + 1))]);
-          _guard(res, function (): void {
-            okJson(c);
+          _guard(res, c, function (): unknown {
+            return okJson(c);
           });
           return true;
         }
@@ -86,8 +94,8 @@ class CompiledRoutes extends GenDispatch {
         const slash = rest.indexOf("/");
         if (slash > 0) {
           rv._seedPm(["*", dec(rest.slice(slash + 1))]);
-          _guard(res, function (): void {
-            okJson(c);
+          _guard(res, c, function (): unknown {
+            return okJson(c);
           });
           return true;
         }
@@ -95,14 +103,14 @@ class CompiledRoutes extends GenDispatch {
       return false;
     }
     if (method === "POST" && path === "/echo") {
-      _buffer(req, res, c, function (): void {
-        c.text(c.req.body());
+      _buffer(req, res, c, function (): unknown {
+        return c.text(c.req.body());
       });
       return true;
     }
     if (method === "POST" && path === "/user") {
-      _guard(res, function (): void {
-        c.text("");
+      _guard(res, c, function (): unknown {
+        return c.text("");
       });
       return true;
     }

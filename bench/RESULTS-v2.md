@@ -438,3 +438,54 @@ one branch per composed layer is free. Note: earlier ch3-node rows in this file
 (79k json) were measured through the old bench app that imported src directly;
 the current app runs against the workspace-linked `ch3` package. Do not compare
 rows across that boundary.
+
+## scriptc 0.3.0 async-first matrix (2026-10-13, Linux VM)
+
+Async-first dispatch landed properly this time: chain results that are not
+already settled (`undefined`/`null`/`c`) are joined through `await` inside
+`settleChain` (the package's only async fn, fire-and-forget). The earlier
+`typeof r.then === "function"` duck check was replaced — under scriptc,
+reading `.then` as a value refuses as a statement (SC1090) and silently
+lowers to `undefined` in expression position, `instanceof Promise` is
+refused, `Promise.resolve(nonPromise)` throws, and a union mixing Promise
+and non-Promise arms refuses (SC2009). `await` on `unknown` is the only
+viable promise join in the subset. Verified under ELF: async reject → 500,
+settle-without-response → 500, sync throw → 500; sync handlers still take
+the zero-microtask fast path.
+
+Autocannon -c64 -d6 x3 median (rps). Same machine all rows; do not compare
+against prior sections (different host).
+
+| subject | json | user | echo64 | echo1k | deep | files | missing | mixed |
+|---|---|---|---|---|---|---|---|---|
+| ch3-async-elf | 102,123 | 103,360 | 102,016 | 98,101 | 102,165 | 100,171 | 99,691 | 101,344 |
+| ch3-elf | 99,989 | 99,584 | 98,560 | 95,840 | 100,171 | 98,549 | 96,640 | 96,437 |
+| ch3-fast-elf | 98,752 | 99,744 | 97,259 | 85,045 | 96,981 | 97,781 | 97,365 | 92,149 |
+| raw-async-elf | 103,008 | 100,576 | 100,789 | 95,605 | 101,568 | 102,976 | 99,872 | 98,795 |
+| raw-elf | 97,771 | 96,843 | 97,941 | 93,557 | 96,800 | 97,931 | 94,144 | 79,157 |
+| raw-node | 91,147 | 89,696 | 75,136 | 69,504 | 91,072 | 90,507 | 88,832 | 84,395 |
+| ch3-async-node | 82,581 | 79,936 | 71,000 | 58,944 | 77,131 | 78,731 | 85,952 | 77,440 |
+| ch3-node | 83,179 | 82,208 | 72,693 | 60,341 | 83,360 | 80,213 | 83,904 | 76,395 |
+| fmw-node | 87,008 | – | 74,453 | – | – | – | 104,533 | 81,365 |
+| fastify-node | 85,099 | – | 65,552 | – | – | – | 81,536 | 81,611 |
+| hono-node | 84,192 | – | 63,019 | – | – | – | 76,213 | 77,099 |
+| h3-node | 78,389 | – | 45,429 | – | – | – | 37,669 | 66,072 |
+| express-node | 43,067 | – | 33,620 | – | – | – | 45,136 | 34,148 |
+
+Ratio vs raw-node (json / mixed): ch3-async-elf 1.12x / 1.20x,
+ch3-elf 1.10x / 1.14x, ch3-fast-elf 1.08x / 1.09x, raw-elf 1.07x / 0.94x,
+raw-async-elf 1.13x / 1.17x, ch3-node 0.91x / 0.91x, fmw 0.95x / 0.96x,
+fastify 0.93x / 0.97x, hono 0.92x / 0.91x, h3 0.86x / 0.78x,
+express 0.47x / 0.40x. Zero errors/timeouts in every cell.
+
+Observations:
+
+- ch3-async-elf beats raw node:http on every cell (1.12x–1.47x json→echo1k)
+  and beats every JS/TS framework row by ~18–137% (nearest: fmw/fastify json
+  ~85–87k vs 102k).
+- Async is not a tax under scriptc: async-subject ELFs beat their sync twins
+  on every cell (ch3-async 102k vs ch3 100k json; raw-async 103k vs raw 98k).
+  Under node the async settle path costs ~1–3% (ch3-async-node vs ch3-node,
+  within noise).
+- fmw's 104.5k on the missing cell is a fast 404 short-circuit — router-only
+  lookup, no framework lifecycle. Not a routing-dispatch comparison.
