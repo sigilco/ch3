@@ -21,7 +21,8 @@
     "url": "git+https://github.com/sigilco/ch3.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "main": "./dist/esm/index.js",
@@ -31,6 +32,7 @@
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js"
     },
+    "./src/index.ts": "./src/index.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

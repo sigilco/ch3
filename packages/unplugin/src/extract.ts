@@ -12,7 +12,7 @@ import { ROUTE_METHODS } from "./model.ts";
 
 export interface ExtractOptions {
   // Extra module specifiers to treat as ch3 imports (default
-  // ['ch3', 'ch3'] plus '<pkg>/*' subpaths).
+  // ['ch3'] plus '<pkg>/*' subpaths).
   imports?: string[];
   // Exported binding carrying the router: a name, or 'default'.
   // Default: auto-detect (default export, then 'app', then first export).
@@ -120,7 +120,7 @@ function replayMount(
   }
 }
 
-const DEFAULT_IMPORTS = ["ch3", "ch3"];
+const DEFAULT_IMPORTS = ["ch3"];
 
 function isCh3Specifier(spec: string, extra: string[]): boolean {
   const all = DEFAULT_IMPORTS.concat(extra);
