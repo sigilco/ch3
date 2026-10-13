@@ -1,7 +1,9 @@
 # RESULTS v2 — credible-baseline matrix
 
+> 2026-10-14: subjects renamed ch3* → chttp* (brand rename); measurements unchanged.
+
 2026-10-11 · branch `devin/bench-credible` · supersedes `RESULTS-baseline.md`
-(ch3 rows were pending there; this run fills them with program-code scriptc ELFs).
+(chttp rows were pending there; this run fills them with program-code scriptc ELFs).
 
 **Compare ratios, not absolutes** — `vs raw-node` is cell rps ÷ the same cell's
 `raw-node` rps on this VM. Absolute numbers carry shared-VM noise (ENV.md:
@@ -40,52 +42,52 @@ variance observed; headline `json` cell is median of 5 reps, others median of 3)
 | c-mongoose | root | 119,179 | 1.25x | 0.00 | 0.0 | 1.0 | 21 | 8.4 | 0/0 | 0 |
 | c-mongoose | hello | 104,704 | 1.33x | 0.00 | 1.0 | 3.0 | 23 | 8.6 | 0/0 | 0 |
 | c-mongoose | postuser | 124,480 | 1.38x | 0.00 | 0.0 | 1.0 | 20 | 8.8 | 0/0 | 0 |
-| ch3-bun | json | 104,640 | 1.15x | 0.00 | 1.0 | 1.0 | 29 | 18.7 | 0/0 | 0 |
-| ch3-bun | user | 105,056 | 1.25x | 0.00 | 1.0 | 1.0 | 23 | 18.1 | 0/0 | 0 |
-| ch3-bun | echo64 | 104,149 | 1.65x | 0.00 | 1.0 | 1.0 | 20 | 22.6 | 0/0 | 0 |
-| ch3-bun | echo1k | 67,083 | 1.02x | 0.00 | 3.0 | 4.0 | 22 | 76.1 | 0/0 | 0 |
-| ch3-bun | deep | 79,765 | 0.92x | 0.00 | 3.0 | 4.0 | 26 | 13.8 | 0/0 | 0 |
-| ch3-bun | files | 102,837 | 1.18x | 0.00 | 1.0 | 1.0 | 30 | 16.9 | 0/0 | 0 |
-| ch3-bun | missing | 93,856 | 1.17x | 0.00 | 2.0 | 3.0 | 28 | 16.0 | 0/0 | 1676079 |
-| ch3-bun | mixed | 96,213 | 1.15x | 0.00 | 1.0 | 3.0 | 227 | 16.6 | 0/0 | 0 |
-| ch3-bun | root | 112,000 | 1.18x | 0.00 | 1.0 | 1.0 | 21 | 17.4 | 0/0 | 0 |
-| ch3-bun | hello | 103,499 | 1.31x | 0.00 | 1.0 | 1.0 | 19 | 17.4 | 0/0 | 0 |
-| ch3-bun | postuser | 110,645 | 1.23x | 0.00 | 1.0 | 1.0 | 29 | 17.2 | 0/0 | 0 |
-| ch3-fast-scriptc | json | 102,240 | 1.13x | 0.00 | 1.0 | 1.0 | 22 | 18.2 | 0/0 | 0 |
-| ch3-fast-scriptc | user | 101,131 | 1.20x | 0.00 | 1.0 | 1.0 | 18 | 17.5 | 0/0 | 0 |
-| ch3-fast-scriptc | echo64 | 100,725 | 1.60x | 0.00 | 1.0 | 1.0 | 21 | 21.9 | 0/0 | 0 |
-| ch3-fast-scriptc | echo1k | 97,995 | 1.49x | 0.00 | 1.0 | 1.0 | 22 | 111.2 | 0/0 | 0 |
-| ch3-fast-scriptc | deep | 100,480 | 1.15x | 0.00 | 1.0 | 1.0 | 25 | 17.3 | 0/0 | 0 |
-| ch3-fast-scriptc | files | 98,635 | 1.13x | 0.00 | 1.0 | 1.0 | 24 | 16.2 | 0/0 | 0 |
-| ch3-fast-scriptc | missing | 95,093 | 1.18x | 0.00 | 1.0 | 2.0 | 28 | 16.2 | 0/0 | 1701083 |
-| ch3-fast-scriptc | mixed | 93,685 | 1.12x | 0.00 | 1.0 | 2.0 | 242 | 16.2 | 0/0 | 0 |
-| ch3-fast-scriptc | root | 102,421 | 1.08x | 0.00 | 1.0 | 1.0 | 22 | 15.9 | 0/0 | 0 |
-| ch3-fast-scriptc | hello | 97,856 | 1.24x | 0.00 | 1.0 | 1.0 | 24 | 16.4 | 0/0 | 0 |
-| ch3-fast-scriptc | postuser | 102,155 | 1.14x | 0.00 | 1.0 | 1.0 | 19 | 15.9 | 0/0 | 0 |
-| ch3-node | json | 79,179 | 0.87x | 0.00 | 1.0 | 3.0 | 35 | 14.1 | 0/0 | 0 |
-| ch3-node | user | 78,731 | 0.93x | 0.00 | 1.0 | 2.0 | 24 | 13.6 | 0/0 | 0 |
-| ch3-node | echo64 | 72,893 | 1.16x | 0.00 | 1.0 | 2.0 | 39 | 15.8 | 0/0 | 0 |
-| ch3-node | echo1k | 62,888 | 0.95x | 0.00 | 1.0 | 2.0 | 22 | 71.4 | 0/0 | 0 |
-| ch3-node | deep | 83,947 | 0.96x | 0.00 | 1.0 | 2.0 | 24 | 14.5 | 0/0 | 0 |
-| ch3-node | files | 81,941 | 0.94x | 0.00 | 1.0 | 1.0 | 22 | 13.4 | 0/0 | 0 |
-| ch3-node | missing | 67,221 | 0.84x | 0.00 | 3.0 | 4.0 | 39 | 11.5 | 0/0 | 1289727 |
-| ch3-node | mixed | 57,496 | 0.69x | 0.00 | 3.0 | 4.0 | 277 | 9.9 | 0/0 | 0 |
-| ch3-node | root | 68,189 | 0.72x | 0.00 | 3.0 | 4.0 | 29 | 10.6 | 0/0 | 0 |
-| ch3-node | hello | 77,013 | 0.98x | 0.00 | 2.0 | 3.0 | 28 | 12.9 | 0/0 | 0 |
-| ch3-node | postuser | 96,821 | 1.08x | 0.00 | 1.0 | 1.0 | 26 | 15.0 | 0/0 | 0 |
-| ch3-node | json-p10 | 110,035 | 0.95x | 10.00 | 13.0 | 15.0 | 66 | 19.6 | 0/0 | 0 |
-| ch3-scriptc | json | 103,947 | 1.15x | 0.00 | 0.0 | 1.0 | 21 | 18.5 | 0/0 | 0 |
-| ch3-scriptc | user | 103,936 | 1.23x | 0.00 | 0.0 | 1.0 | 20 | 17.9 | 0/0 | 0 |
-| ch3-scriptc | echo64 | 102,571 | 1.63x | 0.00 | 1.0 | 1.0 | 20 | 22.3 | 0/0 | 0 |
-| ch3-scriptc | echo1k | 96,843 | 1.47x | 0.00 | 1.0 | 1.0 | 21 | 109.9 | 0/0 | 0 |
-| ch3-scriptc | deep | 99,413 | 1.14x | 0.00 | 1.0 | 1.0 | 21 | 17.2 | 0/0 | 0 |
-| ch3-scriptc | files | 102,336 | 1.18x | 0.00 | 1.0 | 1.0 | 20 | 16.8 | 0/0 | 0 |
-| ch3-scriptc | missing | 96,747 | 1.20x | 0.00 | 1.0 | 2.0 | 18 | 16.5 | 0/0 | 1710868 |
-| ch3-scriptc | mixed | 95,008 | 1.14x | 0.00 | 1.0 | 3.0 | 233 | 16.4 | 0/0 | 0 |
-| ch3-scriptc | root | 107,008 | 1.12x | 0.00 | 0.0 | 1.0 | 20 | 16.6 | 0/0 | 0 |
-| ch3-scriptc | hello | 101,323 | 1.28x | 0.00 | 1.0 | 1.0 | 24 | 17.0 | 0/0 | 0 |
-| ch3-scriptc | postuser | 105,685 | 1.17x | 0.00 | 0.0 | 1.0 | 21 | 16.4 | 0/0 | 0 |
-| ch3-scriptc | json-p10 | 204,109 | 1.76x | 4.00 | 7.0 | 9.0 | 45 | 36.4 | 0/0 | 0 |
+| chttp-bun | json | 104,640 | 1.15x | 0.00 | 1.0 | 1.0 | 29 | 18.7 | 0/0 | 0 |
+| chttp-bun | user | 105,056 | 1.25x | 0.00 | 1.0 | 1.0 | 23 | 18.1 | 0/0 | 0 |
+| chttp-bun | echo64 | 104,149 | 1.65x | 0.00 | 1.0 | 1.0 | 20 | 22.6 | 0/0 | 0 |
+| chttp-bun | echo1k | 67,083 | 1.02x | 0.00 | 3.0 | 4.0 | 22 | 76.1 | 0/0 | 0 |
+| chttp-bun | deep | 79,765 | 0.92x | 0.00 | 3.0 | 4.0 | 26 | 13.8 | 0/0 | 0 |
+| chttp-bun | files | 102,837 | 1.18x | 0.00 | 1.0 | 1.0 | 30 | 16.9 | 0/0 | 0 |
+| chttp-bun | missing | 93,856 | 1.17x | 0.00 | 2.0 | 3.0 | 28 | 16.0 | 0/0 | 1676079 |
+| chttp-bun | mixed | 96,213 | 1.15x | 0.00 | 1.0 | 3.0 | 227 | 16.6 | 0/0 | 0 |
+| chttp-bun | root | 112,000 | 1.18x | 0.00 | 1.0 | 1.0 | 21 | 17.4 | 0/0 | 0 |
+| chttp-bun | hello | 103,499 | 1.31x | 0.00 | 1.0 | 1.0 | 19 | 17.4 | 0/0 | 0 |
+| chttp-bun | postuser | 110,645 | 1.23x | 0.00 | 1.0 | 1.0 | 29 | 17.2 | 0/0 | 0 |
+| chttp-fast-scriptc | json | 102,240 | 1.13x | 0.00 | 1.0 | 1.0 | 22 | 18.2 | 0/0 | 0 |
+| chttp-fast-scriptc | user | 101,131 | 1.20x | 0.00 | 1.0 | 1.0 | 18 | 17.5 | 0/0 | 0 |
+| chttp-fast-scriptc | echo64 | 100,725 | 1.60x | 0.00 | 1.0 | 1.0 | 21 | 21.9 | 0/0 | 0 |
+| chttp-fast-scriptc | echo1k | 97,995 | 1.49x | 0.00 | 1.0 | 1.0 | 22 | 111.2 | 0/0 | 0 |
+| chttp-fast-scriptc | deep | 100,480 | 1.15x | 0.00 | 1.0 | 1.0 | 25 | 17.3 | 0/0 | 0 |
+| chttp-fast-scriptc | files | 98,635 | 1.13x | 0.00 | 1.0 | 1.0 | 24 | 16.2 | 0/0 | 0 |
+| chttp-fast-scriptc | missing | 95,093 | 1.18x | 0.00 | 1.0 | 2.0 | 28 | 16.2 | 0/0 | 1701083 |
+| chttp-fast-scriptc | mixed | 93,685 | 1.12x | 0.00 | 1.0 | 2.0 | 242 | 16.2 | 0/0 | 0 |
+| chttp-fast-scriptc | root | 102,421 | 1.08x | 0.00 | 1.0 | 1.0 | 22 | 15.9 | 0/0 | 0 |
+| chttp-fast-scriptc | hello | 97,856 | 1.24x | 0.00 | 1.0 | 1.0 | 24 | 16.4 | 0/0 | 0 |
+| chttp-fast-scriptc | postuser | 102,155 | 1.14x | 0.00 | 1.0 | 1.0 | 19 | 15.9 | 0/0 | 0 |
+| chttp-node | json | 79,179 | 0.87x | 0.00 | 1.0 | 3.0 | 35 | 14.1 | 0/0 | 0 |
+| chttp-node | user | 78,731 | 0.93x | 0.00 | 1.0 | 2.0 | 24 | 13.6 | 0/0 | 0 |
+| chttp-node | echo64 | 72,893 | 1.16x | 0.00 | 1.0 | 2.0 | 39 | 15.8 | 0/0 | 0 |
+| chttp-node | echo1k | 62,888 | 0.95x | 0.00 | 1.0 | 2.0 | 22 | 71.4 | 0/0 | 0 |
+| chttp-node | deep | 83,947 | 0.96x | 0.00 | 1.0 | 2.0 | 24 | 14.5 | 0/0 | 0 |
+| chttp-node | files | 81,941 | 0.94x | 0.00 | 1.0 | 1.0 | 22 | 13.4 | 0/0 | 0 |
+| chttp-node | missing | 67,221 | 0.84x | 0.00 | 3.0 | 4.0 | 39 | 11.5 | 0/0 | 1289727 |
+| chttp-node | mixed | 57,496 | 0.69x | 0.00 | 3.0 | 4.0 | 277 | 9.9 | 0/0 | 0 |
+| chttp-node | root | 68,189 | 0.72x | 0.00 | 3.0 | 4.0 | 29 | 10.6 | 0/0 | 0 |
+| chttp-node | hello | 77,013 | 0.98x | 0.00 | 2.0 | 3.0 | 28 | 12.9 | 0/0 | 0 |
+| chttp-node | postuser | 96,821 | 1.08x | 0.00 | 1.0 | 1.0 | 26 | 15.0 | 0/0 | 0 |
+| chttp-node | json-p10 | 110,035 | 0.95x | 10.00 | 13.0 | 15.0 | 66 | 19.6 | 0/0 | 0 |
+| chttp-scriptc | json | 103,947 | 1.15x | 0.00 | 0.0 | 1.0 | 21 | 18.5 | 0/0 | 0 |
+| chttp-scriptc | user | 103,936 | 1.23x | 0.00 | 0.0 | 1.0 | 20 | 17.9 | 0/0 | 0 |
+| chttp-scriptc | echo64 | 102,571 | 1.63x | 0.00 | 1.0 | 1.0 | 20 | 22.3 | 0/0 | 0 |
+| chttp-scriptc | echo1k | 96,843 | 1.47x | 0.00 | 1.0 | 1.0 | 21 | 109.9 | 0/0 | 0 |
+| chttp-scriptc | deep | 99,413 | 1.14x | 0.00 | 1.0 | 1.0 | 21 | 17.2 | 0/0 | 0 |
+| chttp-scriptc | files | 102,336 | 1.18x | 0.00 | 1.0 | 1.0 | 20 | 16.8 | 0/0 | 0 |
+| chttp-scriptc | missing | 96,747 | 1.20x | 0.00 | 1.0 | 2.0 | 18 | 16.5 | 0/0 | 1710868 |
+| chttp-scriptc | mixed | 95,008 | 1.14x | 0.00 | 1.0 | 3.0 | 233 | 16.4 | 0/0 | 0 |
+| chttp-scriptc | root | 107,008 | 1.12x | 0.00 | 0.0 | 1.0 | 20 | 16.6 | 0/0 | 0 |
+| chttp-scriptc | hello | 101,323 | 1.28x | 0.00 | 1.0 | 1.0 | 24 | 17.0 | 0/0 | 0 |
+| chttp-scriptc | postuser | 105,685 | 1.17x | 0.00 | 0.0 | 1.0 | 21 | 16.4 | 0/0 | 0 |
+| chttp-scriptc | json-p10 | 204,109 | 1.76x | 4.00 | 7.0 | 9.0 | 45 | 36.4 | 0/0 | 0 |
 | express-bun | json | 84,928 | 0.94x | 0.00 | 1.0 | 1.0 | 22 | 18.5 | 0/0 | 0 |
 | express-bun | user | 83,499 | 0.99x | 0.00 | 1.0 | 1.0 | 22 | 17.7 | 0/0 | 0 |
 | express-bun | echo64 | 65,181 | 1.04x | 0.00 | 1.0 | 2.0 | 26 | 16.8 | 0/0 | 0 |
@@ -259,22 +261,22 @@ variance observed; headline `json` cell is median of 5 reps, others median of 3)
 | c-mongoose | user | 80,631 | 80,313 | 100,789 | 1.16 | 2.44 | 4.2 | 9 | 0 |
 | c-mongoose | root | 95,343 | 94,976 | 119,179 | 1.17 | 2.97 | 20.2 | 43 | 0 |
 | c-mongoose | postuser | 99,584 | 99,202 | 124,480 | 1.14 | 2.43 | 4.8 | 12 | 0 |
-| ch3-bun | json | 83,712 | 83,382 | 104,640 | 1.20 | 3.66 | 7.6 | 25 | 0 |
-| ch3-bun | user | 84,045 | 83,710 | 105,056 | 1.28 | 12.99 | 42.4 | 62 | 0 |
-| ch3-bun | root | 89,600 | 89,252 | 112,000 | 1.21 | 4.11 | 21.7 | 58 | 0 |
-| ch3-bun | postuser | 88,516 | 88,177 | 110,645 | 1.25 | 8.44 | 54.8 | 72 | 0 |
-| ch3-fast-scriptc | json | 81,792 | 81,472 | 102,240 | 1.11 | 3.32 | 11.9 | 43 | 0 |
-| ch3-fast-scriptc | user | 80,905 | 80,589 | 101,131 | 1.08 | 2.32 | 4.7 | 10 | 0 |
-| ch3-fast-scriptc | root | 81,937 | 81,614 | 102,421 | 1.06 | 2.17 | 4.1 | 9 | 0 |
-| ch3-fast-scriptc | postuser | 81,724 | 81,402 | 102,155 | 1.06 | 2.24 | 4.9 | 12 | 0 |
-| ch3-node | json | 63,343 | 59,473 | 79,179 | 1.17 | 14.33 | 185.7 | 346 | 0 |
-| ch3-node | user | 62,985 | 61,220 | 78,731 | 1.19 | 50.50 | 250.0 | 290 | 0 |
-| ch3-node | root | 54,551 | 54,337 | 68,189 | 0.89 | 1.95 | 4.3 | 11 | 0 |
-| ch3-node | postuser | 77,457 | 77,138 | 96,821 | 1.28 | 5.82 | 12.3 | 24 | 0 |
-| ch3-scriptc | json | 83,157 | 80,821 | 103,947 | 1.09 | 2.75 | 47.5 | 83 | 0 |
-| ch3-scriptc | user | 83,149 | 82,824 | 103,936 | 1.12 | 2.76 | 6.8 | 27 | 0 |
-| ch3-scriptc | root | 85,606 | 85,253 | 107,008 | 1.07 | 2.23 | 4.8 | 15 | 0 |
-| ch3-scriptc | postuser | 84,548 | 82,176 | 105,685 | 1.08 | 2.48 | 29.3 | 76 | 0 |
+| chttp-bun | json | 83,712 | 83,382 | 104,640 | 1.20 | 3.66 | 7.6 | 25 | 0 |
+| chttp-bun | user | 84,045 | 83,710 | 105,056 | 1.28 | 12.99 | 42.4 | 62 | 0 |
+| chttp-bun | root | 89,600 | 89,252 | 112,000 | 1.21 | 4.11 | 21.7 | 58 | 0 |
+| chttp-bun | postuser | 88,516 | 88,177 | 110,645 | 1.25 | 8.44 | 54.8 | 72 | 0 |
+| chttp-fast-scriptc | json | 81,792 | 81,472 | 102,240 | 1.11 | 3.32 | 11.9 | 43 | 0 |
+| chttp-fast-scriptc | user | 80,905 | 80,589 | 101,131 | 1.08 | 2.32 | 4.7 | 10 | 0 |
+| chttp-fast-scriptc | root | 81,937 | 81,614 | 102,421 | 1.06 | 2.17 | 4.1 | 9 | 0 |
+| chttp-fast-scriptc | postuser | 81,724 | 81,402 | 102,155 | 1.06 | 2.24 | 4.9 | 12 | 0 |
+| chttp-node | json | 63,343 | 59,473 | 79,179 | 1.17 | 14.33 | 185.7 | 346 | 0 |
+| chttp-node | user | 62,985 | 61,220 | 78,731 | 1.19 | 50.50 | 250.0 | 290 | 0 |
+| chttp-node | root | 54,551 | 54,337 | 68,189 | 0.89 | 1.95 | 4.3 | 11 | 0 |
+| chttp-node | postuser | 77,457 | 77,138 | 96,821 | 1.28 | 5.82 | 12.3 | 24 | 0 |
+| chttp-scriptc | json | 83,157 | 80,821 | 103,947 | 1.09 | 2.75 | 47.5 | 83 | 0 |
+| chttp-scriptc | user | 83,149 | 82,824 | 103,936 | 1.12 | 2.76 | 6.8 | 27 | 0 |
+| chttp-scriptc | root | 85,606 | 85,253 | 107,008 | 1.07 | 2.23 | 4.8 | 15 | 0 |
+| chttp-scriptc | postuser | 84,548 | 82,176 | 105,685 | 1.08 | 2.48 | 29.3 | 76 | 0 |
 | express-bun | json | 67,942 | 67,673 | 84,928 | 1.37 | 7.02 | 15.9 | 35 | 0 |
 | express-bun | user | 66,799 | 66,538 | 83,499 | 1.35 | 8.55 | 70.5 | 89 | 0 |
 | express-bun | root | 72,670 | 72,384 | 90,837 | 1.33 | 32.50 | 100.4 | 118 | 0 |
@@ -339,10 +341,10 @@ variance observed; headline `json` cell is median of 5 reps, others median of 3)
 | subject | cold start ms (median of 10) | RSS after 100k reqs | binary size |
 |---------|------------------------------|---------------------|-------------|
 | c-mongoose | 3 | 2 MB | 0.1 MB |
-| ch3-bun | 25 | 60 MB | — |
-| ch3-fast-scriptc | 6 | 4 MB | 0.7 MB |
-| ch3-node | 83 | 116 MB | — |
-| ch3-scriptc | 3 | 4 MB | 0.6 MB |
+| chttp-bun | 25 | 60 MB | — |
+| chttp-fast-scriptc | 6 | 4 MB | 0.7 MB |
+| chttp-node | 83 | 116 MB | — |
+| chttp-scriptc | 3 | 4 MB | 0.6 MB |
 | express-bun | 61 | 67 MB | — |
 | express-node | 72 | 140 MB | — |
 | fastify-bun | 100 | 77 MB | — |
@@ -366,7 +368,7 @@ whether the server sustains it plus the corrected latency spectrum. Result:
 every subject sustained **97-100% of the fixed rate** on every cell — the
 autocannon rps numbers are confirmed sustainable by an independent load
 generator (different request loop, different HTTP parser, different stat
-collection). The one sub-100% cluster (`ch3-node` json 94%, `user` 97%)
+collection). The one sub-100% cluster (`chttp-node` json 94%, `user` 97%)
 reflects its thinner margin vs the other runtimes, not a measurement
 disagreement. No cell showed a >20% unexplained divergence between tools.
 
@@ -374,10 +376,10 @@ disagreement. No cell showed a >20% unexplained divergence between tools.
 
 - `raw-node` json 85.9k → 90.7k (+5.6%, inside noise); same ordering across the
   board — baseline ratios hold.
-- ch3 now measured: `ch3-node` 0.69-1.08× raw-node depending on cell;
-  **`ch3-scriptc` 1.08-1.76× raw-node on every cell**; `ch3-bun` is the
+- chttp now measured: `chttp-node` 0.69-1.08× raw-node depending on cell;
+  **`chttp-scriptc` 1.08-1.76× raw-node on every cell**; `chttp-bun` is the
   strongest interpreted variant (1.02-1.65×).
-- `ch3-scriptc` ≈ `ch3-fast-scriptc` ≈ `raw-scriptc` within a few % — the
+- `chttp-scriptc` ≈ `chttp-fast-scriptc` ≈ `raw-scriptc` within a few % — the
   compiled program-code build has no measurable router overhead vs the
   compiled bare-node baseline, and beats every interpreted subject except on
   the `postuser`/`echo1k` corners where h3-bun/hono-bun edge ahead.
@@ -385,11 +387,11 @@ disagreement. No cell showed a >20% unexplained divergence between tools.
 ## Surprises worth reporting
 
 - **Pipelining multiplies scriptc**: `json-p10` (-c100 -p10) lifts
-  `ch3-scriptc` to **204k rps** and `raw-scriptc` to 197k — ~2× its own
+  `chttp-scriptc` to **204k rps** and `raw-scriptc` to 197k — ~2× its own
   -c64 rate, the largest pipelining gain of any subject (node-side subjects
   gain ~1.1-1.4×). The compiled runtime's per-request cost is so low that
   per-connection parsing/dispatch was the bottleneck, not per-request work.
-- **ch3-node is weakest on `mixed`/`root`/`missing`** (0.69×/0.72×/0.84×):
+- **chttp-node is weakest on `mixed`/`root`/`missing`** (0.69×/0.72×/0.84×):
   the interpreted wrapper pays most on wildcard-miss and table-scan routes;
   the compiled build eliminates that gap entirely.
 - **express-node is the clear bottom** (0.44-0.65× raw-node) and
@@ -399,19 +401,19 @@ disagreement. No cell showed a >20% unexplained divergence between tools.
   bun collapses on `GET /` only — its `/` handler hits a slow path under
   bun's HTTP server that doesn't reproduce on node (103k). Worth a look if
   fmw+bun is ever a real deployment target.
-- **`ch3-node` `postuser` inverts the pattern** (1.08×, best ch3-node cell):
-  an empty-body POST hits almost no ch3 code — another data point that the
+- **`chttp-node` `postuser` inverts the pattern** (1.08×, best chttp-node cell):
+  an empty-body POST hits almost no chttp code — another data point that the
   interpreted overhead is in route/param processing, not dispatch.
 - **`hono-bun` `root` max latency 1005ms** under wrk2: single-run tail spike,
   p95 is 4.78ms — flagged, not a regression.
-- Cold start/RSS (Raygun axis): `ch3-scriptc` starts in **3ms** with **4MB
+- Cold start/RSS (Raygun axis): `chttp-scriptc` starts in **3ms** with **4MB
   RSS** after 100k reqs (0.6MB binary) — vs 83ms/116MB for the same app on
   node, 25ms/60MB on bun, and 3ms/3MB for raw-scriptc. The router costs
   ~0.1-0.3MB binary + ~1MB RSS over bare node:http compiled.
 
 ## Provenance
 
-`ch3-scriptc`/`ch3-fast-scriptc` built via
+`chttp-scriptc`/`chttp-fast-scriptc` built via
 `scriptc build --optimization=speed` (program-code) from `devin/compiled-mode`
 sources grafted into this branch — **not** `--npm-static` (measured 40-70%
 cliff, deliberately unreported). `ReqView.header()` in `src/index.ts` was
@@ -434,9 +436,9 @@ autocannon -c64 -d3, same machine, back-to-back runs (pre = stash of 15e32ec^):
 | mixed | 309k | 315k |
 
 Post-async within noise (slightly ahead on both cells). The one return slot +
-one branch per composed layer is free. Note: earlier ch3-node rows in this file
+one branch per composed layer is free. Note: earlier chttp-node rows in this file
 (79k json) were measured through the old bench app that imported src directly;
-the current app runs against the workspace-linked `ch3` package. Do not compare
+the current app runs against the workspace-linked `chttp` package. Do not compare
 rows across that boundary.
 
 ## scriptc 0.3.0 async-first matrix (2026-10-13, Linux VM)
@@ -458,34 +460,34 @@ against prior sections (different host).
 
 | subject | json | user | echo64 | echo1k | deep | files | missing | mixed |
 |---|---|---|---|---|---|---|---|---|
-| ch3-async-elf | 102,123 | 103,360 | 102,016 | 98,101 | 102,165 | 100,171 | 99,691 | 101,344 |
-| ch3-elf | 99,989 | 99,584 | 98,560 | 95,840 | 100,171 | 98,549 | 96,640 | 96,437 |
-| ch3-fast-elf | 98,752 | 99,744 | 97,259 | 85,045 | 96,981 | 97,781 | 97,365 | 92,149 |
+| chttp-async-elf | 102,123 | 103,360 | 102,016 | 98,101 | 102,165 | 100,171 | 99,691 | 101,344 |
+| chttp-elf | 99,989 | 99,584 | 98,560 | 95,840 | 100,171 | 98,549 | 96,640 | 96,437 |
+| chttp-fast-elf | 98,752 | 99,744 | 97,259 | 85,045 | 96,981 | 97,781 | 97,365 | 92,149 |
 | raw-async-elf | 103,008 | 100,576 | 100,789 | 95,605 | 101,568 | 102,976 | 99,872 | 98,795 |
 | raw-elf | 97,771 | 96,843 | 97,941 | 93,557 | 96,800 | 97,931 | 94,144 | 79,157 |
 | raw-node | 91,147 | 89,696 | 75,136 | 69,504 | 91,072 | 90,507 | 88,832 | 84,395 |
-| ch3-async-node | 82,581 | 79,936 | 71,000 | 58,944 | 77,131 | 78,731 | 85,952 | 77,440 |
-| ch3-node | 83,179 | 82,208 | 72,693 | 60,341 | 83,360 | 80,213 | 83,904 | 76,395 |
+| chttp-async-node | 82,581 | 79,936 | 71,000 | 58,944 | 77,131 | 78,731 | 85,952 | 77,440 |
+| chttp-node | 83,179 | 82,208 | 72,693 | 60,341 | 83,360 | 80,213 | 83,904 | 76,395 |
 | fmw-node | 87,008 | – | 74,453 | – | – | – | 104,533 | 81,365 |
 | fastify-node | 85,099 | – | 65,552 | – | – | – | 81,536 | 81,611 |
 | hono-node | 84,192 | – | 63,019 | – | – | – | 76,213 | 77,099 |
 | h3-node | 78,389 | – | 45,429 | – | – | – | 37,669 | 66,072 |
 | express-node | 43,067 | – | 33,620 | – | – | – | 45,136 | 34,148 |
 
-Ratio vs raw-node (json / mixed): ch3-async-elf 1.12x / 1.20x,
-ch3-elf 1.10x / 1.14x, ch3-fast-elf 1.08x / 1.09x, raw-elf 1.07x / 0.94x,
-raw-async-elf 1.13x / 1.17x, ch3-node 0.91x / 0.91x, fmw 0.95x / 0.96x,
+Ratio vs raw-node (json / mixed): chttp-async-elf 1.12x / 1.20x,
+chttp-elf 1.10x / 1.14x, chttp-fast-elf 1.08x / 1.09x, raw-elf 1.07x / 0.94x,
+raw-async-elf 1.13x / 1.17x, chttp-node 0.91x / 0.91x, fmw 0.95x / 0.96x,
 fastify 0.93x / 0.97x, hono 0.92x / 0.91x, h3 0.86x / 0.78x,
 express 0.47x / 0.40x. Zero errors/timeouts in every cell.
 
 Observations:
 
-- ch3-async-elf beats raw node:http on every cell (1.12x–1.47x json→echo1k)
+- chttp-async-elf beats raw node:http on every cell (1.12x–1.47x json→echo1k)
   and beats every JS/TS framework row by ~18–137% (nearest: fmw/fastify json
   ~85–87k vs 102k).
 - Async is not a tax under scriptc: async-subject ELFs beat their sync twins
-  on every cell (ch3-async 102k vs ch3 100k json; raw-async 103k vs raw 98k).
-  Under node the async settle path costs ~1–3% (ch3-async-node vs ch3-node,
+  on every cell (chttp-async 102k vs chttp 100k json; raw-async 103k vs raw 98k).
+  Under node the async settle path costs ~1–3% (chttp-async-node vs chttp-node,
   within noise).
 - fmw's 104.5k on the missing cell is a fast 404 short-circuit — router-only
   lookup, no framework lifecycle. Not a routing-dispatch comparison.

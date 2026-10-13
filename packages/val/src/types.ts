@@ -35,7 +35,7 @@ export interface VStdResult {
 }
 
 // Failure sentinel: `_run` returns this object — class identity is the
-// discriminator (mirrors ch3's isSettled trick), never a data value.
+// discriminator (mirrors chttp's isSettled trick), never a data value.
 export class VFail {
   _f: number;
   constructor() {

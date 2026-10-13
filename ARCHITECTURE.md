@@ -1,6 +1,6 @@
-# ch3 architecture
+# chttp architecture
 
-ch3 is a minimal HTTP router for `node:http`, async-first. The package has zero runtime dependencies and is authored in the scriptc-compilable subset of TypeScript, so `scriptc build` can statically lower the whole package into a native binary. Routes are registered on an `App`, matched against a trie at request time, and handled by a chain of middleware plus one handler that writes the response through `Ctx` helpers. Handlers and middleware may return promises: dispatch awaits a non-settled chain result inside `settleChain`, a fire-and-forget async helper. Synchronous handlers complete without scheduling a microtask (one return slot, three identity compares).
+chttp is a minimal HTTP router for `node:http`, async-first. The package has zero runtime dependencies and is authored in the scriptc-compilable subset of TypeScript, so `scriptc build` can statically lower the whole package into a native binary. Routes are registered on an `App`, matched against a trie at request time, and handled by a chain of middleware plus one handler that writes the response through `Ctx` helpers. Handlers and middleware may return promises: dispatch awaits a non-settled chain result inside `settleChain`, a fire-and-forget async helper. Synchronous handlers complete without scheduling a microtask (one return slot, three identity compares).
 
 ## Request flow
 
@@ -38,11 +38,11 @@ flowchart TD
 
 | Module                      | Role                                                                                                                                            |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/ch3/src/index.ts` | The whole core: `App`, `Ctx`, `ReqView`, `compose`, `matchPath`, `addRoute`, error path, exported `createRouter()` factory                      |
-| `packages/ch3/src/gen.ts`   | The `GenDispatch` base class and `DispatchFn` type, the interface between runtime dispatch and build-generated route modules                    |
-| `packages/unplugin/src`     | Build-time plugin: extracts the literal route table from `*.ch3.ts` modules and emits a `routes.gen.ts` that satisfies `docs/route-contract.md` |
+| `packages/chttp/src/index.ts` | The whole core: `App`, `Ctx`, `ReqView`, `compose`, `matchPath`, `addRoute`, error path, exported `createRouter()` factory                      |
+| `packages/chttp/src/gen.ts`   | The `GenDispatch` base class and `DispatchFn` type, the interface between runtime dispatch and build-generated route modules                    |
+| `packages/unplugin/src`     | Build-time plugin: extracts the literal route table from `*.chttp.ts` modules and emits a `routes.gen.ts` that satisfies `docs/route-contract.md` |
 
-Inside `packages/ch3/src/index.ts`:
+Inside `packages/chttp/src/index.ts`:
 
 - `ReqView` (line 37) is a read view over `IncomingMessage`: method, path, query, headers, body. Param and query tables materialize lazily; dispatch skips param work entirely for handlers that never read them.
 - `Ctx` (line 213) wraps `ReqView` plus `ServerResponse` and exposes the response-writing helpers. `sent` records whether a body-carrying helper already flushed, which the error path consults.
@@ -81,7 +81,7 @@ A path match whose method misses goes through `allow405` instead: a 405 with an 
 
 ## scriptc compilation
 
-ch3's source is written inside the scriptc-compilable subset so `scriptc build` lowers it to a native binary. The constraints that force the code into its current shape:
+chttp's source is written inside the scriptc-compilable subset so `scriptc build` lowers it to a native binary. The constraints that force the code into its current shape:
 
 - The only async function in the package is `settleChain`, the fire-and-forget settler called when a chain result is not already settled. Promises cannot be detected directly in the subset: reading `.then` as a value refuses (SC1090; in expression position it silently lowers to `undefined`), `instanceof Promise` is refused, and a union mixing `Promise` and non-Promise arms refuses (SC2009). `await` is the one narrowing left: it passthroughs non-thenables and joins real promises, so the discriminator is the identity check `r === undefined || r === null || r === c` plus `await` for everything else. Sync-complete returns take the zero-microtask path and async handlers get full settle semantics.
 - `| null` unions only, never `| undefined`.
@@ -93,7 +93,7 @@ ch3's source is written inside the scriptc-compilable subset so `scriptc build` 
 - `String(x)` / `Number(x)` coercion at function entry for parameters that arrive `unknown`.
 - Bodies are read with `req.on('data' | 'end')` plus string concatenation. `Buffer.concat` is not lowered.
 
-The `GenDispatch` seam (`packages/ch3/src/gen.ts`) is a base class whose default `dispatch` returns `false`. The unplugin emits a `class CompiledRoutes extends GenDispatch` from the extracted route table and the app registers it with `app.withDispatch(...)`. `_dispatch` offers every request to that module first, so generated code can dispatch literal routes directly (seeding pre-materialized param pairs via `ReqView._seedPm`) and bypass the general trie entirely. The unplugin is deliberately deterministic and positional: only top-level registrations with compile-time literal paths count, everything else stays on the runtime router with a warning.
+The `GenDispatch` seam (`packages/chttp/src/gen.ts`) is a base class whose default `dispatch` returns `false`. The unplugin emits a `class CompiledRoutes extends GenDispatch` from the extracted route table and the app registers it with `app.withDispatch(...)`. `_dispatch` offers every request to that module first, so generated code can dispatch literal routes directly (seeding pre-materialized param pairs via `ReqView._seedPm`) and bypass the general trie entirely. The unplugin is deliberately deterministic and positional: only top-level registrations with compile-time literal paths count, everything else stays on the runtime router with a warning.
 
 Reference documents:
 

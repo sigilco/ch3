@@ -1,8 +1,8 @@
-// ch3 async canonical app — identical route table to ch3.ts, but every
+// chttp async canonical app — identical route table to chttp.ts, but every
 // handler is `async`, so each request exercises the thenable settle path
 // (microtask scheduling + then/catch attach) under node, bun, and the
 // scriptc ELF build.
-import { createRouter } from "../../packages/ch3/src/index.ts";
+import { createRouter } from "../../packages/chttp/src/index.ts";
 import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from "./common.mjs";
 
 const app = createRouter();

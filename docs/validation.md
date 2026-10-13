@@ -1,6 +1,6 @@
 # Validation
 
-Runtime validation at the edge. In Node mode any [Standard Schema](https://standardschema.dev) library works. npm schema libraries do not compile into a ch3 ELF, so the repo ships `@ch3/val`, a subset-native Standard Schema library.
+Runtime validation at the edge. In Node mode any [Standard Schema](https://standardschema.dev) library works. npm schema libraries do not compile into a chttp ELF, so the repo ships `@chttp/val`, a subset-native Standard Schema library.
 
 ## TL;DR
 
@@ -8,21 +8,21 @@ Runtime validation at the edge. In Node mode any [Standard Schema](https://stand
 | ------------------------- | ---------------------- | ----------------------------------------------- |
 | Node (`node apps/*.ts`)   | none (read body only)  | ~72k req/s                                      |
 | Node                      | `JSON.parse` only      | ~65k req/s                                      |
-| Node                      | `@ch3/val` `safeParse` | ~57.9k req/s (same band as valibot)             |
-| **ELF**                   | `@ch3/val` `safeParse` | **~73k req/s** (-26% vs unvalidated ELF)        |
+| Node                      | `@chttp/val` `safeParse` | ~57.9k req/s (same band as valibot)             |
+| **ELF**                   | `@chttp/val` `safeParse` | **~73k req/s** (-26% vs unvalidated ELF)        |
 | **ELF** (`scriptc build`) | none                   | ~97-104k req/s                                  |
 
 - In Node mode validation costs ~10-18% of request throughput, comparable to what `JSON.parse` itself costs. Pick any Standard Schema library on API taste.
-- In ELF mode `@ch3/val` is the way to validate inside the compiled binary.
+- In ELF mode `@chttp/val` is the way to validate inside the compiled binary.
 
-## `@ch3/val`
+## `@chttp/val`
 
-`packages/val` is a minimal Standard Schema v1 library written inside the same compilable subset as ch3. `scriptc coverage` on a ch3 app using it: **100% static**.
+`packages/val` is a minimal Standard Schema v1 library written inside the same compilable subset as chttp. `scriptc coverage` on a chttp app using it: **100% static**.
 
 API mirrors [valibot](https://github.com/open-circle/valibot) where the subset allows:
 
 ```ts
-import * as v from "@ch3/val";
+import * as v from "@chttp/val";
 
 const Item = v.strictObject({
   sku: v.pipe(v.string(), v.minLength(1)),
@@ -57,9 +57,9 @@ Shipped surface: `string` `number` `boolean` `any` `unknown` `never` `literal` `
 
 ### How it stays fast
 
-Kind-tagged schema classes (same pattern as ch3's `Context`/`ReqView`) with a module-level `VFail` sentinel for failure identity, and a shared push/pop `path` stack: no exception or record allocation on the happy path beyond the output record. Validation costs ~26% of ELF request throughput on the bench schema.
+Kind-tagged schema classes (same pattern as chttp's `Context`/`ReqView`) with a module-level `VFail` sentinel for failure identity, and a shared push/pop `path` stack: no exception or record allocation on the happy path beyond the output record. Validation costs ~26% of ELF request throughput on the bench schema.
 
 ## Recommendation
 
 - **Node builds:** any Standard Schema library; validation is not the bottleneck.
-- **ELF builds:** `@ch3/val`.
+- **ELF builds:** `@chttp/val`.

@@ -32,8 +32,8 @@ jobs:
       - name: Verify tag matches package versions
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          for pkg in ch3 @ch3/val @ch3/unplugin; do
-            V=$(node -p "require('./packages/${pkg#@ch3/}/package.json').version")
+          for pkg in chttp @chttp/val @chttp/unplugin; do
+            V=$(node -p "require('./packages/${pkg#@chttp/}/package.json').version")
             [ "$V" = "$TAG" ] || { echo "version mismatch: $pkg at $V, tag $TAG"; exit 1; }
           done
       - name: Publish all workspace packages

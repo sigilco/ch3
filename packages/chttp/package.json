@@ -1,5 +1,5 @@
 {
-  "name": "ch3",
+  "name": "chttp",
   "version": "0.1.0",
   "description": "Minimal async-first HTTP router authored inside the scriptc compilable subset",
   "keywords": [
@@ -11,14 +11,14 @@
     "router-http",
     "scriptc"
   ],
-  "homepage": "https://github.com/sigilco/ch3#readme",
+  "homepage": "https://github.com/sigilco/chttp#readme",
   "bugs": {
-    "url": "https://github.com/sigilco/ch3/issues"
+    "url": "https://github.com/sigilco/chttp/issues"
   },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sigilco/ch3.git"
+    "url": "git+https://github.com/sigilco/chttp.git"
   },
   "files": [
     "dist",

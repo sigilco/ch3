@@ -1,7 +1,7 @@
-// ch3 canonical app — wired against the frozen createRouter contract
+// chttp canonical app — wired against the frozen createRouter contract
 // (DESIGN.md §2/§7). The library core lands in ../../src/ in parallel;
 // this file is ready to run the moment it does.
-import { createRouter } from "../../packages/ch3/src/index.ts";
+import { createRouter } from "../../packages/chttp/src/index.ts";
 import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from "./common.mjs";
 
 const app = createRouter();

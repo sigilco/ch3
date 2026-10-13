@@ -1,5 +1,5 @@
 {
-  "name": "ch3-example-json-api",
+  "name": "chttp-example-json-api",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "start": "./app"
   },
   "dependencies": {
-    "ch3": "0.1.0"
+    "chttp": "0.1.0"
   },
   "devDependencies": {
     "scriptc": "0.3.0"

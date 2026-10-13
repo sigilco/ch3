@@ -1,4 +1,4 @@
-import { createRouter } from "ch3";
+import { createRouter } from "chttp";
 
 const app = createRouter();
 

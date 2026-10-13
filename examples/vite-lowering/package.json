@@ -1,5 +1,5 @@
 {
-  "name": "ch3-example-vite-lowering",
+  "name": "chttp-example-vite-lowering",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,10 +10,10 @@
     "start:runtime": "node src/runtime.ts"
   },
   "dependencies": {
-    "ch3": "0.1.0"
+    "chttp": "0.1.0"
   },
   "devDependencies": {
-    "@ch3/unplugin": "0.1.0",
+    "@chttp/unplugin": "0.1.0",
     "typescript": "^5.9.0",
     "vite": "^7.0.0",
     "@types/node": "^24.0.0"

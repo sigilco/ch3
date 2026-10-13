@@ -11,9 +11,9 @@ docker compose -f bench/docker-compose.yml up --build
 or without compose:
 
 ```bash
-docker build -f bench/Dockerfile -t ch3-bench .
+docker build -f bench/Dockerfile -t chttp-bench .
 docker run --rm -v "$PWD/bench/results:/work/bench/results" \
-                 -v "$PWD/bench/results-wrk2:/work/bench/results-wrk2" ch3-bench
+                 -v "$PWD/bench/results-wrk2:/work/bench/results-wrk2" chttp-bench
 ```
 
 The image installs node 24, bun, scriptc, go, rust, clang, and builds wrk2 +
@@ -37,7 +37,7 @@ bash run-latency.sh    # wrk2 fixed-rate    -> results-wrk2/*.jsonl
 node lib/render-results.mjs > RESULTS-v2.md  # aggregated tables to stdout
 ```
 
-Subset: `bash run.sh raw-node ch3-node fastify-node` /
+Subset: `bash run.sh raw-node chttp-node fastify-node` /
 `bash run-latency.sh raw-node`. wrk2 rates derive from each subject's
 autocannon median, so run `run.sh` first.
 

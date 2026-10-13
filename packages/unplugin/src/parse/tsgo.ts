@@ -185,7 +185,7 @@ export class TsgoParser implements Parser {
   parse(fileName: string, code: string): AstSource {
     if (this.failed) {
       throw new Error(
-        "unplugin-ch3: tsgo parser failed to initialize earlier; refusing to retry (use parser: 'classic')",
+        "unplugin-chttp: tsgo parser failed to initialize earlier; refusing to retry (use parser: 'classic')",
       );
     }
     try {
@@ -193,7 +193,7 @@ export class TsgoParser implements Parser {
     } catch (e) {
       this.failed = true;
       throw new Error(
-        "unplugin-ch3: tsgo parser requires typescript@next (7.x nightly) providing the 'typescript/sync' subpath; got: " +
+        "unplugin-chttp: tsgo parser requires typescript@next (7.x nightly) providing the 'typescript/sync' subpath; got: " +
           String(e),
       );
     }

@@ -6,7 +6,7 @@
 // middleware chains, mounts, and exactly one dynamic bail per file — the
 // plugin must warn on it and leave that route to runtime registration).
 //
-// Output: bench/plugin/corpus/<size>/modNNN.ch3.ts (gitignored).
+// Output: bench/plugin/corpus/<size>/modNNN.chttp.ts (gitignored).
 //
 // Usage: node gen-corpus.mjs [sizes...]   e.g. node gen-corpus.mjs 10 100 1000
 
@@ -62,7 +62,7 @@ function moduleSource(i, size) {
   const dyn = `const dyn${i} = '/dyn${i}'\napp.get(dyn${i}, (c) => c.text('dynamic'))`;
   return [
     `// corpus module ${i} of ${size} (generated — see gen-corpus.mjs)`,
-    `import { createRouter } from './ch3.ts'`,
+    `import { createRouter } from './chttp.ts'`,
     ``,
     `export const app = createRouter()`,
     ``,
@@ -75,9 +75,9 @@ function moduleSource(i, size) {
   ].join("\n");
 }
 
-// Barrel the plugin imports from: re-export the workspace ch3 source the same
+// Barrel the plugin imports from: re-export the workspace chttp source the same
 // way fixtures/vite-app does, so the generated dispatch imports resolve.
-const CH3_BARREL = `export * from '../../../packages/ch3/src/index.ts'\n`;
+const CHTTP_BARREL = `export * from '../../../packages/chttp/src/index.ts'\n`;
 
 const sizes = process.argv.slice(2).map(Number).filter((n) => n > 0);
 const list = sizes.length > 0 ? sizes : [10, 100, 1000];
@@ -86,9 +86,9 @@ for (const size of list) {
   const dir = join(outRoot, String(size));
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "ch3.ts"), CH3_BARREL);
+  writeFileSync(join(dir, "chttp.ts"), CHTTP_BARREL);
   for (let i = 0; i < size; i++) {
-    writeFileSync(join(dir, `mod${i}.ch3.ts`), moduleSource(i, size));
+    writeFileSync(join(dir, `mod${i}.chttp.ts`), moduleSource(i, size));
   }
   console.log(`corpus/${size}: ${size} modules`);
 }

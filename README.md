@@ -1,4 +1,4 @@
-# ch3
+# chttp
 
 A minimal async-first HTTP router for `node:http`. Handlers and middleware
 may be `async`; the router core ships no runtime dependencies.
@@ -6,7 +6,7 @@ may be `async`; the router core ships no runtime dependencies.
 The package is authored inside the **scriptc compilable subset**
 ([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
 native-ELF compiler): the same source lowers statically into a single
-binary via `scriptc build --npm-static ch3` with zero deferred sites
+binary via `scriptc build --npm-static chttp` with zero deferred sites
 (100% static coverage, scriptc 0.3.0).
 
 ## 🚀 Quick start
@@ -14,13 +14,13 @@ binary via `scriptc build --npm-static ch3` with zero deferred sites
 Install:
 
 ```bash
-npm i ch3
+npm i chttp
 ```
 
 Import:
 
 ```ts
-import { createRouter } from "ch3";
+import { createRouter } from "chttp";
 
 const app = createRouter();
 
@@ -112,11 +112,11 @@ handler never responds, or when the handler itself throws or rejects. The `405` 
 
 ## ✔️ Compile to a native binary
 
-Because ch3 stays inside the scriptc subset, the same code compiles to a
+Because chttp stays inside the scriptc subset, the same code compiles to a
 native ELF:
 
 ```sh
-scriptc build app.js --npm-static ch3 --optimization=speed -o app-bin
+scriptc build app.js --npm-static chttp --optimization=speed -o app-bin
 ./app-bin 3000
 ```
 
@@ -125,8 +125,8 @@ Numbers (shared VM, compare ratios not absolutes; full matrix in
 
 | subject                | json               | pipelined (-c100 -p10) | cold start | RSS after 100k req |
 | ---------------------- | ------------------ | ---------------------- | ---------- | ------------------ |
-| ch3 on node            | 0.87× raw-node     | 0.95×                  | 83 ms      | 116 MB             |
-| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)**   | **3 ms**   | **4 MB**           |
+| chttp on node            | 0.87× raw-node     | 0.95×                  | 83 ms      | 116 MB             |
+| **chttp compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)**   | **3 ms**   | **4 MB**           |
 | fastify on node        | 0.69×              | 0.65×                  | 111 ms     | 108 MB             |
 
 The compiled build sits at ≥96% of a bare compiled `node:http` server on
@@ -134,19 +134,19 @@ every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
 
 ## ✔️ Bundler plugins
 
-Two tiers, kept separate on purpose. ch3 itself needs no plugin to go native: the core is authored in the scriptc compilable subset, so `scriptc build` lowers it directly like any subset library. The plugins below are elective additions:
+Two tiers, kept separate on purpose. chttp itself needs no plugin to go native: the core is authored in the scriptc compilable subset, so `scriptc build` lowers it directly like any subset library. The plugins below are elective additions:
 
-- `@ch3/unplugin` (separate package, [`packages/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin)), via `ch3Plugin`: build-time dispatch specialization. It recovers the route table from imperative `app.get()`/`use()`/`route()` registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie walk. Works with plain vite/rollup (JS dist) and composes with `unplugin-scriptc` (ELF). Uncertain routes stay on runtime dispatch with a build warning. See [docs/unplugin.md](docs/unplugin.md).
+- `@chttp/unplugin` (separate package, [`packages/unplugin`](https://github.com/sigilco/chttp/tree/main/packages/unplugin)), via `chttpPlugin`: build-time dispatch specialization. It recovers the route table from imperative `app.get()`/`use()`/`route()` registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie walk. Works with plain vite/rollup (JS dist) and composes with `unplugin-scriptc` (ELF). Uncertain routes stay on runtime dispatch with a build warning. See [docs/unplugin.md](docs/unplugin.md).
 - `unplugin-scriptc`, via `scriptcPlugin`, which runs `scriptc coverage` diagnostics and `scriptc build` inside your bundler pipeline. See [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
 
 ```ts
 // vite.config.ts
-import { ch3Plugin } from "@ch3/unplugin";
+import { chttpPlugin } from "@chttp/unplugin";
 import { scriptcPlugin } from "unplugin-scriptc";
 
 export default defineConfig({
   plugins: [
-    ch3Plugin.vite(),
+    chttpPlugin.vite(),
     scriptcPlugin.vite({ entry: "src/main.ts", out: "dist/app" }),
   ],
 });
@@ -154,14 +154,14 @@ export default defineConfig({
 
 ## ✔️ Validation
 
-`@ch3/val` (in `packages/val`) is a Standard Schema v1 library authored
+`@chttp/val` (in `packages/val`) is a Standard Schema v1 library authored
 inside the same subset — the only way to run schema validation inside a
-compiled ch3 ELF (npm validators can't compile alongside it — see
+compiled chttp ELF (npm validators can't compile alongside it — see
 [docs/validation.md](docs/validation.md)). In Node mode it performs in the
 same band as [valibot](https://github.com/open-circle/valibot).
 
 ```ts
-import * as v from "@ch3/val";
+import * as v from "@chttp/val";
 
 const Order = v.strictObject({ id: v.pipe(v.string(), v.uuid()) });
 app.post("/order", (c) => {
@@ -175,9 +175,9 @@ app.post("/order", (c) => {
 ## 📖 Docs
 
 - [Architecture](ARCHITECTURE.md): why it compiles, the subset rules
-- [Validation](docs/validation.md): Standard Schema in node vs ELF, `@ch3/val`
+- [Validation](docs/validation.md): Standard Schema in node vs ELF, `@chttp/val`
 - [Route contract](docs/route-contract.md): the generated-dispatch seam
-- Full docs site: https://ch3js.pages.dev/
+- Full docs site: https://chttpjs.pages.dev/
 
 ## ⚙️ Build & test
 

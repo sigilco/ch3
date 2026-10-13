@@ -1,4 +1,4 @@
-// AST extraction: a routes module (*.ch3.ts) is walked with the TypeScript
+// AST extraction: a routes module (*.chttp.ts) is walked with the TypeScript
 // compiler API to recover the literal app.<method>(path, handler) table.
 //
 // Everything here is positional and deterministic — a registration only
@@ -14,8 +14,8 @@ import { ROUTE_METHODS } from "./model.ts";
 export interface ExtractOptions {
   // Exported binding carrying the router instance: a name, or 'default'.
   appExport?: string;
-  // Extra module specifiers to treat as ch3 imports (default
-  // ['ch3'] plus '<pkg>/*' subpaths).
+  // Extra module specifiers to treat as chttp imports (default
+  // ['chttp'] plus '<pkg>/*' subpaths).
   imports?: string[];
   // Parser backend name; resolved through the registry in ./parse/.
   // Default 'classic'. 'tsgo' is experimental.
@@ -123,9 +123,9 @@ function replayMount(
   }
 }
 
-const DEFAULT_IMPORTS = ["ch3"];
+const DEFAULT_IMPORTS = ["chttp"];
 
-function isCh3Specifier(spec: string, extra: string[]): boolean {
+function isChttpSpecifier(spec: string, extra: string[]): boolean {
   const all = DEFAULT_IMPORTS.concat(extra);
   for (const p of all) {
     if (spec === p || spec.indexOf(p + "/") === 0) {
@@ -397,15 +397,15 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
   const sf: AstSource = p.parse(fileName, code);
   const line = (n: Node): number => sf.lineOf(n);
   const warn = (n: Node, msg: string): void => {
-    warnings.push("unplugin-ch3: " + fileName + ":" + String(line(n)) + " " + msg);
+    warnings.push("unplugin-chttp: " + fileName + ":" + String(line(n)) + " " + msg);
   };
 
-  // 1. createRouter bindings from ch3 imports
+  // 1. createRouter bindings from chttp imports
   const factories = new Set<string>();
   const namespaces = new Set<string>();
   for (const st of sf.statements) {
     if (p.isImportDeclaration(st) && p.isStringLiteral(st.moduleSpecifier)) {
-      if (!isCh3Specifier(st.moduleSpecifier.text, extraImports)) {
+      if (!isChttpSpecifier(st.moduleSpecifier.text, extraImports)) {
         continue;
       }
       const clause = st.importClause;
@@ -528,7 +528,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
     }
     if (appVar === "") {
       warnings.push(
-        'unplugin-ch3: appExport "' +
+        'unplugin-chttp: appExport "' +
           want +
           '" does not resolve to an exported createRouter() binding — emitting a stub dispatch',
       );
@@ -559,14 +559,14 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
     }
     if (model.app === null) {
       warnings.push(
-        'unplugin-ch3: router var "' +
+        'unplugin-chttp: router var "' +
           appVar +
           '" is not exported — emitting a stub dispatch; export it to enable the compiled path',
       );
     }
   } else {
     warnings.push(
-      "unplugin-ch3: no exported createRouter() binding found — emitting a stub dispatch",
+      "unplugin-chttp: no exported createRouter() binding found — emitting a stub dispatch",
     );
   }
 

@@ -13,4 +13,4 @@ app.get("/user/:id", (c) => c.json({ id: c.req.param("id") }));
 
 const port = process.argv.length > 2 ? Number(process.argv[2]) : 3000;
 app.serve({ port: port });
-console.log("ch3 smoke listening on :" + port);
+console.log("chttp smoke listening on :" + port);

@@ -1,9 +1,9 @@
 # Introduction
 
-ch3 is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source compiles to a native ELF.
+chttp is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source compiles to a native ELF.
 
 ```ts
-import { createRouter } from "ch3";
+import { createRouter } from "chttp";
 
 const app = createRouter();
 
@@ -30,19 +30,19 @@ Handlers and middleware may be `async`; dispatch settles a `Promise` return unde
 == tab "npm"
 
 ```sh
-npm i ch3
+npm i chttp
 ```
 
 == tab "pnpm"
 
 ```sh
-pnpm add ch3
+pnpm add chttp
 ```
 
 == tab "bun"
 
 ```sh
-bun add ch3
+bun add chttp
 ```
 
 :::

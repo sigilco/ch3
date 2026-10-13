@@ -1,8 +1,8 @@
-# ch3 bench suite — one-command repro image.
+# chttp bench suite — one-command repro image.
 # Build context must be the REPO ROOT (needs src/ for program-code scriptc):
-#   docker build -f bench/Dockerfile -t ch3-bench .
+#   docker build -f bench/Dockerfile -t chttp-bench .
 #   docker run --rm -v "$PWD/bench/results:/work/bench/results" \
-#                    -v "$PWD/bench/results-wrk2:/work/bench/results-wrk2" ch3-bench
+#                    -v "$PWD/bench/results-wrk2:/work/bench/results-wrk2" chttp-bench
 # or: docker compose -f bench/docker-compose.yml up --build
 FROM ubuntu:24.04
 
@@ -39,8 +39,8 @@ RUN npm ci \
  && (cd ceilings/rust-axum && cargo build --release -q && cp target/release/bench-axum ../bin/rust-axum) \
  && gcc -O2 -o ceilings/bin/c-mongoose ceilings/c-mongoose.c ceilings/mongoose.c -DMG_ENABLE_LOG=0 \
  && scriptc build apps/raw.ts -o bin/raw-scriptc --optimization=speed \
- && scriptc build apps/ch3.ts -o bin/ch3-scriptc --optimization=speed \
- && scriptc build apps/ch3-fast.ts -o bin/ch3-fast-scriptc --optimization=speed
+ && scriptc build apps/chttp.ts -o bin/chttp-scriptc --optimization=speed \
+ && scriptc build apps/chttp-fast.ts -o bin/chttp-fast-scriptc --optimization=speed
 
 # Full run: autocannon matrix -> wrk2 cross-validation -> aggregates.
 CMD ["bash", "-c", "bash run.sh && bash run-latency.sh"]

@@ -212,24 +212,24 @@ importers:
 
   examples/demo:
     dependencies:
-      ch3:
+      chttp:
         specifier: workspace:*
-        version: link:../../packages/ch3
+        version: link:../../packages/chttp
 
   fixtures/vite-app:
     dependencies:
-      ch3:
+      chttp:
         specifier: workspace:*
-        version: link:../../packages/ch3
+        version: link:../../packages/chttp
     devDependencies:
-      '@ch3/unplugin':
+      '@chttp/unplugin':
         specifier: workspace:*
         version: link:../../packages/unplugin
       vite:
         specifier: ^7.0.0
         version: 7.3.7(@types/node@24.19.2)(yaml@2.9.1)
 
-  packages/ch3:
+  packages/chttp:
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -253,9 +253,9 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
-      ch3:
+      chttp:
         specifier: workspace:^
-        version: link:../ch3
+        version: link:../chttp
       typescript:
         specifier: ^5.9.0
         version: 5.9.3

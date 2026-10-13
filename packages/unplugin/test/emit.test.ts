@@ -4,13 +4,13 @@ import { extractModule } from "../src/extract.ts";
 import { emitGenModule } from "../src/emit.ts";
 
 const gen = (src: string): string =>
-  emitGenModule(extractModule("/app/src/routes.ch3.ts", src), {
-    importFrom: "ch3",
-    modulePath: "/app/src/routes.ch3.ts",
+  emitGenModule(extractModule("/app/src/routes.chttp.ts", src), {
+    importFrom: "chttp",
+    modulePath: "/app/src/routes.chttp.ts",
   });
 
 const SRC = `
-import { createRouter } from 'ch3'
+import { createRouter } from 'chttp'
 export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
@@ -24,7 +24,7 @@ describe("emitGenModule", () => {
     assert.match(g, /export class CompiledRoutes extends GenDispatch/);
     assert.match(g, /constructor\(a: App\)/);
     assert.match(g, /dispatch\(req: IncomingMessage, res: ServerResponse\): boolean/);
-    assert.match(g, /export const routeTable: Ch3RouteEntry\[\] = \[/);
+    assert.match(g, /export const routeTable: ChttpRouteEntry\[\] = \[/);
     assert.match(
       g,
       /\{ method: "GET", path: "\/json", kind: "static", handlerIdx: 0, needsBody: false \}/,
@@ -41,8 +41,8 @@ describe("emitGenModule", () => {
       g,
       /\{ method: "POST", path: "\/echo", kind: "static", handlerIdx: 3, needsBody: true \}/,
     );
-    assert.match(g, /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "ch3"/);
-    assert.match(g, /import type \{ App \} from "ch3"/);
+    assert.match(g, /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "chttp"/);
+    assert.match(g, /import type \{ App \} from "chttp"/);
   });
 
   it("emits a no-Ctx static runner for literal sends", () => {
@@ -85,7 +85,7 @@ describe("emitGenModule", () => {
 
   it("sorts checks by path precedence (static < param < wildcard)", () => {
     const g = gen(`
-import { createRouter } from 'ch3'
+import { createRouter } from 'chttp'
 export const app = createRouter()
 app.get('/a/*', (c) => c.text('w'))
 app.get('/a/b', (c) => c.text('s'))
@@ -100,7 +100,7 @@ app.get('/a/:x', (c) => c.text(c.req.param('x') || ''))
 
   it("puts *-method routes in every method section and the fallthrough", () => {
     const g = gen(`
-import { createRouter } from 'ch3'
+import { createRouter } from 'chttp'
 export const app = createRouter()
 app.all('/any', (c) => c.text('any'))
 app.get('/g', (c) => c.text('g'))
@@ -112,7 +112,7 @@ app.get('/g', (c) => c.text('g'))
 
   it("keeps a runtime method check only for declared-body * routes", () => {
     const g = gen(`
-import { createRouter } from 'ch3'
+import { createRouter } from 'chttp'
 export const app = createRouter()
 app.all('/u', (c) => c.text(c.req.body()), { body: true })
 `);
@@ -127,12 +127,12 @@ app.all('/u', (c) => c.text(c.req.body()), { body: true })
 
   it("emits a stub class when the router is not exported", () => {
     const g = gen(`
-import { createRouter } from 'ch3'
+import { createRouter } from 'chttp'
 const app = createRouter()
 app.get('/a', (c) => c.text('a'))
 `);
     assert.match(g, /export class CompiledRoutes extends GenDispatch/);
-    assert.match(g, /export const routeTable: Ch3RouteEntry\[\] = \[\]/);
+    assert.match(g, /export const routeTable: ChttpRouteEntry\[\] = \[\]/);
     assert.match(g, /return false/);
   });
 });

@@ -1,15 +1,15 @@
 # Generated dispatch contract
 
-Status: **frozen** — this is the seam between `packages/ch3/src/gen.ts` (`GenDispatch`) and `ch3` (route table + ctx machinery) and build-time code generators (the Vite/unplugin transform agent emits modules satisfying this contract). v0.3.0, 2026-10-13.
+Status: **frozen** — this is the seam between `packages/chttp/src/gen.ts` (`GenDispatch`) and `chttp` (route table + ctx machinery) and build-time code generators (the Vite/unplugin transform agent emits modules satisfying this contract). v0.3.0, 2026-10-13.
 
 ## The seam in one paragraph
 
-`app.withDispatch(d)` registers a generated dispatch object. On every request, `app.serve()`/`app.handler()` calls `d.dispatch(req, res)` **first**. `true` = the request is handled (or committed to be handled asynchronously after a body-buffer); `false` = decline — ch3's internal specialized dispatch takes over. Routes stay registered on `app` either way: the generated module is a pure accelerator overlay, never a replacement for the route table.
+`app.withDispatch(d)` registers a generated dispatch object. On every request, `app.serve()`/`app.handler()` calls `d.dispatch(req, res)` **first**. `true` = the request is handled (or committed to be handled asynchronously after a body-buffer); `false` = decline — chttp's internal specialized dispatch takes over. Routes stay registered on `app` either way: the generated module is a pure accelerator overlay, never a replacement for the route table.
 
 ## Module shape
 
 ```ts
-import { GenDispatch } from 'ch3'
+import { GenDispatch } from 'chttp'
 
 // Emit a CLASS, not an object literal. Under scriptc's eager
 // program-code instantiation a function value inside a record
@@ -120,23 +120,23 @@ The emitted module compiles into the user's program, so it lives under the same 
 
 ## Versioning
 
-The contract majors with the package: any change to a member listed in the stable-surface table bumps minor at minimum and is recorded here. The unplugin agent should pin `ch3` peer ranges accordingly.
+The contract majors with the package: any change to a member listed in the stable-surface table bumps minor at minimum and is recorded here. The unplugin agent should pin `chttp` peer ranges accordingly.
 
 ## Contract versioning
 
-`ROUTE_CONTRACT_VERSION` (currently `1`) is a plain number exported from `ch3` (defined in `src/gen.ts`, re-exported by `src/index.ts`). It exists so a stale generated module can never silently serve requests against a runtime that expects a different emit shape:
+`ROUTE_CONTRACT_VERSION` (currently `1`) is a plain number exported from `chttp` (defined in `src/gen.ts`, re-exported by `src/index.ts`). It exists so a stale generated module can never silently serve requests against a runtime that expects a different emit shape:
 
-- **Lives in ch3.** The runtime is the source of truth; the constant is a plain `const` number, subset-clean.
+- **Lives in chttp.** The runtime is the source of truth; the constant is a plain `const` number, subset-clean.
 - **Stamped into gen files.** Emitters write the same number as a literal — `export const ROUTE_CONTRACT_VERSION = 1;` in the module header next to the Source comment, and `ROUTE_CONTRACT_VERSION = 1` as an instance field on the emitted `CompiledRoutes` class (assigned after `super()`, shadowing the `GenDispatch` default). The gen file stays standalone: no import of the version, just the literal.
 - **Validated at `withDispatch`.** If the dispatch object exposes a numeric `ROUTE_CONTRACT_VERSION` that differs from the runtime's, `app.withDispatch(d)` throws immediately, naming both versions. A missing stamp is accepted (dispatches that predate versioning).
-- **Bump semantics.** Any breaking change to this contract — member shapes, dispatch obligations, the emitted-module grammar — bumps the number. Bump `ch3`'s export and `@ch3/unplugin`'s mirrored constant (`packages/unplugin/src/contract.ts`, asserted equal by test) in the same commit; a regenerated module then carries the new stamp.
+- **Bump semantics.** Any breaking change to this contract — member shapes, dispatch obligations, the emitted-module grammar — bumps the number. Bump `chttp`'s export and `@chttp/unplugin`'s mirrored constant (`packages/unplugin/src/contract.ts`, asserted equal by test) in the same commit; a regenerated module then carries the new stamp.
 
 ```ts
-// runtime (ch3)
-import { GenDispatch, ROUTE_CONTRACT_VERSION } from 'ch3'
+// runtime (chttp)
+import { GenDispatch, ROUTE_CONTRACT_VERSION } from 'chttp'
 app.withDispatch(new CompiledRoutes(app)) // throws on stamp mismatch
 
-// emitted header (.ch3/routes.gen.ts)
+// emitted header (.chttp/routes.gen.ts)
 export const ROUTE_CONTRACT_VERSION = 1
 export class CompiledRoutes extends GenDispatch {
   ROUTE_CONTRACT_VERSION = 1
