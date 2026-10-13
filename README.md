@@ -1,10 +1,13 @@
 # ch3
 
-A minimal async-first HTTP router for `node:http` with zero dependencies.
+A minimal async-first HTTP router for `node:http`. Handlers and middleware
+may be `async`; the router core ships no runtime dependencies.
 
-The whole package is authored inside the **scriptc compilable subset**: it
-lowers statically into a native ELF via `scriptc build --npm-static ch3`
-with zero deferred sites (100% static coverage, scriptc 0.2.8).
+The package is authored inside the **scriptc compilable subset**
+([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
+native-ELF compiler): the same source lowers statically into a single
+binary via `scriptc build --npm-static ch3` with zero deferred sites
+(100% static coverage, scriptc 0.3.0).
 
 ## 🚀 Quick start
 
@@ -118,14 +121,35 @@ scriptc build app.js --npm-static ch3 --optimization=speed -o app-bin
 Numbers (shared VM, compare ratios not absolutes; full matrix in
 [bench/RESULTS-v2.md](bench/RESULTS-v2.md)):
 
-| subject                | json               | pipelined (-c100 -p10) | cold start | RSS after 100k req |
+| subject | json | pipelined (-c100 -p10) | cold start | RSS after 100k req |
 | ---------------------- | ------------------ | ---------------------- | ---------- | ------------------ |
-| ch3 on node            | 0.87× raw-node     | 0.95×                  | 83 ms      | 116 MB             |
-| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)**   | **3 ms**   | **4 MB**           |
-| fastify on node        | 0.69×              | 0.65×                  | 111 ms     | 108 MB             |
+| ch3 on node | 0.87× raw-node | 0.95× | 83 ms | 116 MB |
+| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)** | **3 ms** | **4 MB** |
+| fastify on node | 0.69× | 0.65× | 111 ms | 108 MB |
 
 The compiled build sits at ≥96% of a bare compiled `node:http` server on
 every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
+
+## ✔️ Bundler plugins
+
+The package ships two unplugin factories:
+
+- `ch3/unplugin` — `ch3Plugin`, build-time route lowering: scans `*.ch3.ts`
+  modules and emits a `CompiledRoutes` dispatch that skips the runtime trie
+  walk. See [docs/unplugin.md](docs/unplugin.md).
+- `ch3/scriptc` — re-exports `unplugin-scriptc`'s `scriptcPlugin`, which runs
+  `scriptc coverage` diagnostics and `scriptc build` inside your bundler
+  pipeline. See [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
+
+```ts
+// vite.config.ts
+import { ch3Plugin } from "ch3/unplugin";
+import { scriptcPlugin } from "ch3/scriptc";
+
+export default defineConfig({
+  plugins: [ch3Plugin.vite(), scriptcPlugin.vite({ entry: "src/main.ts", out: "dist/app" })],
+});
+```
 
 ## ✔️ Validation
 
@@ -161,4 +185,4 @@ npm test          # node --test test/
 
 ## License
 
-Published under the [MIT](LICENSE) license.
+Published under the [Apache-2.0](LICENSE) license.

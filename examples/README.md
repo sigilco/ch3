@@ -17,4 +17,4 @@ npm run build        # scriptc build src/main.ts -o app
 ./app                # ELF listening on :3000
 ```
 
-For build-time route lowering (compiled dispatch) add `@ch3/unplugin` and a `.ch3.ts` routes module; under scriptc that path needs ch3 as program code (vendored `ch3/src` or workspace source). See `docs/unplugin.md` → "Compiling with scriptc" for the two tiers.
+For build-time route lowering (compiled dispatch) add `ch3/unplugin` and a `.ch3.ts` routes module; under scriptc that path needs ch3 as program code (vendored `ch3/src` or workspace source). See `docs/unplugin.md` → "Compiling with scriptc" for the two tiers.

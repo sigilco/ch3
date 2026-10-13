@@ -1,6 +1,6 @@
-# ch3 generated-dispatch contract (`src/gen.ts`)
+# Generated dispatch contract
 
-Status: **frozen** — this is the seam between `ch3` (route table +
+Status: **frozen** — this is the seam between `packages/ch3/src/gen.ts` (`GenDispatch`) and `ch3` (route table +
 ctx machinery) and build-time code generators (the Vite/unplugin transform
 agent emits modules satisfying this contract). v0.3.0, 2026-10-13.
 
@@ -52,16 +52,16 @@ export class GenDispatch {
 
 1. `withDispatch` may be called at most once; a second call **replaces** the
    previous dispatch object (documented, deterministic — last wins).
-2. Every request calls `dispatch` exactly once, before any internal work —
+1. Every request calls `dispatch` exactly once, before any internal work —
    including requests the generated module does not recognize.
-3. `false` must only be returned **before** any response bytes, headers, or
+1. `false` must only be returned **before** any response bytes, headers, or
    `req.on(...)` listeners are committed. Returning `false` after
    `setHeader`/`end`/body-listeners is a contract violation (undefined
    behavior, double-response).
-4. Returning `true` after `app._buffer(...)` was invoked is correct even
+1. Returning `true` after `app._buffer(...)` was invoked is correct even
    though the response completes later — the commitment is made at
    listener-attach time.
-5. The internal dispatch never calls generated code; generated code never
+1. The internal dispatch never calls generated code; generated code never
    calls back into `App._dispatch`. One direction only.
 
 ## What generated code may use (the stable surface)

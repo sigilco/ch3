@@ -1,6 +1,6 @@
 # Architecture
 
-ch3 is authored inside the **scriptc compilable subset**: the whole package lowers statically into a native ELF via `scriptc build --npm-static ch3` with zero deferred sites (100% static coverage on scriptc 0.2.8).
+ch3 is authored inside the **scriptc compilable subset**: the whole package lowers statically into a native ELF via `scriptc build --npm-static ch3` with zero deferred sites (100% static coverage on scriptc 0.3.0).
 
 The full document lives in the repo: [ARCHITECTURE.md](https://github.com/sigilco/ch3/blob/main/ARCHITECTURE.md).
 

@@ -1,6 +1,8 @@
 # Introduction
 
-ch3 is a minimal async-first HTTP router for `node:http` with zero dependencies, authored inside the scriptc compilable subset.
+ch3 is a minimal async-first HTTP router for `node:http`, authored inside
+the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the
+same source compiles to a native ELF.
 
 ```ts
 import { createRouter } from "ch3";
@@ -15,12 +17,9 @@ app.notFound((c) => c.status(404).text("not found"));
 app.serve({ port: 3000 });
 ```
 
-## Why
-
-Two reasons:
-
-- Handlers and middleware may be `async`. Dispatch settles a `Promise` return under the same error path as sync code; sync handlers keep a zero-microtask fast path. Request access stays synchronous — dispatch pre-buffers declared request bodies.
-- The package obeys the scriptc compilable subset (see [Architecture](architecture.md)), so the exact same source compiles to a native ELF: 3 ms cold start, 4 MB RSS, 204k req/s pipelined on a shared VM.
+Handlers and middleware may be `async`; dispatch settles a `Promise` return
+under the same error path as sync code, and sync handlers keep a
+zero-microtask fast path.
 
 ## Install
 
@@ -46,8 +45,6 @@ bun add ch3
 
 :::
 
-Next: [Routing](routing.md).
-
-For runtime validation, see [Validation](validation.md): npm schema
-libraries can't compile into a ch3 ELF, so the repo ships `@ch3/val`, a
-subset-native Standard Schema library.
+Next: [Routing](routing.md). For request validation see
+[Validation](validation.md). For the bundler and native-compile pipeline see
+[Route lowering plugin](unplugin.md).

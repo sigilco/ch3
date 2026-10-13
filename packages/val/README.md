@@ -25,4 +25,4 @@ See `docs/validation.md` for the full API surface, the deliberate divergences
 from valibot (plain-record results, typed `literal`/`optional` slots, no
 `Issue.input`, `optionalStr`/`optionalNum`/`optionalBool` defaults), and the
 reasoning that made this package necessary (no npm validator compiles to ELF;
-importing valibot poisons program-code class instantiation under scriptc 0.3.0).
+npm schema libraries do not compile into a ch3 ELF).

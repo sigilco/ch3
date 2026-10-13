@@ -58,7 +58,7 @@ flowchart TD
 | --- | --- |
 | `packages/ch3/src/index.ts` | The whole core: `App`, `Ctx`, `ReqView`, `compose`, `matchPath`, `addRoute`, error path, exported `createRouter()` factory |
 | `packages/ch3/src/gen.ts` | The `GenDispatch` base class and `DispatchFn` type, the seam between runtime dispatch and build-generated route modules |
-| `packages/unplugin` | Build-time plugin: extracts the literal route table from `*.ch3.ts` modules and emits a `routes.gen.ts` that satisfies `docs/route-contract.md` |
+| `packages/ch3/src/unplugin` | Build-time plugin: extracts the literal route table from `*.ch3.ts` modules and emits a `routes.gen.ts` that satisfies `docs/route-contract.md` |
 
 Inside `packages/ch3/src/index.ts`:
 
