@@ -1,8 +1,6 @@
 # Introduction
 
-ch3 is a minimal async-first HTTP router for `node:http`, authored inside
-the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the
-same source compiles to a native ELF.
+ch3 is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source compiles to a native ELF.
 
 ```ts
 import { createRouter } from "ch3";
@@ -17,9 +15,7 @@ app.notFound((c) => c.status(404).text("not found"));
 app.serve({ port: 3000 });
 ```
 
-Handlers and middleware may be `async`; dispatch settles a `Promise` return
-under the same error path as sync code, and sync handlers keep a
-zero-microtask fast path.
+Handlers and middleware may be `async`; dispatch settles a `Promise` return under the same error path as sync code, and sync handlers keep a zero-microtask fast path.
 
 ## Install
 
@@ -45,6 +41,4 @@ bun add ch3
 
 :::
 
-Next: [Routing](routing.md). For request validation see
-[Validation](validation.md). For the bundler and native-compile pipeline see
-[Route lowering plugin](unplugin.md).
+Next: [Routing](routing.md). For request validation see [Validation](validation.md). For the bundler and native-compile pipeline see [Route lowering plugin](unplugin.md).
