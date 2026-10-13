@@ -8,3 +8,7 @@ demo/package-lock.json
 
 .env
 docs/site/
+examples/*/node_modules/
+examples/*/app
+examples/*/dist/
+examples/*/main.ll
