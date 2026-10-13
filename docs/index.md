@@ -29,3 +29,7 @@ npm i ch3
 ```
 
 Next: [Routing](routing.md).
+
+For runtime validation, see [Validation](validation.md): npm schema
+libraries can't compile into a ch3 ELF, so the repo ships `@ch3/val`, a
+subset-native Standard Schema library.

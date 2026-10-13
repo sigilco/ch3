@@ -118,18 +118,37 @@ scriptc build app.js --npm-static ch3 --optimization=speed -o app-bin
 Numbers (shared VM, compare ratios not absolutes; full matrix in
 [bench/RESULTS-v2.md](bench/RESULTS-v2.md)):
 
-| subject | json | pipelined (-c100 -p10) | cold start | RSS after 100k req |
-|---|---|---|---|---|
-| ch3 on node | 0.87× raw-node | 0.95× | 83 ms | 116 MB |
-| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)** | **3 ms** | **4 MB** |
-| fastify on node | 0.69× | 0.65× | 111 ms | 108 MB |
+| subject                | json               | pipelined (-c100 -p10) | cold start | RSS after 100k req |
+| ---------------------- | ------------------ | ---------------------- | ---------- | ------------------ |
+| ch3 on node            | 0.87× raw-node     | 0.95×                  | 83 ms      | 116 MB             |
+| **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)**   | **3 ms**   | **4 MB**           |
+| fastify on node        | 0.69×              | 0.65×                  | 111 ms     | 108 MB             |
 
 The compiled build sits at ≥96% of a bare compiled `node:http` server on
 every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
 
+## ✔️ Validation
+
+`@ch3/val` (in `packages/val`) is a Standard Schema v1 library authored
+inside the same subset — the only way to run schema validation inside a
+compiled ch3 ELF (npm validators can't compile alongside it — see
+[docs/validation.md](docs/validation.md)). In Node mode it performs in the
+same band as valibot.
+
+```ts
+import * as v from "@ch3/val";
+
+const Order = v.strictObject({ id: v.pipe(v.string(), v.uuid()) });
+app.post("/order", (c) => {
+  const r = v.safeParse(Order, JSON.parse(c.req.body()));
+  return r.success ? c.json({ ok: true }) : c.status(400).json({ issues: r.issues });
+});
+```
+
 ## 📖 Docs
 
 - [Architecture](ARCHITECTURE.md): why it compiles, the subset rules
+- [Validation](docs/validation.md): Standard Schema in node vs ELF, `@ch3/val`
 - [Route contract](docs/route-contract.md): the generated-dispatch seam
 - Full docs site: https://ch3js.pages.dev/
 
