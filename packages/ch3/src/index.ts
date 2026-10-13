@@ -167,11 +167,15 @@ export class ReqView<P extends string = string> {
     if (typeof v === "string") {
       return String(v);
     }
-    // Narrow string[] | undefined to the single string[] arm — neither
-    // else-branch narrowing (SC0001: resolves to never) nor an
-    // unknown-cast (SC2003: union layout mismatch) compiles here.
-    if (v !== undefined && v !== null && v.length > 0) {
-      return String(v[0]);
+    // Repeated-value arm via headersDistinct (string[] | undefined — a
+    // union with no `string` member, so the check narrows cleanly; the
+    // `headers` union collapses to never after the failed typeof, SC0001,
+    // and an unknown-cast mismatches the union layout, SC2003). Node keeps
+    // only unjoinable headers (set-cookie, cookie) as arrays in `headers`,
+    // so d[0] === v[0] here — identical semantics to reading v[0].
+    const d = this.raw.headersDistinct[key];
+    if (d !== undefined && d.length > 0) {
+      return String(d[0]);
     }
     return null;
   }

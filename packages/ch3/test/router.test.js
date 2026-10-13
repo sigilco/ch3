@@ -8,6 +8,7 @@ function mkReq(opts = {}) {
     method: opts.method || "GET",
     url: opts.url || "/",
     headers: opts.headers || {},
+    headersDistinct: opts.headersDistinct || {},
     on(ev, cb) {
       cbs[ev] = cb;
     },
