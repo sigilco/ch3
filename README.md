@@ -132,14 +132,10 @@ every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
 
 ## ✔️ Bundler plugins
 
-Build-time route lowering lives in the separate [`@ch3/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin) package:
+Two tiers, kept separate on purpose. ch3 itself needs no plugin to go native: the core is authored in the scriptc compilable subset, so `scriptc build` lowers it directly like any subset library. The plugins below are elective additions:
 
-- `@ch3/unplugin` — `ch3Plugin`: scans `*.ch3.ts` modules and emits a
-  `CompiledRoutes` dispatch that skips the runtime trie walk. See
-  [docs/unplugin.md](docs/unplugin.md).
-- `unplugin-scriptc` — `scriptcPlugin`, which runs `scriptc coverage`
-  diagnostics and `scriptc build` inside your bundler pipeline. See
-  [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
+- `@ch3/unplugin` (separate package, [`packages/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin)), via `ch3Plugin`: build-time dispatch specialization. It recovers the route table from imperative `app.get()`/`use()`/`route()` registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie walk. Works with plain vite/rollup (JS dist) and composes with `unplugin-scriptc` (ELF). Uncertain routes stay on runtime dispatch with a build warning. See [docs/unplugin.md](docs/unplugin.md).
+- `unplugin-scriptc`, via `scriptcPlugin`, which runs `scriptc coverage` diagnostics and `scriptc build` inside your bundler pipeline. See [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
 
 ```ts
 // vite.config.ts

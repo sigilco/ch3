@@ -1,6 +1,6 @@
 # ch3
 
-Minimal async-first HTTP router for `node:http` authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset.
+Minimal async-first HTTP router for `node:http`, zero dependencies, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset. The same source lowers to a native ELF directly, no plugin required.
 
 ```ts
 import { createRouter } from "ch3";
@@ -23,14 +23,14 @@ npm i ch3
 
 ## Compile to native
 
-The package compiles fully statically under scriptc v0.3.0 automatic package compilation:
+The package has zero runtime dependencies and compiles fully statically under scriptc v0.3.0 automatic package compilation, no plugin required:
 
 ```sh
 scriptc build src/main.ts -o app
 ./app
 ```
 
-Add [`@ch3/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin) for build-time route lowering (compiled dispatch), and [`unplugin-scriptc`](https://github.com/sigilco/unplugin-scriptc) to run the scriptc compile from your bundler. Compiled dispatch requires ch3 as program code; see the unplugin docs for the source-layout options.
+That is the whole native story: ch3 lowers directly like any subset library. On top of it, [`@ch3/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin) is an elective build-time dispatch specialization: it recovers the route table from imperative registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie (works with plain vite/rollup; composes with [`unplugin-scriptc`](https://github.com/sigilco/unplugin-scriptc) for the ELF pipeline, where ch3 must be program code). See the [unplugin docs](https://github.com/sigilco/ch3/blob/main/docs/unplugin.md).
 
 ## Docs
 
