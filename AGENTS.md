@@ -1,6 +1,6 @@
 # ch3 AGENTS.md
 
-ch3 is a minimal HTTP router for `node:http`, async-first, zero dependencies, authored in the scriptc compilable subset so the same source compiles to a single native ELF. Workspace: `packages/ch3` (runtime) and `packages/ch3/src/unplugin` (build-time route-lowering plugin).
+ch3 is a minimal HTTP router for `node:http`, async-first, zero dependencies, authored in the scriptc compilable subset so the same source compiles to a single native ELF. Workspace: `packages/ch3` (runtime) and `packages/unplugin` (build-time route-lowering plugin).
 
 ## Commands
 
@@ -8,7 +8,7 @@ ch3 is a minimal HTTP router for `node:http`, async-first, zero dependencies, au
 - `pnpm --filter ch3 build` - build runtime package
 - `pnpm lint` - oxlint (type-aware)
 - `pnpm fmt` - oxfmt
-- `pnpm --dir packages/ch3 test` - plugin tests
+- `pnpm --filter @ch3/unplugin test` - plugin tests
 - `pnpm docs:build` - build docs site
 
 ## Scriptc subset rules (packages/ch3/src)
@@ -29,4 +29,4 @@ These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
 - Conventional commits, atomic commits (one logical change each).
 - Any handler or dispatch change ships with tests.
 - Any performance claim requires re-running the relevant bench cell first. `bench/RESULTS-v2.md` is the baseline.
-- Plugin work is fixture-first: `fixtures/vite-app` must build before an emit change lands. See `packages/ch3/src/unplugin/AGENTS.md`.
+- Plugin work is fixture-first: `fixtures/vite-app` must build before an emit change lands. See `packages/unplugin/AGENTS.md`.

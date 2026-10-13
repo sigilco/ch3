@@ -132,19 +132,19 @@ every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
 
 ## ✔️ Bundler plugins
 
-The package ships two unplugin factories:
+Build-time route lowering lives in the separate [`@ch3/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin) package:
 
-- `ch3/unplugin` — `ch3Plugin`, build-time route lowering: scans `*.ch3.ts`
-  modules and emits a `CompiledRoutes` dispatch that skips the runtime trie
-  walk. See [docs/unplugin.md](docs/unplugin.md).
-- `ch3/scriptc` — re-exports `unplugin-scriptc`'s `scriptcPlugin`, which runs
-  `scriptc coverage` diagnostics and `scriptc build` inside your bundler
-  pipeline. See [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
+- `@ch3/unplugin` — `ch3Plugin`: scans `*.ch3.ts` modules and emits a
+  `CompiledRoutes` dispatch that skips the runtime trie walk. See
+  [docs/unplugin.md](docs/unplugin.md).
+- `unplugin-scriptc` — `scriptcPlugin`, which runs `scriptc coverage`
+  diagnostics and `scriptc build` inside your bundler pipeline. See
+  [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
 
 ```ts
 // vite.config.ts
-import { ch3Plugin } from "ch3/unplugin";
-import { scriptcPlugin } from "ch3/scriptc";
+import { ch3Plugin } from "@ch3/unplugin";
+import { scriptcPlugin } from "unplugin-scriptc";
 
 export default defineConfig({
   plugins: [ch3Plugin.vite(), scriptcPlugin.vite({ entry: "src/main.ts", out: "dist/app" })],

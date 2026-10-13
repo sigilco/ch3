@@ -1,4 +1,4 @@
-# ch3/unplugin
+# @ch3/unplugin
 
 Build-time route lowering for `ch3`.
 The plugin statically reads your route registrations and emits a specialized dispatch module next to them, so requests skip the runtime trie walk on every match.
@@ -7,7 +7,7 @@ Everything emitted is authored inside the scriptc-compilable subset, so `scriptc
 ## Install
 
 ```sh
-npm i -D ch3/unplugin
+npm i -D @ch3/unplugin
 ```
 
 ## Usage (vite)
@@ -15,7 +15,7 @@ npm i -D ch3/unplugin
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { ch3Plugin } from "ch3/unplugin";
+import { ch3Plugin } from "@ch3/unplugin";
 
 export default defineConfig({
   plugins: [ch3Plugin.vite()],
@@ -117,8 +117,8 @@ scriptc build src/main.ts -o app-bin
 ## Verification
 
 ```sh
-cd unplugin && npm test       # node --test: extraction, emit, and an e2e that
-                              # imports the real gen file and hits every route kind
+pnpm --filter @ch3/unplugin test  # node --test: extraction, emit, and an e2e that
+                                  # imports the real gen file and hits every route kind
 cd fixtures/vite-app && npm run build && node dist/main.js 3100
 ```
 

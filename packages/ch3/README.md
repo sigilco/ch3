@@ -30,7 +30,7 @@ scriptc build src/main.ts -o app
 ./app
 ```
 
-Add [`ch3/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/ch3/src/unplugin) for build-time route lowering (compiled dispatch), and [`unplugin-scriptc`](https://github.com/sigilco/unplugin-scriptc) to run the scriptc compile from your bundler. Compiled dispatch requires ch3 as program code; see the unplugin docs for the source-layout options.
+Add [`@ch3/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin) for build-time route lowering (compiled dispatch), and [`unplugin-scriptc`](https://github.com/sigilco/unplugin-scriptc) to run the scriptc compile from your bundler. Compiled dispatch requires ch3 as program code; see the unplugin docs for the source-layout options.
 
 ## Docs
 

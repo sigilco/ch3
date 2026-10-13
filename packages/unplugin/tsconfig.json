@@ -11,5 +11,5 @@
     "types": ["node"],
     "forceConsistentCasingInFileNames": true,
   },
-  "include": ["src/unplugin/**/*.ts", "src/scriptc.ts", "test/unplugin/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts"],
 }

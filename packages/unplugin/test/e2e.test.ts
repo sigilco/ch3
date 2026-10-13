@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { extractModule } from "../../src/unplugin/extract.ts";
-import { emitGenModule, genFileName } from "../../src/unplugin/emit.ts";
+import { extractModule } from "../src/extract.ts";
+import { emitGenModule, genFileName } from "../src/emit.ts";
 
 // End-to-end: write a routes module + the generated .ch3/routes.gen.ts to a
 // temp dir, import CompiledRoutes for real, wire it via app.withDispatch,
@@ -14,7 +14,7 @@ import { emitGenModule, genFileName } from "../../src/unplugin/emit.ts";
 
 const CH3_SRC = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
-  "../../src/index.ts",
+  "../../ch3/src/index.ts",
 );
 
 interface FakeRes {

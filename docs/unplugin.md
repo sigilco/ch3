@@ -1,8 +1,8 @@
 # Route lowering plugin
 
-`ch3/unplugin` — build-time route lowering for `ch3`, bundled in the `ch3` package. This is the point of the project's build story: the plugin statically reads your route registrations and emits a specialized dispatch module next to them, so requests skip the runtime trie walk on every match. Everything emitted is authored inside the scriptc-compilable subset, so `scriptc build` lowers it into the native binary.
+`@ch3/unplugin` — build-time route lowering for `ch3`, a separate workspace package. This is the point of the project's build story: the plugin statically reads your route registrations and emits a specialized dispatch module next to them, so requests skip the runtime trie walk on every match. Everything emitted is authored inside the scriptc-compilable subset, so `scriptc build` lowers it into the native binary.
 
-Full reference: [packages/ch3/PLUGIN.md](https://github.com/sigilco/ch3/blob/main/packages/ch3/PLUGIN.md).
+Full reference: [packages/unplugin/PLUGIN.md](https://github.com/sigilco/ch3/blob/main/packages/unplugin/PLUGIN.md).
 
 ## What the plugin does
 
@@ -29,7 +29,7 @@ If a routes module cannot be analyzed at all, the plugin emits a stub whose `dis
 ```ts
 // vite.config.ts
 import { defineConfig } from 'vite'
-import { ch3Plugin } from "ch3/unplugin"
+import { ch3Plugin } from "@ch3/unplugin"
 
 export default defineConfig({
   plugins: [ch3Plugin.vite()],

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import { ch3Plugin } from 'ch3/unplugin'
+import { ch3Plugin } from '@ch3/unplugin'
 
 export default defineConfig({
   plugins: [

@@ -12,6 +12,7 @@
     "ch3": "workspace:*"
   },
   "devDependencies": {
+    "@ch3/unplugin": "workspace:*",
     "vite": "^7.0.0"
   }
 }

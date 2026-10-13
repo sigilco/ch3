@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { extractModule } from "../../src/unplugin/extract.ts";
-import { emitGenModule } from "../../src/unplugin/emit.ts";
+import { extractModule } from "../src/extract.ts";
+import { emitGenModule } from "../src/emit.ts";
 
 const gen = (src: string): string =>
   emitGenModule(extractModule("/app/src/routes.ch3.ts", src), {

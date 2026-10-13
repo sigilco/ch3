@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { extractModule } from "../../src/unplugin/extract.ts";
+import { extractModule } from "../src/extract.ts";
 
 const SRC_BASIC = `
 import { createRouter } from 'ch3'
