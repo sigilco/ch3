@@ -1,7 +1,7 @@
 {
   "name": "@ch3/unplugin",
   "version": "0.1.0",
-  "description": "Build-time route lowering for ch3 — emits a specialized, scriptc-clean dispatch module per routes file",
+  "description": "Build-time route lowering for ch3 \u2014 emits a specialized, scriptc-clean dispatch module per routes file",
   "license": "Apache-2.0",
   "files": [
     "src",
@@ -31,5 +31,6 @@
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "author": "Joaquin Terrasa & contributors"
 }
