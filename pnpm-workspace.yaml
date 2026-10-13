@@ -3,6 +3,6 @@ packages:
   - demo
   - bench
   - fixtures/*
-onlyBuiltDependencies:
-  - esbuild
-  - '@docmd/engine-rust'
+allowBuilds:
+  esbuild: true
+  '@docmd/engine-rust': true
