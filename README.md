@@ -1,6 +1,6 @@
 # ch3
 
-A minimal synchronous HTTP router for `node:http` with zero dependencies.
+A minimal async-first HTTP router for `node:http` with zero dependencies.
 
 The whole package is authored inside the **scriptc compilable subset**: it
 lowers statically into a native ELF via `scriptc build --npm-static ch3`
@@ -45,8 +45,10 @@ gets a `405` with an `Allow` header built from the route's method table.
 
 ## ✔️ Context
 
-Request access is synchronous. Dispatch pre-buffers the body for
-POST/PUT/PATCH/DELETE, so handlers never await.
+Handlers and middleware may be `async` — dispatch settles a `Promise`
+return with the same error path as synchronous code. Request access stays
+synchronous: dispatch pre-buffers the body for POST/PUT/PATCH/DELETE, so
+handlers never await on `c.req`.
 
 ```ts
 c.req.param("id");    // string | null, percent-decoded
@@ -73,13 +75,18 @@ c.redirect("/elsewhere", 302);
 
 ## ✔️ Middleware
 
-Synchronous `(c, next) => void`. Applies to routes registered after it
-(snapshot semantics):
+`(c, next) => void | Promise<void>` — sync or async. Applies to routes
+registered after it (snapshot semantics):
 
 ```ts
 app.use((c, next) => {
   c.header("x-start", Date.now().toString());
   next();
+});
+
+app.use(async (c, next) => {
+  await auth(c.req);
+  await next();
 });
 ```
 
@@ -94,9 +101,9 @@ app.onError((err, c) => {
 });
 ```
 
-An error thrown anywhere in the chain lands here. The built-in 500 path is
-the fallback when unset, when the handler never responds, or when the
-handler itself throws. The `405` error carries `.allow` for custom bodies.
+An error thrown anywhere in the chain — sync throw or rejected promise —
+lands here. The built-in 500 path is the fallback when unset, when the
+handler never responds, or when the handler itself throws or rejects. The `405` error carries `.allow` for custom bodies.
 
 ## ✔️ Compile to a native binary
 

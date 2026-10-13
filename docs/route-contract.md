@@ -2,7 +2,7 @@
 
 Status: **frozen** — this is the seam between `ch3` (route table +
 ctx machinery) and build-time code generators (the Vite/unplugin transform
-agent emits modules satisfying this contract). v0.2.0, 2026-10-11.
+agent emits modules satisfying this contract). v0.3.0, 2026-10-13.
 
 ## The seam in one paragraph
 
@@ -85,10 +85,14 @@ rv._seedPm(['id', dec(segValue)])       // 'id' → param('id'), '*' for splat
 // Body: ONLY for routes the author declared `body: true` at registration.
 app-free helper, attaches 'data'/'end', buffers, then runs k under the
 // send500 guard. Returns void; dispatch() must still return true.
-_buffer(req, res, c, function (): void { handler(c) })
+_buffer(req, res, c, function (): unknown { return handler(c) })
 
-// Guard: wrap synchronous handler execution with the standard 500 path.
-_guard(res, function (): void { handler(c) })
+// Guard: run the handler under the standard 500 path. The closure MUST
+// return the chain result — _guard awaits a result that is not already
+// settled (`undefined`/`null`/`c` are) so a rejected promise answers 500
+// and a settled chain that wrote no response answers 500 too (checked via
+// Ctx.sent + res headers).
+_guard(res, c, function (): unknown { return handler(c) })
 ```
 
 | Export | Signature | Contract |
@@ -99,8 +103,8 @@ _guard(res, function (): void { handler(c) })
 | `ReqView._setBody` | `(s: string) => void` | set by `_buffer` only |
 | `Ctx` | `new (rv, res)` + `json/text/html/status/header/redirect` | unchanged authoring API |
 | `App.withDispatch` | `(d: GenDispatch) => App` | last-wins, tried first per request |
-| `_buffer` | `(req, res, c, k: () => void) => void` | data/end + `_setBody` + guarded `k` |
-| `_guard` | `(res, k: () => void) => void` | `try { k() } catch → send500` |
+| `_buffer` | `(req, res, c, k: () => unknown) => void` | data/end + `_setBody` + guarded `k` |
+| `_guard` | `(res, c, k: () => unknown) => void` | `try { k() }`; result not settled → `await` it; throw/reject/unsent → `send500` |
 | `dec` | `(s: string) => string` | `+`→space then `decodeURIComponent`, fallback raw |
 
 ## Body buffering — declared-body rule
@@ -129,7 +133,11 @@ app.post('/echo', (c) => c.text(c.req.body()), { body: true })
 The emitted module compiles into the user's program, so it lives under the
 same subset rules as `src/`:
 
-- Sync only. No `Promise`/`async` on the dispatch path.
+- Handlers may be async (`Promise`-returning). The dispatch seam itself
+  stays synchronous — `dispatch(req, res): boolean` and the `_guard`/
+  `_buffer` closures return the chain result so the guard can settle it.
+  Rejections inside generated code run the built-in `send500`; `onError`
+  only intercepts errors on the internal dispatch path.
 - `null`, never `undefined`, in every union and return position.
 - Class instances (not object literals) for `GenDispatch` impls.
 - No function values inside records — generated tables hold `number`

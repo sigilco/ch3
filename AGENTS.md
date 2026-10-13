@@ -1,6 +1,6 @@
 # ch3 AGENTS.md
 
-ch3 is a minimal sync HTTP router for `node:http`, zero dependencies, authored in the scriptc compilable subset so the same source compiles to a single native ELF. Workspace: `packages/ch3` (runtime) and `packages/unplugin` (build-time route-lowering plugin).
+ch3 is a minimal HTTP router for `node:http`, async-first, zero dependencies, authored in the scriptc compilable subset so the same source compiles to a single native ELF. Workspace: `packages/ch3` (runtime) and `packages/unplugin` (build-time route-lowering plugin).
 
 ## Commands
 
@@ -15,7 +15,7 @@ ch3 is a minimal sync HTTP router for `node:http`, zero dependencies, authored i
 
 These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
 
-- No async syntax: no `Promise`/`async`/`await`/`then` on the request path.
+- Handlers/middleware may return a Promise; dispatch settles a non-settled chain result by `await`ing it inside `settleChain` (the package's only async function; fire-and-forget). Sync-complete results — `undefined`, `null`, or the `c` object — keep a zero-microtask path via `isSettled`. NEVER detect promises by reading `.then` as a value (`typeof r.then` silently lowers to `undefined`), `instanceof Promise` (SC1090), or a union mixing Promise/non-Promise arms (SC2009).
 - `| null` unions only. Never `undefined` (SC3004).
 - No `Map`/`Set`/`Object.create(null)`/`Object.freeze`. Plain `({})` records only. Classes only for `Context`, `Ch3Request`, `HttpError`.
 - Indexed `for` loops (and `for...of` over arrays). Never `for...in`.

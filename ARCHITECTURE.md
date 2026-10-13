@@ -1,12 +1,14 @@
 # ch3 architecture
 
-ch3 is a minimal synchronous HTTP router for `node:http`. The package has zero
+ch3 is a minimal HTTP router for `node:http`, async-first. The package has zero
 runtime dependencies and is authored in the scriptc-compilable subset of
 TypeScript, so `scriptc build` can statically lower the whole package into a
 native binary. Routes are registered on an `App`, matched against a trie at
 request time, and handled by a chain of middleware plus one handler that
-writes the response through `Ctx` helpers. Handlers are plain synchronous
-functions; there is no promise or async machinery anywhere in the package.
+writes the response through `Ctx` helpers. Handlers and middleware may return
+promises — dispatch awaits a non-settled chain result inside `settleChain`, a
+fire-and-forget async helper — while synchronous handlers keep a
+zero-microtask fast path (one return slot, three identity compares).
 
 ## Request flow
 
@@ -15,9 +17,12 @@ A request enters through the `node:http` listener created by `app.serve()` or
 request to the registered generated dispatch module (the build-time seam), then
 splits `req.url` into path and query string, matches the path against the route
 trie, picks the entry for the method, and runs the precomposed chain for that
-entry. The chain writes the response synchronously; `Ctx` helpers
-(`text`, `json`, `html`, `redirect`) set status, headers, and content length,
-then call `res.end()`.
+entry. `Ctx` helpers (`text`, `json`, `html`, `redirect`) set status, headers,
+and content length, then call `res.end()`. When the chain returns something
+that is not already settled (`undefined`, `null`, or the `c` object that
+response helpers hand back), dispatch awaits it in `settleChain`: a fulfilled
+result that never wrote a response and a rejection both fall into the error
+path below.
 
 ```mermaid
 flowchart TD
@@ -34,12 +39,14 @@ flowchart TD
     I --> J
     J --> K{"body declared and write method?"}
     K -- yes --> L["buffer data/end events, then run chain"]
-    K -- no --> M["run chain synchronously"]
+    K -- no --> M["run chain"]
     L --> N["chain writes via Ctx helpers"]
     M --> N
     N --> O[response complete]
-    M -- "throws" --> P["onError if set, else send500"]
-    L -- "throws" --> P
+    M -- "throws or rejects" --> P["onError if set, else send500"]
+    L -- "throws or rejects" --> P
+    M -- "settled, no response" --> P
+    L -- "settled, no response" --> P
     P --> O
     H --> O
     F --> O
@@ -113,8 +120,14 @@ and only for write methods (POST, PUT, PATCH, DELETE), does dispatch attach
 
 ## Error path
 
-Every chain invocation sits inside one `try`/`catch`. On a throw, dispatch
-calls `runOnError`:
+Every chain invocation goes through `runChain`: one `try`/`catch` for the
+synchronous path, plus `await` settlement inside `settleChain` when the chain
+result is not already settled (`undefined`/`null`/`c` are — everything else,
+in practice promises, is not). Throws and rejections land on `runOnError` the
+same way; a settled chain that never wrote a response gets the built-in 500
+fallback.
+
+On an error, `runOnError` applies this order:
 
 1. If headers were already sent, the socket is destroyed (nothing sane to
    write); otherwise the user `onError(err, c)` runs, if registered.
@@ -133,8 +146,16 @@ synthetic `Ctx` wrapping the real request so it can answer custom 405s.
 ch3's source is written inside the scriptc-compilable subset so `scriptc
 build` lowers it to a native binary. The constraints that shape the code:
 
-- No async syntax in `src/`: handlers, middleware, and dispatch are all
-  synchronous functions.
+- The only async function in the package is `settleChain`, the fire-and-forget
+  settler called when a chain result is not already settled. Promises cannot
+  be detected directly in the subset: reading `.then` as a value refuses
+  (SC1090 — and in expression position silently lowers to `undefined`),
+  `instanceof Promise` is refused, and a union mixing `Promise` and
+  non-Promise arms refuses (SC2009). `await` is the one narrowing left — it
+  passthroughs non-thenables and joins real promises, so the discriminator is
+  the identity check `r === undefined || r === null || r === c` plus `await`
+  for everything else. Sync-complete returns therefore keep a zero-microtask
+  path while async handlers get full settle semantics.
 - `| null` unions only, never `| undefined`.
 - No `Map`, `Set`, `Object.create(null)`, or `Object.freeze`; plain record
   literals with full shapes.
