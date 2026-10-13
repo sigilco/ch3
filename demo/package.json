@@ -1,9 +1,0 @@
-{
-  "name": "ch3-demo",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "dependencies": {
-    "@sigilco/ch3": "file:.."
-  }
-}

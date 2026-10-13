@@ -1,0 +1,3 @@
+# generated corpora (see gen-corpus.mjs) — never commit
+*
+!.gitignore

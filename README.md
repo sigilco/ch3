@@ -1,10 +1,13 @@
 # ch3
 
-A minimal synchronous HTTP router for `node:http` with zero dependencies.
+A minimal async-first HTTP router for `node:http`. Handlers and middleware
+may be `async`; the router core ships no runtime dependencies.
 
-The whole package is authored inside the **scriptc compilable subset**: it
-lowers statically into a native ELF via `scriptc build --npm-static ch3`
-with zero deferred sites (100% static coverage, scriptc 0.2.8).
+The package is authored inside the **scriptc compilable subset**
+([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
+native-ELF compiler): the same source lowers statically into a single
+binary via `scriptc build --npm-static ch3` with zero deferred sites
+(100% static coverage, scriptc 0.3.0).
 
 ## 🚀 Quick start
 
@@ -45,8 +48,10 @@ gets a `405` with an `Allow` header built from the route's method table.
 
 ## ✔️ Context
 
-Request access is synchronous. Dispatch pre-buffers the body for
-POST/PUT/PATCH/DELETE, so handlers never await.
+Handlers and middleware may be `async` — dispatch settles a `Promise`
+return with the same error path as synchronous code. Request access stays
+synchronous: dispatch pre-buffers the body for POST/PUT/PATCH/DELETE, so
+handlers never await on `c.req`.
 
 ```ts
 c.req.param("id");    // string | null, percent-decoded
@@ -73,13 +78,18 @@ c.redirect("/elsewhere", 302);
 
 ## ✔️ Middleware
 
-Synchronous `(c, next) => void`. Applies to routes registered after it
-(snapshot semantics):
+`(c, next) => void | Promise<void>` — sync or async. Applies to routes
+registered after it (snapshot semantics):
 
 ```ts
 app.use((c, next) => {
   c.header("x-start", Date.now().toString());
   next();
+});
+
+app.use(async (c, next) => {
+  await auth(c.req);
+  await next();
 });
 ```
 
@@ -94,9 +104,9 @@ app.onError((err, c) => {
 });
 ```
 
-An error thrown anywhere in the chain lands here. The built-in 500 path is
-the fallback when unset, when the handler never responds, or when the
-handler itself throws. The `405` error carries `.allow` for custom bodies.
+An error thrown anywhere in the chain — sync throw or rejected promise —
+lands here. The built-in 500 path is the fallback when unset, when the
+handler never responds, or when the handler itself throws or rejects. The `405` error carries `.allow` for custom bodies.
 
 ## ✔️ Compile to a native binary
 
@@ -112,7 +122,7 @@ Numbers (shared VM, compare ratios not absolutes; full matrix in
 [bench/RESULTS-v2.md](bench/RESULTS-v2.md)):
 
 | subject | json | pipelined (-c100 -p10) | cold start | RSS after 100k req |
-|---|---|---|---|---|
+| ---------------------- | ------------------ | ---------------------- | ---------- | ------------------ |
 | ch3 on node | 0.87× raw-node | 0.95× | 83 ms | 116 MB |
 | **ch3 compiled (ELF)** | **1.15× raw-node** | **1.76× (204k rps)** | **3 ms** | **4 MB** |
 | fastify on node | 0.69× | 0.65× | 111 ms | 108 MB |
@@ -120,9 +130,45 @@ Numbers (shared VM, compare ratios not absolutes; full matrix in
 The compiled build sits at ≥96% of a bare compiled `node:http` server on
 every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
 
+## ✔️ Bundler plugins
+
+Two tiers, kept separate on purpose. ch3 itself needs no plugin to go native: the core is authored in the scriptc compilable subset, so `scriptc build` lowers it directly like any subset library. The plugins below are elective additions:
+
+- `@ch3/unplugin` (separate package, [`packages/unplugin`](https://github.com/sigilco/ch3/tree/main/packages/unplugin)), via `ch3Plugin`: build-time dispatch specialization. It recovers the route table from imperative `app.get()`/`use()`/`route()` registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie walk. Works with plain vite/rollup (JS dist) and composes with `unplugin-scriptc` (ELF). Uncertain routes stay on runtime dispatch with a build warning. See [docs/unplugin.md](docs/unplugin.md).
+- `unplugin-scriptc`, via `scriptcPlugin`, which runs `scriptc coverage` diagnostics and `scriptc build` inside your bundler pipeline. See [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
+
+```ts
+// vite.config.ts
+import { ch3Plugin } from "@ch3/unplugin";
+import { scriptcPlugin } from "unplugin-scriptc";
+
+export default defineConfig({
+  plugins: [ch3Plugin.vite(), scriptcPlugin.vite({ entry: "src/main.ts", out: "dist/app" })],
+});
+```
+
+## ✔️ Validation
+
+`@ch3/val` (in `packages/val`) is a Standard Schema v1 library authored
+inside the same subset — the only way to run schema validation inside a
+compiled ch3 ELF (npm validators can't compile alongside it — see
+[docs/validation.md](docs/validation.md)). In Node mode it performs in the
+same band as valibot.
+
+```ts
+import * as v from "@ch3/val";
+
+const Order = v.strictObject({ id: v.pipe(v.string(), v.uuid()) });
+app.post("/order", (c) => {
+  const r = v.safeParse(Order, JSON.parse(c.req.body()));
+  return r.success ? c.json({ ok: true }) : c.status(400).json({ issues: r.issues });
+});
+```
+
 ## 📖 Docs
 
 - [Architecture](ARCHITECTURE.md): why it compiles, the subset rules
+- [Validation](docs/validation.md): Standard Schema in node vs ELF, `@ch3/val`
 - [Route contract](docs/route-contract.md): the generated-dispatch seam
 - Full docs site: https://ch3js.pages.dev/
 
@@ -135,4 +181,4 @@ npm test          # node --test test/
 
 ## License
 
-Published under the [MIT](LICENSE) license.
+Published under the [Apache-2.0](LICENSE) license.
