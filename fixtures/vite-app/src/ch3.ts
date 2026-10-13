@@ -3,4 +3,4 @@
 // binding rooted at package instantiation loses lowering (SC1090), and
 // node:http objects cannot cross the --dynamic boundary — so the whole
 // app graph must reach the router through source paths.
-export * from '../../../src/index.ts'
+export * from '../../../packages/ch3/src/index.ts'

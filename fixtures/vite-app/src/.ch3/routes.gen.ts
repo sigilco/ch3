@@ -63,28 +63,28 @@ function run1(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], q
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _guard(res, function (): void { a._chains[1](c) })
+  _guard(res, c, function (): unknown { return a._chains[1](c) })
 }
 
 function run2(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _guard(res, function (): void { a._chains[2](c) })
+  _guard(res, c, function (): unknown { return a._chains[2](c) })
 }
 
 function run3(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _guard(res, function (): void { a._chains[3](c) })
+  _guard(res, c, function (): unknown { return a._chains[3](c) })
 }
 
 function run4(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _buffer(req, res, c, function (): void { a._chains[4](c) })
+  _buffer(req, res, c, function (): unknown { return a._chains[4](c) })
 }
 
 function run5(req: IncomingMessage, res: ServerResponse): void {
@@ -101,7 +101,7 @@ function run6(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], q
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _guard(res, function (): void { a._chains[6](c) })
+  _guard(res, c, function (): unknown { return a._chains[6](c) })
 }
 
 function run7(req: IncomingMessage, res: ServerResponse): void {
@@ -119,14 +119,14 @@ function run8(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], q
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _guard(res, function (): void { a._chains[8](c) })
+  _guard(res, c, function (): unknown { return a._chains[8](c) })
 }
 
 function run9(a: App, req: IncomingMessage, res: ServerResponse, pm: string[], qs: string, path: string, m: string): void {
   const rv = new ReqView(req, qs, path)
   rv._seedPm(pm)
   const c = new Ctx(rv, res)
-  _guard(res, function (): void { a._chains[9](c) })
+  _guard(res, c, function (): unknown { return a._chains[9](c) })
 }
 
 export class CompiledRoutes extends GenDispatch {
