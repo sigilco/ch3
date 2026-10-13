@@ -1,4 +1,4 @@
-# unplugin-ch3
+# @ch3/unplugin
 
 Build-time route lowering for `ch3`.
 The plugin statically reads your route registrations and emits a specialized dispatch module next to them, so requests skip the runtime trie walk on every match.
@@ -7,7 +7,7 @@ Everything emitted is authored inside the scriptc-compilable subset, so `scriptc
 ## Install
 
 ```sh
-npm i -D unplugin-ch3
+npm i -D @ch3/unplugin
 ```
 
 ## Usage (vite)
@@ -15,7 +15,7 @@ npm i -D unplugin-ch3
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { ch3Plugin } from "unplugin-ch3";
+import { ch3Plugin } from "@ch3/unplugin";
 
 export default defineConfig({
   plugins: [ch3Plugin.vite()],
@@ -89,19 +89,20 @@ The plugin never silently produces wrong routes: uncertainty means bail, not gue
 | `include`    | `['**/*.ch3.ts','**/*.ch3.js']`  | Globs (relative to root) marking routes modules              |
 | `root`       | vite `config.root`, else `cwd()` | Project root scanned at `buildStart`                         |
 | `appExport`  | auto-detect                      | Exported binding carrying the router (`name` or `'default'`) |
-| `imports`    | `['ch3','ch3']`                  | Extra specifiers treated as ch3 imports                      |
+| `imports`    | `['ch3']`                        | Extra specifiers treated as ch3 imports                      |
 | `importFrom` | `'ch3'`                          | Specifier emitted for `import type { App }` in the gen file  |
 
 ## Compiling with scriptc
 
-The generated module only lowers when the whole app graph is program code.
-Under `scriptc build`, a dependency module that imports a binding rooted at a package instantiation (`app = createRouter()` in another file, or any package class) loses lowering for ALL its exports (SC1090): the poisoning applies to value imports AND `import type` edges, and a module that imports `app` cannot call other imported functions either.
-Method calls on an npm-rooted binding lower (`app.serve(...)`); field reads and passing it as an argument do not.
-`--dynamic` is not an escape hatch either: `IncomingMessage`/`ServerResponse` cannot cross the dynamic boundary.
+`scriptc` stays a separate CLI step on your own entry — the plugin only emits the module; it does not wrap the compiler, so all `scriptc build` flags (`--optimization`, `--target`, `--npm-static`, output) remain yours.
 
-The emitted shape sidesteps all of it: `CompiledRoutes` is instantiated inside the app-owning entry (`app.withDispatch(new CompiledRoutes(app))`, a method call), the app arrives through the constructor rather than an import, and the contract surface (`GenDispatch`, `ReqView`, `Ctx`, `_buffer`, `_guard`, `dec`) is imported normally when every file reaches the router through SOURCE paths.
-Inside this repo the fixture uses a barrel (`fixtures/vite-app/src/ch3.ts`) that re-exports `../../../src/index.ts`; consumers can do the same with an installed source layout or a path alias.
-This is also the fast path: `--npm-static` linkage runs measurably slower than program-code linkage.
+Two tiers under scriptc v0.3.0's automatic package compilation:
+
+- **Runtime dispatch, npm-installed `ch3`**: fully static out of the box. `scriptc build app.ts` on a project that does `npm i ch3` compiles the package's dist + your entry to native with zero extra layout work (verified: 100% static, ELF serves). This is the drop-in tier.
+- **Compiled dispatch (`withDispatch` + the emitted module)**: only lowers when ch3 is reachable as program code. `CompiledRoutes extends GenDispatch` must override a package-frozen signature and `g.dispatch` inside the packaged `withDispatch` path is a deferred site, so a `node_modules` copy — even one whose `main` is `.ts` — cannot carry it (SC1090/SC2013). Reach ch3 through SOURCE paths instead: a vendored `src/` copy (the published tarball ships `src/` and exports `./src/index.ts` for exactly this), ch3 as a workspace member, or a relative-path barrel like `fixtures/vite-app/src/ch3.ts` (`export * from '../../../src/index.ts'`). TypeScript source linked that way compiles as program modules and the whole graph lowers.
+
+Under program code the emitted shape sidesteps the older SC1090 poisoning rules: `CompiledRoutes` is instantiated inside the app-owning entry (`app.withDispatch(new CompiledRoutes(app))`, a method call), the app arrives through the constructor rather than an import, and the contract surface (`GenDispatch`, `ReqView`, `Ctx`, `_buffer`, `_guard`, `dec`) imports normally.
+Program-code linkage is also the fast path: `--npm-static` linkage runs measurably slower.
 
 ```sh
 cd fixtures/vite-app
