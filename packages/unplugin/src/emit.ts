@@ -109,9 +109,14 @@ function emitCtxRunner(name: string, r: RouteSpec): string {
   lines.push("  const rv = new ReqView(req, qs, path)");
   lines.push("  rv._seedPm(pm)");
   lines.push("  const c = new Ctx(rv, res)");
+  // The closures MUST return the chain result: _guard/_buffer settle it
+  // through await when it is not already settled so async handlers get
+  // the same semantics as internal dispatch (rejection -> 500, settle
+  // without a response -> 500). Dropping the return value would
+  // unhandled-reject and hang the socket.
   const chain = "a._chains[" + idx + "](c)";
-  const guarded = "_guard(res, function (): void { " + chain + " })";
-  const buffered = "_buffer(req, res, c, function (): void { " + chain + " })";
+  const guarded = "_guard(res, c, function (): unknown { return " + chain + " })";
+  const buffered = "_buffer(req, res, c, function (): unknown { return " + chain + " })";
   if (r.needsBody) {
     if (r.method === "*") {
       lines.push('  if (m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE") {');

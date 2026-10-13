@@ -64,9 +64,15 @@ describe("emitGenModule", () => {
     // run3 = POST /echo declared-body ctx runner
     const run3 = g.slice(g.indexOf("function run3"));
     assert.match(run3, /new ReqView\(req, qs, path\)/);
-    assert.match(run3, /_buffer\(req, res, c, function \(\): void \{ a\._chains\[3\]\(c\) \}\)/);
+    assert.match(
+      run3,
+      /_buffer\(req, res, c, function \(\): unknown \{ return a\._chains\[3\]\(c\) \}\)/,
+    );
     const run1 = g.slice(g.indexOf("function run1"), g.indexOf("function run2"));
-    assert.match(run1, /_guard\(res, function \(\): void \{ a\._chains\[1\]\(c\) \}\)/);
+    assert.match(
+      run1,
+      /_guard\(res, c, function \(\): unknown \{ return a\._chains\[1\]\(c\) \}\)/,
+    );
     assert.doesNotMatch(g, /req\.on\("data"/);
   });
 
