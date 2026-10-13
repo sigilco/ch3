@@ -1,6 +1,6 @@
 # ch3 examples
 
-Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i ch3` project whose `build` script compiles to a native ELF via `scriptc build`. No bundler required for the basic templates; `vite-elf` shows the bundler pipeline with `@sigilco/unplugin-scriptc`.
+Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i ch3` project whose `build` script compiles to a native ELF via `scriptc build`. No bundler required for the basic templates; `vite-elf` shows the bundler pipeline with `unplugin-scriptc`.
 
 | Template | Shows |
 | --- | --- |
@@ -8,7 +8,7 @@ Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i
 | `middleware` | `app.use` global and per-route middleware |
 | `json-api` | POST body (`{ body: true }`), `onError`, `notFound` |
 | `router-mount` | `app.route` sub-router mounting |
-| `vite-elf` | Vite + `@sigilco/unplugin-scriptc` bundler pipeline |
+| `vite-elf` | Vite + `unplugin-scriptc` bundler pipeline |
 
 ```sh
 cd examples/hello

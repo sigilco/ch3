@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { scriptcPlugin } from "@sigilco/unplugin-scriptc";
+import { scriptcPlugin } from "unplugin-scriptc";
 
 export default defineConfig({
   plugins: [

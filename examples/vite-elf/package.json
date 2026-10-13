@@ -11,7 +11,7 @@
     "ch3": "0.1.0"
   },
   "devDependencies": {
-    "@sigilco/unplugin-scriptc": "0.1.0",
+    "unplugin-scriptc": "0.1.0",
     "scriptc": "0.3.0",
     "vite": "^7.0.0"
   }
