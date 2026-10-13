@@ -9,8 +9,7 @@
     "start:runtime": "node src/runtime.ts"
   },
   "dependencies": {
-    "ch3": "workspace:*",
-    "@ch3/unplugin": "workspace:*"
+    "ch3": "workspace:*"
   },
   "devDependencies": {
     "vite": "^7.0.0"

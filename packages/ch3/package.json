@@ -1,7 +1,7 @@
 {
   "name": "ch3",
   "version": "0.1.0",
-  "description": "Minimal async-first HTTP router authored inside the scriptc compilable subset",
+  "description": "Minimal async-first HTTP router authored inside the scriptc compilable subset, with a bundled route-lowering bundler plugin and a scriptc compile shim",
   "keywords": [
     "aot",
     "http",
@@ -33,19 +33,33 @@
       "import": "./dist/esm/index.js"
     },
     "./src/index.ts": "./src/index.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./unplugin": {
+      "types": "./src/unplugin/index.ts",
+      "import": "./src/unplugin/index.ts"
+    },
+    "./scriptc": {
+      "types": "./src/scriptc.ts",
+      "import": "./src/scriptc.ts"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/router.test.js test/server.test.js test/async.test.js"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.unplugin.json",
+    "test": "npm run build && node --test test/router.test.js test/server.test.js test/async.test.js test/unplugin/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "@types/picomatch": "^4.0.3"
   },
   "engines": {
     "node": ">=22"
   },
-  "author": "Joaquin Terrasa & contributors"
+  "author": "Joaquin Terrasa & contributors",
+  "dependencies": {
+    "picomatch": "^4.0.7",
+    "unplugin": "^3.4.0",
+    "unplugin-scriptc": "0.1.0"
+  }
 }
