@@ -4,3 +4,4 @@
 2026-10-13 | ch3: examples/ standalone non-workspace templates over workspace members | copyable as-is, declare published versions, root install doesn't break pre-publish
 2026-10-13 | ch3: unplugin-scriptc extracted to sigilco/unplugin-scriptc over packages/ member | separate npm lifecycle + own pages.dev docs; ch3 stays Hono/H3-alternative focused, scriptc toolchain glue lives upstream
 2026-10-13 | ch3: guard headersDistinct field read before key index | scriptc 0.3.0 leaves the field undefined; indexing it on header miss threw TypeError and every absent header answered 500 under ELF
+2026-10-13 | ch3: @ch3/unplugin extracted to packages/unplugin workspace member + parser seam (classic default, tsgo behind flag gated on bench + TS 7.1 stable) | ch3 core is directly lowerable like any subset lib; plugin is elective dispatch specialization; core returns to zero-dep, ch3/scriptc shim dropped; plan .agents/plans/2026-10-13-unplugin-extraction-tsgo.md
