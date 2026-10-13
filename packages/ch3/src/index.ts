@@ -1,7 +1,9 @@
-// ch3 — minimal synchronous HTTP router for node:http.
+// ch3 — minimal HTTP router for node:http, async-first.
 // Authored inside the scriptc compilable subset so `scriptc build` can
 // statically lower the whole package into a native binary:
-//   - sync handlers only; `| null` unions, never `| undefined`
+//   - handlers may return a Promise; sync handlers keep a zero-tick fast
+//     path (one return slot + three identity compares per composed layer)
+//   - `| null` unions, never `| undefined`
 //   - plain ({}) records for route data; real classes for Ctx/ReqView/App
 //   - indexed `for` loops only; `.pop()` statements, never expressions
 //   - no object/method shorthand in literals, no `?.`/`??`, no eval/new Function
@@ -299,9 +301,17 @@ export type ParamKey<P extends string> = string extends P
       ? "*"
       : string;
 
-export type Handler = (c: Ctx) => void | Promise<void>;
-export type Next = () => void | Promise<void>;
-export type Middleware = (c: Ctx, next: Next) => void | Promise<void>;
+// What a chain step may return: anything — dispatch ignores non-thenable
+// values and settles thenables through `await` (the async contract).
+// Response helpers return `c` for chaining, so Ctx-valued returns are
+// common. The type is `unknown` rather than
+// `void | Ctx | Promise<...>` because the scriptc subset cannot express
+// that union: Promise arms mixed with non-Promise arms refuse to compile
+// (SC2009), `instanceof Promise` is refused (SC1090), and reading `.then`
+// as a value to duck-type it silently lowers to undefined.
+export type Handler = (c: Ctx) => unknown;
+export type Next = () => unknown;
+export type Middleware = (c: Ctx, next: Next) => unknown;
 
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
@@ -539,19 +549,30 @@ function defaultNotFound(c: Ctx): void {
 }
 
 // Contract helpers for generated dispatch modules (docs/route-contract.md):
-// _guard runs a synchronous handler body under the standard 500 path;
+// _guard runs a handler body under the standard 500 path — a thrown error,
+// a rejected promise, or a settled chain that wrote no response all answer
+// 500 (the exact internal-dispatch rule: _guard delegates to runChain).
 // _buffer attaches data/end listeners, buffers the body, then runs k under
-// the same guard. The internal dispatch inlines the equivalent flow so the
-// hot path never pays a closure it doesn't need.
-export function _guard(res: ServerResponse, k: () => void): void {
-  try {
-    k();
-  } catch (e) {
-    send500(res);
-  }
+// the same guard.
+// The internal dispatch inlines the equivalent flow so the hot path never
+// pays a closure it doesn't need.
+export function _guard(res: ServerResponse, c: Ctx, k: () => unknown): void {
+  runChain(
+    function (): unknown {
+      return k();
+    },
+    c,
+    res,
+    null,
+  );
 }
 
-export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: () => void): void {
+export function _buffer(
+  req: IncomingMessage,
+  res: ServerResponse,
+  c: Ctx,
+  k: () => unknown,
+): void {
   const rv = c.req;
   let buf = "";
   req.on("data", function (chunk: Buffer): void {
@@ -559,7 +580,7 @@ export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: ()
   });
   req.on("end", function (): void {
     rv._setBody(buf);
-    _guard(res, k);
+    _guard(res, c, k);
   });
 }
 
@@ -700,15 +721,16 @@ function copyMw(mw: Middleware[]): Middleware[] {
 // request). Linear semantics are identical: next() resumes the tail, and a
 // mw calling next() twice re-runs the tail twice — same as the cursor.
 // Wrappers return fn(c, next) so an async tail's promise propagates to
-// dispatch's thenable check. Sync fast path: one return slot + one branch
+// dispatch's settle check. Sync fast path: one return slot + the
+// isSettled identity compares
 // per layer, zero microtask ticks.
 function compose(mw: Middleware[], h: Handler): Handler {
   let chain: Handler = h;
   for (let i = mw.length - 1; i >= 0; i--) {
     const fn = mw[i];
     const inner = chain;
-    chain = function (c: Ctx): void | Promise<void> {
-      return fn(c, function (): void | Promise<void> {
+    chain = function (c: Ctx): unknown {
+      return fn(c, function (): unknown {
         return inner(c);
       });
     };
@@ -849,40 +871,40 @@ export class App {
   // for literal-param inference, but param() is string-typed regardless
   // — no type-safety is lost. `opts.body` declares body use; without it
   // c.req.body() returns '' (docs/route-contract.md).
-  get(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("GET", path, h as unknown as Handler, bodyFlag(opts));
+  get(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("GET", path, h, bodyFlag(opts));
   }
 
-  post(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("POST", path, h as unknown as Handler, bodyFlag(opts));
+  post(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("POST", path, h, bodyFlag(opts));
   }
 
-  put(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("PUT", path, h as unknown as Handler, bodyFlag(opts));
+  put(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("PUT", path, h, bodyFlag(opts));
   }
 
-  delete(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("DELETE", path, h as unknown as Handler, bodyFlag(opts));
+  delete(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("DELETE", path, h, bodyFlag(opts));
   }
 
-  patch(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("PATCH", path, h as unknown as Handler, bodyFlag(opts));
+  patch(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("PATCH", path, h, bodyFlag(opts));
   }
 
-  head(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("HEAD", path, h as unknown as Handler, bodyFlag(opts));
+  head(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("HEAD", path, h, bodyFlag(opts));
   }
 
-  options(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("OPTIONS", path, h as unknown as Handler, bodyFlag(opts));
+  options(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("OPTIONS", path, h, bodyFlag(opts));
   }
 
-  all(path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add("*", path, h as unknown as Handler, bodyFlag(opts));
+  all(path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add("*", path, h, bodyFlag(opts));
   }
 
-  on(method: string, path: string, h: (c: Ctx) => void, opts?: RouteOpts): App {
-    return this._add(String(method).toUpperCase(), path, h as unknown as Handler, bodyFlag(opts));
+  on(method: string, path: string, h: Handler, opts?: RouteOpts): App {
+    return this._add(String(method).toUpperCase(), path, h, bodyFlag(opts));
   }
 
   use(fn: Middleware): App {
@@ -890,8 +912,8 @@ export class App {
     return this;
   }
 
-  notFound(h: (c: Ctx) => void): App {
-    this._nf = h as unknown as Handler;
+  notFound(h: Handler): App {
+    this._nf = h;
     this._nfmw = copyMw(this._mw);
     this._nfchain = compose(this._nfmw, this._nf);
     return this;
@@ -1010,62 +1032,78 @@ export class App {
       });
       req.on("end", function (): void {
         rv._setBody(buf);
-        try {
-          const r = chain(c);
-          if (r !== null && r !== undefined && typeof r.then === "function") {
-            r.then(
-              function (): void {
-                if (c.sent === false && res.headersSent === false) {
-                  send500(res);
-                }
-              },
-              function (e: unknown): void {
-                if (oef !== null) {
-                  runOnError(oef, e, res, c);
-                } else {
-                  send500(res);
-                }
-              },
-            );
-          } else if (c.sent === false && res.headersSent === false) {
-            send500(res);
-          }
-        } catch (e) {
-          if (oef !== null) {
-            runOnError(oef, e, res, c);
-          } else {
-            send500(res);
-          }
-        }
+        runChain(chain, c, res, oef);
       });
     } else {
-      try {
-        const r = chain(c);
-        if (r !== null && r !== undefined && typeof r.then === "function") {
-          r.then(
-            function (): void {
-              if (c.sent === false && res.headersSent === false) {
-                send500(res);
-              }
-            },
-            function (e: unknown): void {
-              if (oef !== null) {
-                runOnError(oef, e, res, c);
-              } else {
-                send500(res);
-              }
-            },
-          );
-        } else if (c.sent === false && res.headersSent === false) {
-          send500(res);
-        }
-      } catch (e) {
-        if (oef !== null) {
-          runOnError(oef, e, res, c);
-        } else {
-          send500(res);
-        }
+      runChain(chain, c, res, oef);
+    }
+  }
+}
+
+// Run the composed chain under the standard error path. A sync throw, a
+// rejected promise, or a settled chain that never answered all produce
+// exactly one terminal outcome: onError(err, c) when registered, else the
+// built-in send500. Sync handlers keep a zero-microtask fast path — the
+// settle check is three identity compares on the return slot; only
+// non-settled results pay an async frame.
+//
+// Whether a chain result is already settled: undefined/null returns and
+// the `c` object response helpers hand back for chaining carry nothing
+// to await. Everything else (promises, stray non-thenable values) goes
+// through `await` in settleChain — the only "maybe a Promise"
+// discrimination the scriptc subset can express without refused or
+// miscompiled constructs. Identity, not a type read: `r === c` compares
+// reference, no cast on `r`.
+function isSettled(r: unknown, c: Ctx): boolean {
+  return r === undefined || r === null || r === (c as unknown);
+}
+
+// Settles a chain result that is not already settled. `await`
+// passthroughs non-thenables and joins real promises, so a reject and a
+// fulfilled-without-response both land on the standard error path. Called
+// fire-and-forget — send500/runOnError are internally guarded, so the
+// returned promise can never reject.
+async function settleChain(
+  r: unknown,
+  c: Ctx,
+  res: ServerResponse,
+  oef: ((err: unknown, c: Ctx) => void) | null,
+): Promise<void> {
+  try {
+    await r;
+  } catch (e) {
+    if (oef !== null) {
+      runOnError(oef, e, res, c);
+    } else {
+      send500(res);
+    }
+    return;
+  }
+  if (c.sent === false && res.headersSent === false) {
+    send500(res);
+  }
+}
+
+function runChain(
+  chain: Handler,
+  c: Ctx,
+  res: ServerResponse,
+  oef: ((err: unknown, c: Ctx) => void) | null,
+): void {
+  try {
+    const r = chain(c);
+    if (isSettled(r, c)) {
+      if (c.sent === false && res.headersSent === false) {
+        send500(res);
       }
+    } else {
+      settleChain(r, c, res, oef);
+    }
+  } catch (e) {
+    if (oef !== null) {
+      runOnError(oef, e, res, c);
+    } else {
+      send500(res);
     }
   }
 }

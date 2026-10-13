@@ -362,8 +362,8 @@ test("generated dispatch can spawn ctx + seed params + buffer via helpers", () =
           const rv = new m.ReqView(req, "", url);
           const c = new m.Ctx(rv, res);
           rv._seedPm(["id", m.dec(url.slice(3))]);
-          m._guard(res, function () {
-            c.json({ id: c.req.param("id") });
+          m._guard(res, c, function () {
+            return c.json({ id: c.req.param("id") });
           });
           return true;
         }

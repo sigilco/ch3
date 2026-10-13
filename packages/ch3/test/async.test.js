@@ -3,7 +3,7 @@
 // onError (or 500), and a settled-but-unsent chain falls back to 500.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createRouter } from "../dist/esm/index.js";
+import { createRouter, _guard, _buffer, Ctx, ReqView } from "../dist/esm/index.js";
 
 function fakeRes() {
   return {
@@ -26,6 +26,10 @@ function fakeRes() {
 
 function fakeReq(method, url) {
   return { method: method, url: url, on() {} };
+}
+
+function fakeCtx(res) {
+  return new Ctx(new ReqView(fakeReq("GET", "/x"), "", "/x"), res);
 }
 
 function dispatch(app, method, url) {
@@ -170,4 +174,75 @@ test("mixed sync and async routes coexist", async () => {
   await tick();
   await tick();
   assert.equal(r2.body, "a");
+});
+
+// Contract helpers (docs/route-contract.md) — generated dispatch routes
+// run through _guard/_buffer, which must settle thenable chain results
+// the same way internal dispatch does.
+
+test("_guard lets an async k write the response after settling", async () => {
+  const res = fakeRes();
+  _guard(res, fakeCtx(res), async () => {
+    await tick();
+    res.setHeader("content-type", "text/plain");
+    res.end("gen-ok");
+  });
+  await tick();
+  await tick();
+  assert.equal(res.body, "gen-ok");
+  assert.equal(res.statusCode, 200);
+});
+
+test("_guard answers 500 when the async k rejects", async () => {
+  const res = fakeRes();
+  _guard(res, fakeCtx(res), async () => {
+    await tick();
+    throw new Error("gen-boom");
+  });
+  await tick();
+  await tick();
+  assert.equal(res.statusCode, 500);
+});
+
+test("_guard answers 500 when the chain settles without a response", async () => {
+  const res = fakeRes();
+  _guard(res, fakeCtx(res), async () => {
+    await tick();
+  });
+  await tick();
+  await tick();
+  await tick();
+  assert.equal(res.statusCode, 500);
+});
+
+test("_guard answers 500 when a sync k never responds", () => {
+  const res = fakeRes();
+  _guard(res, fakeCtx(res), () => {
+    // intentionally no response
+  });
+  assert.equal(res.statusCode, 500);
+});
+
+test("_buffer stores the body then runs an async k under the guard", async () => {
+  const res = fakeRes();
+  let endCb = null;
+  const req = {
+    on(ev, cb) {
+      if (ev === "data") cb(Buffer.from("hello"));
+      if (ev === "end") endCb = cb;
+    },
+  };
+  const c = new Ctx(new ReqView(req, "", "/echo"), res);
+  const seen = [];
+  _buffer(req, res, c, async () => {
+    await tick();
+    seen.push(c.req.body());
+    c.text("buf-ok");
+  });
+  endCb();
+  await tick();
+  await tick();
+  await tick();
+  assert.deepEqual(seen, ["hello"]);
+  assert.equal(res.body, "buf-ok");
 });
