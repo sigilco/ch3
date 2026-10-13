@@ -175,9 +175,14 @@ export class ReqView<P extends string = string> {
     // and an unknown-cast mismatches the union layout, SC2003). Node keeps
     // only unjoinable headers (set-cookie, cookie) as arrays in `headers`,
     // so d[0] === v[0] here — identical semantics to reading v[0].
-    const d = this.raw.headersDistinct[key];
-    if (d !== undefined && d.length > 0) {
-      return String(d[0]);
+    // scriptc's IncomingMessage leaves headersDistinct itself undefined,
+    // so the field read must be guarded before the key index.
+    const hd = this.raw.headersDistinct;
+    if (hd !== undefined) {
+      const d = hd[key];
+      if (d !== undefined && d.length > 0) {
+        return String(d[0]);
+      }
     }
     return null;
   }
