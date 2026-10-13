@@ -33,5 +33,18 @@
   "engines": {
     "node": ">=22"
   },
-  "author": "Joaquin Terrasa & contributors"
+  "author": "Joaquin Terrasa & contributors",
+  "keywords": [
+    "standard-schema",
+    "validation",
+    "validator",
+    "schema",
+    "scriptc",
+    "native"
+  ],
+  "homepage": "https://github.com/sigilco/ch3/tree/main/packages/val#readme",
+  "bugs": {
+    "url": "https://github.com/sigilco/ch3/issues"
+  },
+  "sideEffects": false
 }

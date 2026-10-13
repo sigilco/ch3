@@ -11,3 +11,8 @@ minimumReleaseAgeExclude:
   - scriptc
   - '@scriptc/*'
   - unplugin-scriptc
+versioning:
+  fixed:
+    - ["ch3", "@ch3/val", "@ch3/unplugin"]
+  changelog:
+    storage: repository
