@@ -9,8 +9,8 @@ Runtime validation at the edge. In Node mode any [Standard Schema](https://stand
 | Node (`node apps/*.ts`)   | none (read body only)  | ~72k req/s                                      |
 | Node                      | `JSON.parse` only      | ~65k req/s                                      |
 | Node                      | `@ch3/val` `safeParse` | ~57.9k req/s (same band as valibot)             |
-| **ELF** (`scriptc build`) | none                   | ~97-104k req/s                                  |
 | **ELF**                   | `@ch3/val` `safeParse` | **~73k req/s** (-26% vs unvalidated ELF)        |
+| **ELF** (`scriptc build`) | none                   | ~97-104k req/s                                  |
 
 - In Node mode validation costs ~10-18% of request throughput, comparable to what `JSON.parse` itself costs. Pick any Standard Schema library on API taste.
 - In ELF mode `@ch3/val` is the way to validate inside the compiled binary.
