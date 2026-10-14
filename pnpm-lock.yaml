@@ -176,7 +176,7 @@ importers:
         specifier: ^1.87.0
         version: 1.87.0
       scriptc:
-        specifier: 0.3.1
+        specifier: 0.3.x
         version: 0.3.1
       typescript:
         specifier: ^5.9.0
