@@ -19,7 +19,7 @@ One flush rule all recipes rely on: the response helpers (`c.json`, `c.text`, `c
 
 ## Recipe cookbook
 
-Every snippet below is written in the scriptc subset (indexed `for` loops, `| null` unions, no shorthand or spread or optional chaining, plain records instead of `Map`) and was verified to build and run as an ELF with `scriptc build` (scriptc 0.3.1, chttp 0.1.0). Node-only recipes are marked.
+Every snippet below is written in the scriptc subset (indexed `for` loops, `| null` unions, no shorthand or spread or optional chaining, plain records instead of `Map`) and was verified to build and run as an ELF with `scriptc build` (chttp 0.1.0). Node-only recipes are marked.
 
 ### CORS
 
@@ -56,7 +56,7 @@ With credentials instead of `*`: echo the request's `origin` header and add `acc
 
 ### ETag / If-None-Match (304)
 
-Strong etag from a simple hash of the exact body string. The hash below is FNV-1a 32-bit implemented inline: no `node:crypto` dependency, deterministic across processes, and honest about collision odds (32 bits, fine for cache revalidation of modest APIs; use `node:crypto` `createHash` if you want more, it does lower and run under scriptc 0.3.1). Note the etag must be computed over the same bytes you send, so the handler serializes once and writes the response itself instead of `c.json`.
+Strong etag from a simple hash of the exact body string. The hash below is FNV-1a 32-bit implemented inline: no `node:crypto` dependency, deterministic across processes, and honest about collision odds (32 bits, fine for cache revalidation of modest APIs; use `node:crypto` `createHash` if you want more, it does lower and run under scriptc). Note the etag must be computed over the same bytes you send, so the handler serializes once and writes the response itself instead of `c.json`.
 
 ```ts
 function fnv1a(s: string): string {

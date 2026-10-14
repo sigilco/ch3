@@ -28,7 +28,7 @@ scriptc build src/main.ts -o app --strip
 ./app
 ```
 
-scriptc 0.3.1 cannot cross-compile (no `--target`), so build on the OS and architecture you deploy to. For a linux server, build in CI on linux or inside an alpine container. An alpine build is fully static (musl), so it runs on any linux of the same architecture.
+scriptc cannot cross-compile (no `--target`), so build on the OS and architecture you deploy to. For a linux server, build in CI on linux or inside an alpine container. An alpine build is fully static (musl), so it runs on any linux of the same architecture.
 
 ## Node
 
