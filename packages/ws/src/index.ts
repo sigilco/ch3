@@ -141,7 +141,13 @@ export class WsConn {
     }
     this._done = true;
     this._state = 1;
-    this._h.close(this, code, reason);
+    // User code: a throw must not take the process down. There is no
+    // protocol reply to make here, so just drop the socket.
+    try {
+      this._h.close(this, code, reason);
+    } catch (e) {
+      this.socket.destroy();
+    }
   }
 
   _onSocketClose(): void {
@@ -150,7 +156,14 @@ export class WsConn {
 
   _start(head: Buffer): void {
     const self: WsConn = this;
-    this._h.open(self);
+    // User code: a throw must not take the process down (1011, socket gone).
+    try {
+      this._h.open(self);
+    } catch (e) {
+      this._fail(1011);
+      this.socket.destroy();
+      return;
+    }
     if (head.length > 0) {
       this._onData(head);
     }
@@ -238,9 +251,29 @@ export class WsConn {
         this._fail(1007);
         return;
       }
-      this._h.message(this, s);
+      this._safeMessage(s);
     } else {
+      this._safeBinary(data);
+    }
+  }
+
+  // User code: a throw must not take the process down (1011, socket gone).
+  _safeMessage(s: string): void {
+    try {
+      this._h.message(this, s);
+    } catch (e) {
+      this._fail(1011);
+      this.socket.destroy();
+    }
+  }
+
+  // User code: a throw must not take the process down (1011, socket gone).
+  _safeBinary(data: Buffer): void {
+    try {
       this._h.binary(this, data);
+    } catch (e) {
+      this._fail(1011);
+      this.socket.destroy();
     }
   }
 
