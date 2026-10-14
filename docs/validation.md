@@ -1,6 +1,6 @@
 # Validation
 
-Runtime validation at the edge. In Node mode any [Standard Schema](https://standardschema.dev) library works. npm schema libraries do not compile into a chttp ELF, so the repo ships `@chttp/val`, a subset-native Standard Schema library.
+Runtime validation at the edge. In Node mode any [Standard Schema](https://standardschema.dev) library works. npm schema libraries do not compile into a chttp ELF, so the repo ships `@chttp/val`, a subset-native Standard Schema library. `@chttp/val` itself is verified to compile from its packed npm tarball (with `@chttp/router`) into a native ELF by `pnpm smoke:pack`.
 
 ## TL;DR
 
@@ -58,6 +58,10 @@ Shipped surface: `string` `number` `boolean` `any` `unknown` `never` `literal` `
 ### How it stays fast
 
 Kind-tagged schema classes (same pattern as chttp's `Context`/`ReqView`) with a module-level `VFail` sentinel for failure identity, and a shared push/pop `path` stack: no exception or record allocation on the happy path beyond the output record. Validation costs ~26% of ELF request throughput on the bench schema.
+
+### Using results under scriptc
+
+`issues` is `VIssue[] | null` and `success` does not narrow it, so narrow `issues` inline (`r.issues === null ? 0 : r.issues.length`, or `if (r.issues !== null)`). Do not copy it to a local first, because scriptc rejects the inferred union (SC2009). A type error anywhere in the program is reported as SC2013 against an npm package even when the package is fine, so run `tsc --noEmit` first to see the real error.
 
 ## Validating environment variables
 
