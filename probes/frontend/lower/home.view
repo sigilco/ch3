@@ -1,0 +1,2 @@
+fn home(title: string, name: string)
+<h1>{title}</h1><p>Hello {name}</p>

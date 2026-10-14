@@ -1,0 +1,18 @@
+{
+  "name": "chttp-frontend-probe",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Throwaway scriptc probes for a frontend library on chttp. Not published.",
+  "scripts": {
+    "cover": "bash run-cover.sh",
+    "check:node": "bash run-node.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.2",
+    "react": "^19.2.0",
+    "scriptc": "0.3.1",
+    "typescript": "^5.9.3"
+  }
+}
