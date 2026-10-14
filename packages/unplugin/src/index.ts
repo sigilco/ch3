@@ -22,7 +22,6 @@ import { createUnplugin } from "unplugin";
 import { emitGenModule, genFileName } from "./emit.ts";
 import { extractModule } from "./extract.ts";
 import { emitOpenApiModule, openApiFileName } from "./openapi.ts";
-import { emitClientModule, clientFileName } from "./client.ts";
 import { tsgoAvailable } from "./parse/index.ts";
 
 export interface OpenApiOptions {
@@ -62,13 +61,6 @@ export interface ChttpPluginOptions {
   // locatable '@chttp/val' schemas (see PLUGIN.md). Side channel: never
   // imported by runtime dispatch or scriptc. Default false (opt-in).
   openapi?: boolean | OpenApiOptions;
-  // Emit `.chttp/routes.client.ts`: a typed fetch client exporting
-  // `createClient`, `GetRoutes`, `PostRoutes`, etc., with per-route
-  // response / body / params inference from literal send-chains (see
-  // PLUGIN.md). Side channel: never imported by runtime dispatch or
-  // scriptc. `client: true` requires `openapi` to be on (the client types
-  // off the openapi sibling's `chttpRouteTable`). Default false (opt-in).
-  client?: boolean;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".chttp", ".vite"]);
@@ -122,19 +114,6 @@ export const chttpPlugin = createUnplugin((options?: ChttpPluginOptions) => {
   const openapiOpts = openapi === false ? null : openapi === true ? {} : openapi;
   const openapiValSpecifiers = ["@chttp/val"].concat(openapiOpts?.imports ?? []);
 
-  // `client: true` forces `openapi` on: the typed-client module imports the
-  // openapi sibling's `chttpRouteTable`. If the user set client explicitly
-  // and openapi explicitly to false, surface that as a startup warning —
-  // emit nothing for the client.
-  const clientRequested = options?.client === true;
-  const clientOn = clientRequested && openapiOn;
-  if (clientRequested && !openapiOn) {
-    console.warn(
-      "[unplugin-chttp] client: true requested but openapi is off — emit skipped. " +
-        "Enable openapi (true or { ... }) to ship the typed client.",
-    );
-  }
-
   const generate = (id: string, warn: (m: string) => void): void => {
     const code = fs.readFileSync(id, "utf8");
     const model = extractModule(id, code, {
@@ -182,20 +161,6 @@ export const chttpPlugin = createUnplugin((options?: ChttpPluginOptions) => {
       }
       for (const w of model.openapiWarnings) {
         warn(w);
-      }
-    }
-    if (clientOn) {
-      const cli = emitClientModule(model);
-      const cliOut = path.join(path.dirname(id), ".chttp", clientFileName());
-      let cliPrev = "";
-      try {
-        cliPrev = fs.readFileSync(cliOut, "utf8");
-      } catch {
-        cliPrev = "";
-      }
-      if (cliPrev !== cli) {
-        fs.mkdirSync(path.dirname(cliOut), { recursive: true });
-        fs.writeFileSync(cliOut, cli);
       }
     }
     for (const w of model.warnings) {
