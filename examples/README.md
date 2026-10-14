@@ -25,3 +25,11 @@ npm run build        # scriptc build src/main.ts -o app
 ```
 
 For build-time route lowering (compiled dispatch) with a plain JS dist, see `examples/vite-lowering`: `@chttp/unplugin` + a `.chttp.ts` routes module, no scriptc involved. It is elective dispatch specialization on top of a core that already compiles natively; under scriptc that path needs chttp as program code (vendored `chttp/src` or workspace source). See `docs/unplugin.md` → "Two output modes" for the two tiers.
+
+## Integration recipes
+
+Recipes live under `examples/integrations/` and are workspace members (`workspace:*` pins), so `pnpm test` runs their tests.
+
+| Recipe | Shows |
+| --- | --- |
+| `integrations/logging-file-audit` | Request and audit events to a file: subset-native `appendFileSync` sink for ELF, LogTape plus `@logtape/file` on node |
