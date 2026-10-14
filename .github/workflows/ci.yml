@@ -18,6 +18,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # a warm pnpm store cache restores scriptc's toolchain without exec bits
       - run: find node_modules/.pnpm -path '*@scriptc+cli-*/dist/lib/*' -type f -exec chmod +x {} +
+      - run: pnpm change check
+      - run: node --test scripts/changelog-root.test.mjs
       - run: pnpm -r build
       - run: pnpm -r test
       - run: pnpm smoke:pack
