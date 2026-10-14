@@ -31,7 +31,7 @@ Baked data must be an array of records, not a path-keyed object: the subset cann
 
 | Behaviour | Detail |
 | --- | --- |
-| Traversal | The splat is already percent-decoded, so `%2e%2e` and `..%2f` arrive as `..` segments and answer 403. Backslash, NUL and absolute tails are refused too |
+| Traversal | The splat is already percent-decoded, so `%2e%2e` and `..%2f` arrive as `..` segments and answer 403. Backslash, NUL, drive-letter tails (`C:/...`) and absolute tails are refused too |
 | Dotfiles | Any segment starting with `.` answers 404, except `.well-known` |
 | Symlinks | Paths are resolved with `realpath` before serving. A link that stays inside the root keeps working; one that escapes it answers 404 |
 | Directories | `/docs/` and `/docs` serve `docs/index.html` |

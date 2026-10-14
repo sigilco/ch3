@@ -320,3 +320,38 @@ test("codings match exactly, never by substring", async () => {
   assert.notEqual(b.body.toString(), "BR-BYTES");
 });
 
+test("drive-letter tails answer 403", async () => {
+  const r = await req(ctx.pre.port, "/static/C:/etc/passwd");
+  assert.equal(r.status, 403);
+  assert.equal((await req(ctx.pre.port, "/static/C%3A/etc/passwd")).status, 403);
+});
+
+test("empty file: 200, zero length, valid etag", async () => {
+  writeFileSync(join(root, "empty.txt"), "");
+  const r = await req(ctx.main.port, "/empty.txt");
+  assert.equal(r.status, 200);
+  assert.equal(r.headers["content-length"], "0");
+  assert.equal(r.body.length, 0);
+  assert.match(r.headers.etag, /^"[0-9a-f]{40}"$/);
+  // The etag round-trips through If-None-Match like any other asset.
+  assert.equal(
+    (await req(ctx.main.port, "/empty.txt", { headers: { "if-none-match": r.headers.etag } }))
+      .status,
+    304,
+  );
+});
+
+test("query strings are stripped by the router, asset still served", async () => {
+  const plain = await req(ctx.main.port, "/app.js");
+  const r = await req(ctx.main.port, "/app.js?v=2");
+  assert.equal(r.status, 200);
+  assert.equal(r.body.toString(), plain.body.toString());
+});
+
+test("percent-encoded dotfile stays hidden", async () => {
+  // The router decodes %2e, so static sees ".env" and answers 404
+  // (dotfiles 404, never 403, so the filesystem is never probed).
+  const r = await req(ctx.pre.port, "/static/%2eenv");
+  assert.equal(r.status, 404);
+  assert.ok(!r.body.toString().includes("SECRET"));
+});
