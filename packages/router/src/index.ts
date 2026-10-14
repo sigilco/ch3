@@ -1178,7 +1178,11 @@ function runChain(
 
 // Run the user onError handler; anything it throws (or a response it never
 // writes) falls back to the built-in 500 path so the socket always gets
-// exactly one terminal outcome.
+// exactly one terminal outcome. Headers already sent cannot become a 500, so
+// the socket is destroyed — but the handler still runs first (a streaming
+// callback that rejects after streamSSE flushed headers must be observable),
+// and with no handler registered the router stays quiet (no console noise;
+// the destroyed response is the error surface, same as send500's sent path).
 function runOnError(
   oef: (err: unknown, c: Ctx) => void,
   e: unknown,
@@ -1186,13 +1190,11 @@ function runOnError(
   c: Ctx,
 ): void {
   try {
-    if (res.headersSent) {
-      res.destroy();
-      return;
-    }
     oef(e, c);
-    if (!c.sent) {
+    if (!c.sent && !res.headersSent) {
       send500(res);
+    } else {
+      res.destroy();
     }
   } catch (e2) {
     if (!res.headersSent) {
