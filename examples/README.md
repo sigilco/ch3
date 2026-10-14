@@ -34,3 +34,4 @@ Recipes live under `examples/integrations/` and are workspace members (`workspac
 | --- | --- |
 | `integrations/logging-file-audit` | Request and audit events to a file: subset-native `appendFileSync` sink for ELF, LogTape plus `@logtape/file` on node |
 | `integrations/prometheus-metrics` | Request counter and latency histogram on `/metrics`: hand rolled exposition module for ELF, `prom-client` on node |
+| `integrations/otlp-traces` | Server spans exported to an OTLP/HTTP JSON collector via `node:http`, with `traceparent` propagation, same source for ELF and node |
