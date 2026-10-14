@@ -1,5 +1,7 @@
 # chttp
 
+[![ci](https://github.com/sigilco/chttp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sigilco/chttp/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/@chttp/router)](https://www.npmjs.com/package/@chttp/router) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![scriptc static](https://img.shields.io/badge/scriptc%20static-100%25-brightgreen)](scripts/scriptc-gate.sh)
+
 A minimal async-first HTTP router for `node:http`. Handlers and middleware
 may be `async`; the router core ships no runtime dependencies.
 
