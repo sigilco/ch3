@@ -54,6 +54,8 @@ export class WsConn {
   // Fragments of the open message, joined by one concat at the final frame.
   _fchunks: Buffer[] = [];
   _fbytes: number = 0;
+  // Cap on unflushed outbound bytes before a slow consumer is dropped.
+  _maxBacklog: number = 4194304;
 
   constructor(
     socket: Socket,
@@ -115,6 +117,13 @@ export class WsConn {
 
   _write(opcode: number, data: Buffer): void {
     if (this._state !== 0) {
+      return;
+    }
+    if (this.socket.writableLength + data.length > this._maxBacklog) {
+      // Slow consumer: the backlog would never flush, so drop it (1008).
+      this._state = 1;
+      this.socket.destroy();
+      this._finish(1008, "");
       return;
     }
     this.socket.write(encodeFrame(opcode, data));
@@ -339,6 +348,8 @@ export class WsRouter extends UpgradeDispatch {
   maxPayload: number = 1048576;
   // Cap on buffered, not yet parsed bytes per connection.
   maxPending: number = 1048576 + 131072;
+  // Cap on unflushed outbound bytes per connection.
+  maxBacklog: number = 4194304;
   _pats: string[] = [];
   _hs: WsHandler[] = [];
 
@@ -351,6 +362,11 @@ export class WsRouter extends UpgradeDispatch {
   withLimits(maxPayload: number, maxPending: number): WsRouter {
     this.maxPayload = maxPayload;
     this.maxPending = maxPending;
+    return this;
+  }
+
+  withMaxBacklog(maxBacklog: number): WsRouter {
+    this.maxBacklog = maxBacklog;
     return this;
   }
 
@@ -412,6 +428,7 @@ export class WsRouter extends UpgradeDispatch {
       this.maxPayload,
       this.maxPending,
     );
+    conn._maxBacklog = this.maxBacklog;
     socket.on("data", function (d: Buffer): void {
       conn._onData(d);
     });

@@ -420,3 +420,26 @@ test("many fragments reassemble into one intact message", async () => {
   c.s.destroy();
   server.close();
 });
+
+test("send backlog cap drops a slow consumer with 1008", async () => {
+  class Flood extends Rec {
+    open(c) {
+      super.open(c);
+      c.send("x".repeat(2000));
+    }
+  }
+  const h = new Flood();
+  const ws = new WsRouter().ws("/echo", h).withMaxBacklog(1000);
+  const app = createRouter();
+  app.withUpgrade(ws);
+  const server = app.serve({ port: 0, host: "127.0.0.1" });
+  server.on("upgrade", app.upgradeHandler());
+  await new Promise((r) => server.once("listening", r));
+  const c = await handshake(server.address().port, "/echo");
+  c.s.on("error", () => {});
+  await new Promise((r) => c.s.once("close", r));
+  const close = h.events.find((e) => e[0] === "close");
+  assert.ok(close, "handler close fired");
+  assert.equal(close[1], 1008);
+  server.close();
+});
