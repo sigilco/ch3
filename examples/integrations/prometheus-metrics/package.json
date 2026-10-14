@@ -1,0 +1,20 @@
+{
+  "name": "chttp-example-prometheus-metrics",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "scriptc build src/main.ts -o app",
+    "start": "./app",
+    "start:node": "node --experimental-strip-types src/main.node.ts",
+    "test": "node --experimental-strip-types --test test/metrics.test.ts"
+  },
+  "dependencies": {
+    "@chttp/router": "workspace:*",
+    "prom-client": "^15.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "scriptc": "0.3.1"
+  }
+}
