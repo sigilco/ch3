@@ -1,20 +1,79 @@
 name: release
 
+# Three stages so a failure points at one stage and "re-run failed jobs"
+# resumes from it: verify (no secrets) -> publish (approval gate) -> github-release.
+# Releases are packed and published with pnpm, never npm: only pnpm rewrites
+# workspace:^ ranges to real semver ranges in the published package.json.
+
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to dry run against, e.g. v0.2.0 (verifies and prints the release notes, never publishes)"
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
-  id-token: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # a warm pnpm store cache restores scriptc's toolchain without exec bits
+      - run: find node_modules/.pnpm -path '*@scriptc+cli-*/dist/lib/*' -type f -exec chmod +x {} +
+      - run: pnpm change check
+      - run: pnpm -r build
+      - run: pnpm -r test
+      - run: pnpm smoke:pack
+      - name: Packed tarballs have no workspace ranges
+        run: bash scripts/check-packed.sh
+      # Versioning is fixed-group (pnpm-workspace.yaml versioning.fixed):
+      # every package shares one version, which must match the tag.
+      - name: Verify tag matches package versions
+        run: |
+          VER="${TAG#v}"
+          for dir in packages/*/; do
+            V=$(node -p "require('./${dir}package.json').version")
+            [ "$V" = "$VER" ] || { echo "version mismatch: $dir at $V, tag $TAG"; exit 1; }
+          done
+      - name: Build and validate release notes
+        run: |
+          bash scripts/release-notes.sh "$TAG" "$GITHUB_REPOSITORY" > release-notes.md
+          cat release-notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
   publish:
+    needs: verify
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     # Tag pushes queue here until a required reviewer approves the
     # npm-publish environment (repo Settings > Environments).
     environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,20 +84,49 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
-      - run: pnpm -r test
-      # Versioning is fixed-group (pnpm-workspace.yaml versioning.fixed):
-      # all four packages share one version. The release tag must match
-      # the version pnpm version -r wrote into every package.json.
-      - name: Verify tag matches package versions
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          for pkg in @chttp/router @chttp/val @chttp/stream @chttp/unplugin @chttp/static @chttp/ws @chttp/html; do
-            V=$(node -p "require('./packages/${pkg#@chttp/}/package.json').version")
-            [ "$V" = "$TAG" ] || { echo "version mismatch: $pkg at $V, tag $TAG"; exit 1; }
-          done
-      - name: Publish all workspace packages
-        # Must be pnpm, not npm: only pnpm rewrites workspace:^ ranges to real
-        # semver ranges in the published package.json.
-        run: pnpm -r --filter "./packages/*" publish --access public --no-git-checks
+      # npm cannot roll back, so the guarantee is that a rerun converges:
+      # skip versions already on the registry, keep going after a failure,
+      # and exit non zero at the end with a summary.
+      - name: Publish in dependency order
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VER="${TAG#v}"
+          published=""; skipped=""; failed=""
+          for name in router val unplugin static ws stream html; do
+            pkg="@chttp/$name"
+            if npm view "$pkg@$VER" version >/dev/null 2>&1; then
+              skipped="$skipped $pkg"; continue
+            fi
+            if pnpm --filter "$pkg" publish --access public --no-git-checks; then
+              published="$published $pkg"
+            else
+              failed="$failed $pkg"
+            fi
+          done
+          echo "published:${published:- none}"
+          echo "already on npm:${skipped:- none}"
+          echo "failed:${failed:- none}"
+          [ -z "$failed" ]
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+      # Idempotent: create as draft if missing, update the notes, then
+      # publish, so a crash never leaves a half populated public release.
+      - name: Create or update the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRE=""
+          case "$TAG" in *-*) PRE="--prerelease" ;; esac
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --title "$TAG" --notes-file release-notes.md $PRE
+          fi
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file release-notes.md --draft=false $PRE
