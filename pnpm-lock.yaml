@@ -277,6 +277,22 @@ importers:
         specifier: 0.3.1
         version: 0.3.1
 
+  examples/integrations/webhook-server:
+    dependencies:
+      '@chttp/router':
+        specifier: workspace:*
+        version: link:../../../packages/router
+      '@chttp/val':
+        specifier: workspace:*
+        version: link:../../../packages/val
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      scriptc:
+        specifier: 0.3.1
+        version: 0.3.1
+
   examples/rate-limit:
     dependencies:
       '@chttp/router':
