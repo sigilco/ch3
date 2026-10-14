@@ -23,10 +23,13 @@ import * as http from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { GenDispatch, ROUTE_CONTRACT_VERSION } from "./gen.ts";
 import type { DispatchFn } from "./gen.ts";
+import { UpgradeDispatch } from "./upgrade.ts";
+import type { Socket } from "node:net";
 
 export { GenDispatch };
 export type { DispatchFn };
 export { ROUTE_CONTRACT_VERSION };
+export { UpgradeDispatch };
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -274,6 +277,18 @@ export class Ctx<P extends string = string> {
     this.status(n);
     this.res.setHeader("location", String(url));
     this.res.end();
+    this.sent = true;
+    return this;
+  }
+
+  // Binary body. A separate method (not a string | Buffer union on
+  // _send): a mixed-arm union is SC2009 under scriptc. HEAD-safe: node
+  // drops the body for HEAD while keeping content-length.
+  bytes(b: Buffer, ct: string): Ctx<P> {
+    this.res.statusCode = this._status;
+    this.res.setHeader("content-type", String(ct));
+    this.res.setHeader("content-length", String(b.length));
+    this.res.end(b);
     this.sent = true;
     return this;
   }
@@ -845,6 +860,15 @@ export class App {
   // would fence eager program-code instantiation the same way a function
   // inside a record does. Default returns false (never registered).
   _gen: DispatchFn;
+  // Upgrade seam (docs/upgrade-contract.md), same closure-field shape as
+  // _gen. serve() never attaches an "upgrade" listener: any attach built
+  // inside package dist JS defers 2 SC1090 sites for EVERY npm app
+  // importing the router (scriptc cannot recover the listener's parameter
+  // types from the emitted .js), including apps that never upgrade.
+  // Upgrade users wire server.on("upgrade", ...) in their own program —
+  // an inline annotated listener or a typed alias of upgradeHandler()
+  // both lower 100% under npm-static compilation.
+  _up: (req: IncomingMessage, socket: Socket, head: Buffer) => boolean;
 
   constructor() {
     this._nodes = [];
@@ -862,6 +886,9 @@ export class App {
     this._sp = [];
     this._bodyF = [];
     this._gen = function (_r: IncomingMessage, _s: ServerResponse): boolean {
+      return false;
+    };
+    this._up = function (_r: IncomingMessage, _s: Socket, _h: Buffer): boolean {
       return false;
     };
   }
@@ -963,6 +990,29 @@ export class App {
     return this;
   }
 
+  // Registers an upgrade dispatch (docs/upgrade-contract.md). Last call
+  // wins. The listener is only attached by serve()/upgradeHandler() users
+  // when one is registered, so apps without it keep node's default.
+  withUpgrade(u: UpgradeDispatch): App {
+    const g = u;
+    this._up = function (rq: IncomingMessage, sk: Socket, hd: Buffer): boolean {
+      return g.upgrade(rq, sk, hd);
+    };
+    return this;
+  }
+
+  // Listener for custom servers: server.on("upgrade", app.upgradeHandler()).
+  // An unhandled upgrade (nothing registered, or upgrade() returned false)
+  // destroys the socket, matching node's behaviour without a listener.
+  upgradeHandler(): (req: IncomingMessage, socket: Socket, head: Buffer) => void {
+    const app = this;
+    return function (req: IncomingMessage, socket: Socket, head: Buffer): void {
+      if (!app._up(req, socket, head)) {
+        socket.destroy();
+      }
+    };
+  }
+
   handler(): (req: IncomingMessage, res: ServerResponse) => void {
     const app = this;
     return function (req: IncomingMessage, res: ServerResponse): void {
@@ -973,6 +1023,9 @@ export class App {
   serve(opts: { port: number }): Server;
   serve(opts: { port: number; host: string }): Server;
   serve(opts: { port: number; host?: string }): Server {
+    // No "upgrade" attach here (see the _up field note): apps that take
+    // upgrades wire server.on("upgrade", app.upgradeHandler()) themselves
+    // after serve() returns the server, typed at their own call site.
     const s = http.createServer(this.handler());
     if (opts.host === null || opts.host === undefined) {
       s.listen(Number(opts.port));
