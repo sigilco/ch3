@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
-import { ch3Plugin } from '@ch3/unplugin'
+import { chttpPlugin } from '@chttp/unplugin'
 
 export default defineConfig({
-  plugins: [ch3Plugin.vite()],
+  plugins: [chttpPlugin.vite()],
   // SSR-style node build: the server is the build target, not the browser.
   build: {
     ssr: 'src/main.ts',
@@ -12,7 +12,7 @@ export default defineConfig({
       output: { format: 'es' },
     },
   },
-  // bundle ch3 + the generated dispatch into dist/main.js so the
+  // bundle chttp + the generated dispatch into dist/main.js so the
   // output is self-contained (only node:* stays external)
   ssr: { noExternal: true },
 })

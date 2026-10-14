@@ -1,16 +1,11 @@
-// ch3 + valibot validation subject — canonical-style app plus a POST
-// route that JSON.parses the body and safeParses it against a Standard
-// Schema (valibot). Mirrors real REST usage: parse -> validate -> 200/400.
-import { createRouter } from "../../packages/ch3/src/index.ts";
-import * as v from "valibot";
+// chttp + @chttp/val validation subject — the subset-native Standard Schema
+// library, same route + payload as chttp-valibot for a like-for-like cell.
+import { createRouter } from "../../packages/router/src/index.ts";
+import * as v from "../../packages/val/src/index.ts";
 
 const Item = v.strictObject({
   sku: v.pipe(v.string(), v.minLength(1)),
-  qty: v.pipe(
-    v.number(),
-    v.integer(),
-    v.check((n) => n >= 1, "gte1"),
-  ),
+  qty: v.pipe(v.number(), v.integer(), v.minValue(1)),
   price: v.pipe(v.number(), v.finite()),
 });
 
@@ -32,9 +27,10 @@ app.post(
   (c) => {
     const parsed = v.safeParse(Order, JSON.parse(c.req.body()));
     if (!parsed.success) {
-      return c.status(400).json({ issues: parsed.issues.length });
+      return c.status(400).json({ issues: parsed.issues === null ? 0 : parsed.issues.length });
     }
-    return c.json({ ok: true, items: parsed.output.items.length });
+    const items: unknown[] = (parsed.output as { items: unknown[] }).items;
+    return c.json({ ok: true, items: items.length });
   },
   { body: true },
 );

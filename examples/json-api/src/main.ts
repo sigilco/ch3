@@ -1,5 +1,5 @@
-import { createRouter } from "ch3";
-import type { Ctx } from "ch3";
+import { createRouter } from "@chttp/router";
+import type { Ctx } from "@chttp/router";
 
 const app = createRouter();
 

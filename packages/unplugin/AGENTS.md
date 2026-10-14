@@ -1,6 +1,6 @@
-# @ch3/unplugin AGENTS.md
+# @chttp/unplugin AGENTS.md
 
-Build-time route lowering for ch3. Emits a specialized dispatch module so requests skip the runtime trie walk.
+Build-time route lowering for chttp. Emits a specialized dispatch module so requests skip the runtime trie walk.
 
 ## Contract
 
@@ -9,7 +9,7 @@ Build-time route lowering for ch3. Emits a specialized dispatch module so reques
 
 ## Generated files
 
-- `.ch3/routes.gen.ts` (and anything under `.ch3/`) is generated output. Never hand-edit. Change the generator, not the artifact.
+- `.chttp/routes.gen.ts` (and anything under `.chttp/`) is generated output. Never hand-edit. Change the generator, not the artifact.
 
 ## Testing
 

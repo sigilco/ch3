@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { extractModule } from "../src/extract.ts";
 
 const SRC_BASIC = `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
@@ -13,7 +13,7 @@ app.post('/echo', (c) => c.text(c.req.body()), { body: true })
 
 describe("extractModule basics", () => {
   it("extracts literal registrations with kinds and indices", () => {
-    const m = extractModule("routes.ch3.ts", SRC_BASIC);
+    const m = extractModule("routes.chttp.ts", SRC_BASIC);
     assert.equal(m.fatal, "");
     assert.equal(m.app?.varName, "app");
     assert.equal(m.app?.importKind, "named");
@@ -32,7 +32,7 @@ describe("extractModule basics", () => {
   });
 
   it("specializes literal send-chains", () => {
-    const m = extractModule("routes.ch3.ts", SRC_BASIC);
+    const m = extractModule("routes.chttp.ts", SRC_BASIC);
     const json = m.routes[0].staticSend;
     assert.ok(json);
     assert.equal(json.body, '{"hello":"world"}');
@@ -45,9 +45,9 @@ describe("extractModule basics", () => {
 
   it("handles status/header chains and redirect", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.post('/made', (c) => c.status(201).header('x-a', 'b').json({ ok: true }))
 app.get('/redir', (c) => c.redirect('/json'))
@@ -72,9 +72,9 @@ app.get('/t', (c) => c.text('plain'))
 
   it("decomposes fluent chains and app.on", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/a', (c) => c.text('a')).post('/b', (c) => c.text('b'))
 app.on('DELETE', '/c', (c) => c.text('c'))
@@ -90,9 +90,9 @@ app.on('DELETE', '/c', (c) => c.text('c'))
 describe("middleware + mounts", () => {
   it("snapshots middleware depth at registration", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/early', (c) => c.text('e'))
 app.use((c, next) => { c.header('x', '1'); next() })
@@ -107,9 +107,9 @@ app.get('/late', (c) => c.text('l'))
 
   it("replays same-module sub-router mounts with prefix", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/top', (c) => c.text('t'))
 const api = createRouter()
@@ -131,9 +131,9 @@ app.get('/after', (c) => c.text('a'))
 
   it("mount of an unknown router marks later indices uncertain", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 import other from './other.ts'
 export const app = createRouter()
 app.get('/before', (c) => c.text('b'))
@@ -156,9 +156,9 @@ app.get('/also-after', (c) => c.json({ ok: true }))
 describe("bail rules", () => {
   it("non-literal path consumes an index but stays runtime-only", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 const dyn = '/dyn'
 app.get('/a', (c) => c.text('a'))
@@ -179,9 +179,9 @@ app.get('/b', (c) => c.text('b'))
 
   it("conditional registration marks later routes uncertain", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/before', (c) => c.text('b'))
 if (process.env.X) {
@@ -198,9 +198,9 @@ app.get('/after', (c) => c.text('a'))
 
   it("conditional ctx routes after uncertainty are not emitted", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 if (process.env.X) {
   app.get('/cond', (c) => c.text('c'))
@@ -214,9 +214,9 @@ app.get('/after', (c) => c.json({ id: c.req.query('x') }))
 
   it("non-exported router produces a stub model", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 const app = createRouter()
 app.get('/a', (c) => c.text('a'))
 `,
@@ -227,9 +227,9 @@ app.get('/a', (c) => c.text('a'))
 
   it("default export is picked up", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 const router = createRouter()
 router.get('/a', (c) => c.text('a'))
 export default router
@@ -242,9 +242,9 @@ export default router
 
   it("invalid patterns warn but keep the index consumed", () => {
     const m = extractModule(
-      "routes.ch3.ts",
+      "routes.chttp.ts",
       `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/mid/*/x', (c) => c.text('m'))
 app.get('/ok', (c) => c.text('o'))

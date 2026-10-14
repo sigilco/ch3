@@ -1,11 +1,11 @@
-// ch3 demo — same file runs under node, bun, and `scriptc build`.
+// chttp demo — same file runs under node, bun, and `scriptc build`.
 // Usage: <runtime> app.js [port]   (default 3000)
-import { createRouter } from "ch3";
+import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 
 app.use((c, next) => {
-  c.header("x-powered-by", "ch3");
+  c.header("x-powered-by", "chttp");
   next();
 });
 
@@ -28,4 +28,4 @@ app.notFound((c) => {
 
 const port = process.argv.length > 2 ? Number(process.argv[2]) : 3000;
 app.serve({ port: port });
-console.log("ch3 demo listening on :" + port);
+console.log("chttp demo listening on :" + port);

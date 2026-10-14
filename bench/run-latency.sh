@@ -19,10 +19,10 @@ RESULTS=results-wrk2
 mkdir -p "$RESULTS" logs
 
 SUBJECTS=(
-  "ch3-node|node apps/ch3.ts"
-  "ch3-bun|bun apps/ch3.ts"
-  "ch3-scriptc|./bin/ch3-scriptc"
-  "ch3-fast-scriptc|./bin/ch3-fast-scriptc"
+  "chttp-node|node apps/chttp.ts"
+  "chttp-bun|bun apps/chttp.ts"
+  "chttp-scriptc|./bin/chttp-scriptc"
+  "chttp-fast-scriptc|./bin/chttp-fast-scriptc"
   "raw-node|node apps/raw.ts"
   "raw-bun|bun apps/raw-bun.ts"
   "raw-scriptc|./bin/raw-scriptc"

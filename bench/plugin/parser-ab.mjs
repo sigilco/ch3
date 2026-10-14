@@ -49,11 +49,11 @@ function nightlyNodeModulesDir() {
 const TSGO_ENV_DIR = nightlyNodeModulesDir();
 const CHILD_ENV = {
   ...process.env,
-  CH3_PARSER_AB_CHILD: "1",
+  CHTTP_PARSER_AB_CHILD: "1",
   ...(TSGO_ENV_DIR ? { NODE_PATH: TSGO_ENV_DIR } : {}),
 };
 
-if (process.env.CH3_PARSER_AB_CHILD !== "1") {
+if (process.env.CHTTP_PARSER_AB_CHILD !== "1") {
   // parent: one child node process per (size, parser) for the cold number,
   // then drive the warm reps in that same child.
   const sizes = process.argv.slice(2).map(Number).filter(Boolean);
@@ -133,7 +133,7 @@ const { extractModule } = await import(
 
 const dir = join(here, "corpus", String(size));
 const files = readdirSync(dir)
-  .filter((f) => f.endsWith(".ch3.ts"))
+  .filter((f) => f.endsWith(".chttp.ts"))
   .sort();
 const sources = files.map((f) => ({
   name: join(dir, f),
@@ -143,7 +143,7 @@ const sources = files.map((f) => ({
 function extractAll() {
   let lowered = 0;
   for (const s of sources) {
-    const m = extractModule(s.name, s.code, { parser, imports: ["./ch3.ts"] });
+    const m = extractModule(s.name, s.code, { parser, imports: ["./chttp.ts"] });
     lowered += m.routes.length;
   }
   return lowered;

@@ -6,15 +6,15 @@ import * as path from "node:path";
 import { extractModule } from "../src/extract.ts";
 import { emitGenModule, genFileName } from "../src/emit.ts";
 
-// End-to-end: write a routes module + the generated .ch3/routes.gen.ts to a
+// End-to-end: write a routes module + the generated .chttp/routes.gen.ts to a
 // temp dir, import CompiledRoutes for real, wire it via app.withDispatch,
 // and drive dispatch with fake req/res objects. The routes module imports
-// the real ch3 source, so this exercises actual Ctx/ReqView/App behavior —
+// the real chttp source, so this exercises actual Ctx/ReqView/App behavior —
 // not mocks of them.
 
-const CH3_SRC = path.resolve(
+const CHTTP_SRC = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
-  "../../ch3/src/index.ts",
+  "../../router/src/index.ts",
 );
 
 interface FakeRes {
@@ -80,7 +80,7 @@ function fakeReq(method: string, url: string, body: string | null): FakeReq {
 }
 
 const ROUTES_SRC = `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 
 app.get('/json', (c) => c.json({ hello: 'world' }))
@@ -106,41 +106,41 @@ interface GenInstance {
   dispatch: (req: FakeReq, res: FakeRes) => boolean;
 }
 
-interface Ch3App {
-  withDispatch: (d: GenInstance) => Ch3App;
+interface ChttpApp {
+  withDispatch: (d: GenInstance) => ChttpApp;
   _dispatch: (req: FakeReq, res: FakeRes) => void;
 }
 
 describe("e2e: generated dispatch executes against the real App", () => {
   let dir = "";
   let gen: GenInstance | null = null;
-  let app: Ch3App | null = null;
+  let app: ChttpApp | null = null;
 
   before(async () => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), "unplugin-ch3-e2e-"));
-    const modPath = path.join(dir, "routes.ch3.ts");
-    const relCh3 =
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "unplugin-chttp-e2e-"));
+    const modPath = path.join(dir, "routes.chttp.ts");
+    const relChttp =
       "./" +
-      path.relative(fs.realpathSync(dir), fs.realpathSync(CH3_SRC)).split(path.sep).join("/");
-    fs.writeFileSync(modPath, ROUTES_SRC.replace(/'ch3'/g, "'" + relCh3 + "'"));
+      path.relative(fs.realpathSync(dir), fs.realpathSync(CHTTP_SRC)).split(path.sep).join("/");
+    fs.writeFileSync(modPath, ROUTES_SRC.replace(/'@chttp\/router'/g, "'" + relChttp + "'"));
     const model = extractModule(modPath, fs.readFileSync(modPath, "utf8"), {
-      imports: [relCh3],
+      imports: [relChttp],
     });
-    const genDir = path.join(dir, ".ch3");
+    const genDir = path.join(dir, ".chttp");
     fs.mkdirSync(genDir, { recursive: true });
-    const relCh3FromGen =
+    const relChttpFromGen =
       "./" +
-      path.relative(fs.realpathSync(genDir), fs.realpathSync(CH3_SRC)).split(path.sep).join("/");
+      path.relative(fs.realpathSync(genDir), fs.realpathSync(CHTTP_SRC)).split(path.sep).join("/");
     const genSrc = emitGenModule(model, {
-      importFrom: relCh3FromGen,
+      importFrom: relChttpFromGen,
       modulePath: modPath,
     });
     const genPath = path.join(genDir, genFileName(modPath));
     fs.writeFileSync(genPath, genSrc);
     const mod = (await import(genPath)) as {
-      CompiledRoutes: new (a: Ch3App) => GenInstance;
+      CompiledRoutes: new (a: ChttpApp) => GenInstance;
     };
-    const routesMod = (await import(modPath)) as { app: Ch3App };
+    const routesMod = (await import(modPath)) as { app: ChttpApp };
     app = routesMod.app;
     gen = new mod.CompiledRoutes(routesMod.app);
     routesMod.app.withDispatch(gen);
@@ -263,7 +263,7 @@ describe("e2e: contract version validation at withDispatch", () => {
   };
 
   it("throws naming both versions on mismatch", async () => {
-    const m = (await import(CH3_SRC)) as {
+    const m = (await import(CHTTP_SRC)) as {
       createRouter: () => { withDispatch: (d: unknown) => unknown };
     };
     assert.throws(
@@ -273,7 +273,7 @@ describe("e2e: contract version validation at withDispatch", () => {
   });
 
   it("accepts a matching stamp and a missing stamp", async () => {
-    const m = (await import(CH3_SRC)) as {
+    const m = (await import(CHTTP_SRC)) as {
       createRouter: () => { withDispatch: (d: unknown) => unknown; get: unknown };
     };
     m.createRouter().withDispatch(mkGen(1));

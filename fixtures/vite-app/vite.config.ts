@@ -1,14 +1,14 @@
 import { defineConfig } from 'vite'
-import { ch3Plugin } from '@ch3/unplugin'
+import { chttpPlugin } from '@chttp/unplugin'
 
 export default defineConfig({
   plugins: [
-    ch3Plugin.vite({
+    chttpPlugin.vite({
       // routes reach the router through the local barrel (source paths —
-      // see src/ch3.ts); tell the extractor it marks ch3 modules and emit
+      // see src/chttp.ts); tell the extractor it marks chttp modules and emit
       // the App type import through it as well
-      imports: ['./ch3.ts'],
-      importFrom: '../ch3.ts',
+      imports: ['./chttp.ts'],
+      importFrom: '../chttp.ts',
     }),
   ],
   build: {
@@ -19,7 +19,7 @@ export default defineConfig({
       output: { format: 'es' },
     },
   },
-  // bundle ch3 + the generated dispatch into dist/main.js so the
+  // bundle chttp + the generated dispatch into dist/main.js so the
   // output is self-contained (only node:* stays external)
   ssr: { noExternal: true },
 })

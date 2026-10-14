@@ -27,7 +27,7 @@ const CACHE: { [name: string]: Parser } = {};
 export function getParser(name?: string): Parser {
   const key = name === undefined || name === "" ? "classic" : name;
   if (Object.prototype.hasOwnProperty.call(REGISTRY, key) === false) {
-    throw new Error("unplugin-ch3: unknown parser '" + key + "' (available: classic, tsgo)");
+    throw new Error("unplugin-chttp: unknown parser '" + key + "' (available: classic, tsgo)");
   }
   if (Object.prototype.hasOwnProperty.call(CACHE, key) === false) {
     CACHE[key] = REGISTRY[key]();

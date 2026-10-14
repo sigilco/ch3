@@ -3,7 +3,7 @@
 import type { Expression } from "./parse/index.ts";
 
 export interface SegSpec {
-  // 0 static, 1 :param, 2 tail-* wildcard — mirrors ch3's RouteNode.kind
+  // 0 static, 1 :param, 2 tail-* wildcard — mirrors chttp's RouteNode.kind
   kind: number;
   lit: string; // static segment text, or param name, or '*' for wildcards
 }

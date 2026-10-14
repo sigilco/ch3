@@ -1,7 +1,7 @@
 {
-  "name": "@ch3/unplugin",
+  "name": "@chttp/unplugin",
   "version": "0.1.0",
-  "description": "Build-time route-lowering bundler plugin for ch3",
+  "description": "Build-time route-lowering bundler plugin for chttp",
   "keywords": [
     "aot",
     "http",
@@ -13,14 +13,14 @@
     "unplugin",
     "vite"
   ],
-  "homepage": "https://github.com/sigilco/ch3#readme",
+  "homepage": "https://github.com/sigilco/chttp#readme",
   "bugs": {
-    "url": "https://github.com/sigilco/ch3/issues"
+    "url": "https://github.com/sigilco/chttp/issues"
   },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sigilco/ch3.git",
+    "url": "git+https://github.com/sigilco/chttp.git",
     "directory": "packages/unplugin"
   },
   "files": [
@@ -39,7 +39,7 @@
     "test": "node --test test/*.test.ts"
   },
   "peerDependencies": {
-    "ch3": "^0.1.0"
+    "@chttp/router": "^0.1.0"
   },
   "dependencies": {
     "unplugin": "^3.4.0",
@@ -50,7 +50,7 @@
     "@types/picomatch": "^4.0.3",
     "typescript": "^5.9.0",
     "typescript-next": "npm:typescript@next",
-    "ch3": "workspace:^"
+    "@chttp/router": "workspace:^"
   },
   "engines": {
     "node": ">=22"

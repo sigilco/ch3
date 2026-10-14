@@ -1,5 +1,5 @@
 // val — a minimal Standard Schema validation library authored inside the
-// scriptc-compilable subset, so it compiles to a native ELF alongside ch3
+// scriptc-compilable subset, so it compiles to a native ELF alongside chttp
 // (npm validation libraries cannot: importing one poisons program-code class
 // instantiation under scriptc 0.3.0 — see docs/validation.md).
 //
@@ -19,7 +19,7 @@
 //   - No Date/File/Blob/Map/Set schemas, no async schemas, no function
 //     values inside records — checks/transforms live on class instances.
 //
-// Subset notes (same rules as packages/ch3): `| null` unions only; indexed
+// Subset notes (same rules as packages/chttp): `| null` unions only; indexed
 // for loops + for..of over arrays; `instanceof` only on classes declared in
 // program code; `as` casts at entry points for `unknown` params.
 //

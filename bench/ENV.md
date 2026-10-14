@@ -45,12 +45,12 @@ within a run.
 
 ## Package versions
 
-h3 2.0.2 · hono 4.13.13 · @hono/node-server 2.1.4 · find-my-way 9.10.0 · express 5.3.0 · fastify 5.12.5 · chi v5.0.12 (pinned for go1.18) · axum 0.8.9 · mongoose 7.19 (vendored single-file, patched to accept POST without Content-Length — see `ceilings/mongoose.c` "ch3 bench patch")
+h3 2.0.2 · hono 4.13.13 · @hono/node-server 2.1.4 · find-my-way 9.10.0 · express 5.3.0 · fastify 5.12.5 · chi v5.0.12 (pinned for go1.18) · axum 0.8.9 · mongoose 7.19 (vendored single-file, patched to accept POST without Content-Length — see the local patch in `ceilings/mongoose.c`)
 
-## Ch3 build provenance
+## Chttp build provenance
 
-`ch3-scriptc` and `ch3-fast-scriptc` are **program-code** ELFs:
-`scriptc build apps/ch3{,-fast}.ts --optimization=speed`, compiled from
+`chttp-scriptc` and `chttp-fast-scriptc` are **program-code** ELFs:
+`scriptc build apps/chttp{,-fast}.ts --optimization=speed`, compiled from
 `devin/compiled-mode` sources grafted into this branch. The
 `--npm-static` path was measured earlier at a 40-70% throughput cliff and is
 deliberately not reported (see `RESULTS-compiled-mode.md`).

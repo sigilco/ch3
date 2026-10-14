@@ -1,4 +1,4 @@
-// Shared canonical route table for the ch3 bench suite (DESIGN.md §5).
+// Shared canonical route table for the chttp bench suite (DESIGN.md §5).
 // Every framework app consumes these so the tables are identical.
 
 export const JSON_BODY = '{"hello":"world"}';

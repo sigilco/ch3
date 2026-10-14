@@ -1,4 +1,4 @@
-// Generated-dispatch contract — the stable seam between ch3 and
+// Generated-dispatch contract — the stable seam between chttp and
 // build-time code generators (the Vite/unplugin transform). Spec:
 // docs/route-contract.md.
 //

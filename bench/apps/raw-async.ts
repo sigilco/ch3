@@ -1,5 +1,5 @@
 // Raw node:http baseline with an ASYNC request listener — the node-http
-// async control row for ch3-async. Same routes and responses as raw.ts;
+// async control row for chttp-async. Same routes and responses as raw.ts;
 // the listener wraps every request in a promise so each response pays a
 // microtask settle, matching what async frameworks do internally.
 

@@ -1,5 +1,5 @@
 {
-  "name": "ch3-vite-fixture",
+  "name": "chttp-vite-fixture",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,10 +9,10 @@
     "start:runtime": "node src/runtime.ts"
   },
   "dependencies": {
-    "ch3": "workspace:*"
+    "@chttp/router": "workspace:*"
   },
   "devDependencies": {
-    "@ch3/unplugin": "workspace:*",
+    "@chttp/unplugin": "workspace:*",
     "vite": "^7.0.0"
   }
 }
