@@ -1,6 +1,6 @@
 {
   "name": "@chttp/stream",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Server-Sent Events and chunked text streaming for @chttp/router, authored inside the scriptc compilable subset",
   "license": "Apache-2.0",
   "repository": {
@@ -27,9 +27,9 @@
     "test": "tsc -p tsconfig.json && node --test test/stream.test.js"
   },
   "devDependencies": {
+    "@chttp/router": "workspace:^",
     "@types/node": "^24.0.0",
-    "typescript": "^5.9.0",
-    "@chttp/router": "workspace:^"
+    "typescript": "^5.9.0"
   },
   "engines": {
     "node": ">=22"
