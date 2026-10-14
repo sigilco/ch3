@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Fails unless every gate app reports 100% static under `scriptc coverage`.
+# Gates are the compile entries named in each package AGENTS.md. Run after `pnpm -r build`.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+GATES=(
+  bench/apps/chttp-html.ts
+  bench/apps/chttp-stream.ts
+  bench/apps/chttp-val.ts
+  packages/static/gate.ts
+)
+
+fail=0
+for gate in "${GATES[@]}"; do
+  out=$(scriptc coverage "$gate" 2>&1) || true
+  line=$(printf '%s\n' "$out" | grep -E 'compile statically' || true)
+  if [[ "$line" == *"(100%)"* ]]; then
+    printf 'ok   %s %s\n' "$gate" "$(printf '%s' "$line" | tr -s ' ')"
+  else
+    printf 'FAIL %s %s\n' "$gate" "${line:-no coverage line}"
+    printf '%s\n' "$out" | tail -20
+    fail=1
+  fi
+done
+exit "$fail"
