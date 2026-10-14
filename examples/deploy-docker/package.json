@@ -1,0 +1,17 @@
+{
+  "name": "chttp-example-deploy-docker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "scriptc build src/main.ts -o server --strip",
+    "start": "./server",
+    "start:node": "node --experimental-strip-types src/main.ts"
+  },
+  "dependencies": {
+    "@chttp/router": "0.1.0"
+  },
+  "devDependencies": {
+    "scriptc": "0.3.1"
+  }
+}

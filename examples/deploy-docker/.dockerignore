@@ -1,0 +1,10 @@
+node_modules
+server
+app
+*.llvm.ll
+.scriptc
+dist
+.DS_Store
+README.md
+Dockerfile
+.dockerignore

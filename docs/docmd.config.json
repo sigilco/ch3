@@ -49,6 +49,10 @@
      "route": "architecture"
     },
     {
+     "title": "Deploy",
+     "route": "deploy"
+    },
+    {
      "title": "Benchmarks",
      "route": "benchmarks"
     },

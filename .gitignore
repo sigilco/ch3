@@ -1,6 +1,7 @@
 .scriptc/
 node_modules/
 dist/
+bench/viz/
 examples/demo/app-bin
 examples/demo/app.ll
 examples/demo/package-lock.json
@@ -11,3 +12,4 @@ examples/*/node_modules/
 examples/*/app
 examples/*/dist/
 examples/*/main.ll
+!examples/env/

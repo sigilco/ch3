@@ -59,6 +59,42 @@ Shipped surface: `string` `number` `boolean` `any` `unknown` `never` `literal` `
 
 Kind-tagged schema classes (same pattern as chttp's `Context`/`ReqView`) with a module-level `VFail` sentinel for failure identity, and a shared push/pop `path` stack: no exception or record allocation on the happy path beyond the output record. Validation costs ~26% of ELF request throughput on the bench schema.
 
+## Validating environment variables
+
+Env vars arrive as strings, half of them missing, and a bad `PORT` should kill the process at boot, not at first request. The pattern: build a spec record of val schemas, `safeParse` it against `process.env` once at startup, print `summarize()` and exit on failure, and hand the coerced record to the app.
+
+```ts
+import * as v from "@chttp/val";
+
+function createEnv(spec) {
+  // v.object, not strictObject: process.env carries PATH, HOME, ...
+  // plain object validates the spec keys and strips the rest
+  const r = v.safeParse(v.object(spec), process.env);
+  if (r.success) return { ok: true, env: r.output, report: null };
+  return { ok: false, env: null, report: v.summarize(r.issues) };
+}
+
+const Env = createEnv({
+  // string in, number out: transform coerces, minValue checks the result
+  PORT: v.pipe(
+    v.string(),
+    v.transform((s) => Number(s)),
+    v.minValue(1),
+    v.maxValue(65535),
+  ),
+  LOG_LEVEL: v.optionalStr(v.pipe(v.string(), v.toLowerCase()), "info"),
+  NEW_FEATURE: v.optionalStr(v.union([v.literal("on"), v.literal("off")]), "off"),
+});
+
+if (!Env.ok) {
+  console.error("invalid environment:\n" + Env.report); // "PORT: min_value"
+  process.exit(1);
+}
+app.serve({ port: Env.env.PORT });
+```
+
+`process.env` reads lower fine under scriptc, so the same file runs in Node (`node --experimental-strip-types`) and compiles into the ELF (`scriptc build`). Full runnable template: [`examples/env`](../examples/env/).
+
 ## Recommendation
 
 - **Node builds:** any Standard Schema library; validation is not the bottleneck.

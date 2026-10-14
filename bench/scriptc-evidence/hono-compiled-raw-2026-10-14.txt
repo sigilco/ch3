@@ -1,0 +1,163 @@
+scriptc coverage /private/tmp/hono-sc-fresh/app.mjs
+
+  statements analyzed   1582
+  compile statically    1504  (95%)
+
+  npm package compilation:
+    hono               static
+    @hono/node-server  static
+
+  deferred to runtime   78 sites (JS statements that throw their fence if executed)
+      ×2  SC2009  the union shape is supported, but its arm 'T' does not compile (instantiating 'parseFormData' with <T>)
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/utils/body.js:23:67, node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/utils/body.js:29:23
+          hint: the outer shape is supported — the named component is the blocker; restate it inside the compilable set (number, string, boolean, arrays, Maps, Sets, RegExp, functions, classes, records, unions of those, and 'unknown')
+      ×1  SC2009  the function shape is supported, but its parameter 'c' has type 'any', which does not compile
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:1232:48
+          hint: the outer shape is supported — the named component is the blocker; restate it inside the compilable set (number, string, boolean, arrays, Maps, Sets, RegExp, functions, classes, records, unions of those, and 'unknown')
+      ×7  SC1090  'instanceof' right-hand sides other than classes declared in the program
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:64:27, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:638:23, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:648:109 (+4 more)
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×7  SC2020  'Object.defineProperty' is part of the standard library types but has no scriptc lowering yet
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:157:1, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:510:28, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:679:2 (+4 more)
+          hint: the type checker sees the full standard library, but only the supported surface compiles (https://scriptc.dev/limitations)
+      ×4  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'newRequest' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:591:27, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:599:36, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:602:26 (+1 more)
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×3  SC1090  extending classes not declared in the program ('GlobalRequest')
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:192:31
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×2  SC1090  class prototype reflection and accessor replacement (named prototype data and methods compile)
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:163:23, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:707:23
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×2  SC1090  extending classes not declared in the program ('GlobalRequest') is not supported yet (instantiating 'newRequestFromIncoming' with (unknown, unknown, unknown, unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:192:31
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×2  SC1090  extending classes not declared in the program ('Event')
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:1078:59, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:1098:59
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×2  SC1090  the binding 'this' captured through a plain nested function (the declaration has no static storage a capture can thread — bind the value through a typed const, or read it in the declaring scope) is n…
+          at app.mjs:2:1
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×2  SC2004  uses of 'buffer' inherit the blocker on its declaration (instantiating 'readBodyBufferedBeforeDisconnect' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:234:12, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:238:48
+          hint: the declaration of 'buffer' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2004  uses of 'buffer' inherit the blocker on its declaration (instantiating 'readBodyDirect' with (unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:431:30, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:432:13
+          hint: the declaration of 'buffer' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2004  uses of 'host' inherit the blocker on its declaration (instantiating 'newRequest' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:600:7, node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:607:34
+          hint: the declaration of 'host' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2004  uses of 'matcher' inherit the blocker on its declaration (instantiating 'match' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:8:23, node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:13:11
+          hint: the declaration of 'matcher' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2004  uses of 'match' inherit the blocker on its declaration (instantiating 'match' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:11:8, node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:12:17
+          hint: the declaration of 'match' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2004  uses of 'matchResult' inherit the blocker on its declaration
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:268:4, node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:273:7
+          hint: the declaration of 'matchResult' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2004  uses of 'context' inherit the blocker on its declaration
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:288:10, node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:289:12
+          hint: the declaration of 'context' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×2  SC2020  'ErrorConstructor' is part of the standard library types but has no scriptc lowering yet
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/context.js:87:14, node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/context.js:97:14
+          hint: the type checker sees the full standard library, but only the supported surface compiles (https://scriptc.dev/limitations)
+      ×1  SC1042  logical operators on mixed operand types are not supported yet (instantiating 'serve' with (unknown, (unknown) => void))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:1329:3
+          hint: give both operands the same type (number, string, or boolean)
+      ×1  SC1090  the binding 'GlobalHeaders' captured through a plain nested function (the declaration has no static storage a capture can thread — bind the value through a typed const, or read it in the declaring sc…
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:164:69
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'newRequestFromIncoming' with (unknown, unknown, unknown, unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:266:105
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'readRawBodyIfAvailable' with (unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:383:59
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'isRecoverableDisconnectedIncoming' with (unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:215:79
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  JSON methods as values (call 'parse' directly)
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:571:26
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'drainIncoming' with (unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:812:26
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'getRequestListener' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:1036:29
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  'instanceof' right-hand sides other than classes declared in the program is not supported yet (instantiating 'handleResponseError' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:871:28
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  spread arguments in calls through 'unknown' values
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/context.js:140:10
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  method calls like 'resolveCallback(html, HtmlEscapedCallbackPhase.Stringify, false, {}).then'
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/context.js:341:37
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  element access on non-array values are not supported yet (instantiating 'mergePath' with (string, unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/utils/url.js:125:12
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  the reference to 'addEventListener' (a binding form with no lowering)
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:344:3
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  method calls like 'path.match' is not supported yet (instantiating 'match' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:10:17
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  method calls like 'this.router.match'
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:265:23
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  optional parameters of type 'unknown'
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/compose.js:13:30
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  optional parameters of type 'unknown' is not supported yet (instantiating 'route' with (string, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/compose.js:13:30
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  method calls like 'router.match'
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/smart-router/router.js:29:11
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC1090  method calls like 'part.startsWith' is not supported yet (instantiating 'search' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/trie-router/node.js:77:30
+          hint: this form is valid TypeScript but does not compile yet — rewrite it with a supported equivalent of the construct the message names (https://scriptc.dev/limitations lists the boundary)
+      ×1  SC2004  uses of 'matchers' inherit the blocker on its declaration (instantiating 'match' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:7:19
+          hint: the declaration of 'matchers' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×1  SC2004  uses of 'staticMatch' inherit the blocker on its declaration (instantiating 'match' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/router/reg-exp-router/matcher.js:9:7
+          hint: the declaration of 'staticMatch' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×1  SC2004  uses of 'composed' inherit the blocker on its declaration
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/hono-base.js:287:27
+          hint: the declaration of 'composed' did not compile — fix the diagnostic reported there and these sites clear with it
+      ×1  SC2020  'Object.defineProperty' is part of the standard library types but has no scriptc lowering yet (instantiating 'newRequestFromIncoming' with (unknown, unknown, unknown, unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:261:3
+          hint: the type checker sees the full standard library, but only the supported surface compiles (https://scriptc.dev/limitations)
+      ×1  SC2020  'Buffer.from with this encoding' is part of the standard library types but has no scriptc lowering yet (instantiating 'toBufferChunk' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:214:96
+          hint: a literal "utf8", "hex", "base64", "base64url", "latin1", "binary", "ascii", "utf16le", or "ucs2" spelling is the lowered encoding surface
+      ×1  SC2020  'Buffer.concat of 'unknown' values' is part of the standard library types but has no scriptc lowering yet (instantiating 'readBodyBufferedBeforeDisconnect' with (unknown, unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:233:74
+          hint: one Uint8Array[]/Buffer[] value (or literal) is the lowered list shape
+      ×1  SC2020  'Buffer.concat of 'unknown' values' is part of the standard library types but has no scriptc lowering yet (instantiating 'readBodyDirect' with (unknown))
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:430:68
+          hint: one Uint8Array[]/Buffer[] value (or literal) is the lowered list shape
+      ×1  SC2020  'Response.blob' is part of the standard library types but has no scriptc lowering yet
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:566:10
+          hint: the native fetch runtime does not implement this Response operation
+      ×1  SC2020  'Headers.[Symbol.iterator] in a static build' is part of the standard library types but has no scriptc lowering yet
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/context.js:260:31
+          hint: Headers iteration is unsupported; use append/delete/get/getSetCookie/has/set/forEach
+      ×1  SC2020  'Promise.race over non-promise entries' is part of the standard library types but has no scriptc lowering yet
+          at node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:755:23
+          hint: JS would resolve plain values — wrap them: new Promise((r) => r(v))
+      ×1  SC2020  'Response.formData' is part of the standard library types but has no scriptc lowering yet (instantiating 'bufferToFormData' with (unknown, unknown))
+          at node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/utils/buffer.js:48:9
+          hint: the native fetch runtime does not implement this Response operation
+
+
+/private/tmp/hono-sc-fresh/hono-app-elf
+
+Uncaught Error: 'Object.defineProperty' is part of the standard library types but has no scriptc lowering yet [SC2020 at /private/tmp/hono-sc-fresh/node_modules/.pnpm/@hono+node-server@2.1.4_hono@4.13.13/node_modules/@hono/node-server/dist/index.mjs:157]
+
+=== hono-core (minimal node:http adapter, no @hono/node-server) ===
+/private/tmp/hono-sc-fresh/hono-core-elf
+Uncaught Error: element access on non-array values are not supported yet (instantiating 'mergePath' with (string, unknown, unknown)) [SC1090 at /private/tmp/hono-sc-fresh/node_modules/.pnpm/hono@4.13.13/node_modules/hono/dist/utils/url.js:125]
