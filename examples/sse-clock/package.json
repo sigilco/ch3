@@ -9,8 +9,8 @@
     "start:node": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@chttp/router": "0.1.0",
-    "@chttp/stream": "0.1.0"
+    "@chttp/router": "workspace:*",
+    "@chttp/stream": "workspace:*"
   },
   "devDependencies": {
     "scriptc": "0.3.1"

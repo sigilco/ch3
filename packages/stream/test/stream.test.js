@@ -248,6 +248,200 @@ test("headers set before streamSSE are preserved", async () => {
   srv.close();
 });
 
+test("async callback rejection fires onError and destroys the connection", async () => {
+  let seen = null;
+  const { srv, base } = await serve((app) => {
+    app.onError((err) => {
+      seen = err;
+    });
+    return app.get("/e", (c) =>
+      streamSSE(c, async () => {
+        await wait(10);
+        throw new Error("boom-after-flush");
+      }),
+    );
+  });
+  const r = await fetch(base + "/e");
+  assert.equal(r.status, 200); // headers were flushed before the rejection...
+  await r.text().catch(() => undefined); // ...body cut short by the destroy
+  await wait(30);
+  assert.ok(seen instanceof Error, "onError fired despite sent headers");
+  assert.equal(seen.message, "boom-after-flush");
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("async callback rejection without onError destroys and the server keeps serving", async () => {
+  const { srv, base } = await serve((app) => {
+    app.get("/ok", (c) => c.text("ok"));
+    return app.get("/e", (c) =>
+      streamSSE(c, async () => {
+        await wait(10);
+        throw new Error("unobserved");
+      }),
+    );
+  });
+  const r = await fetch(base + "/e");
+  assert.equal(r.status, 200);
+  await r.text().catch(() => undefined);
+  await wait(30);
+  // No crash, no unhandled rejection: the router answers the next request.
+  const ok = await fetch(base + "/ok")
+    .then((x) => x.status)
+    .catch(() => 0);
+  assert.equal(ok, 200);
+  srv.close();
+  srv.closeAllConnections();
+});
+
 test("exports SSEStream class", () => {
   assert.equal(typeof SSEStream, "function");
+});
+
+test("async callback rejection fires onError and destroys the connection", async () => {
+  let seen = null;
+  const { srv, base } = await serve((app) => {
+    app.onError((err) => {
+      seen = err;
+    });
+    return app.get("/e", (c) =>
+      streamSSE(c, async () => {
+        await wait(10);
+        throw new Error("boom-after-flush");
+      }),
+    );
+  });
+  const r = await fetch(base + "/e");
+  assert.equal(r.status, 200); // headers were flushed before the rejection...
+  await r.text().catch(() => undefined); // ...body cut short by the destroy
+  await wait(30);
+  assert.ok(seen instanceof Error, "onError fired despite sent headers");
+  assert.equal(seen.message, "boom-after-flush");
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("async callback rejection without onError destroys and the server keeps serving", async () => {
+  const { srv, base } = await serve((app) => {
+    app.get("/ok", (c) => c.text("ok"));
+    return app.get("/e", (c) =>
+      streamSSE(c, async () => {
+        await wait(10);
+        throw new Error("unobserved");
+      }),
+    );
+  });
+  const r = await fetch(base + "/e");
+  assert.equal(r.status, 200);
+  await r.text().catch(() => undefined);
+  await wait(30);
+  // No crash, no unhandled rejection: the router answers the next request.
+  const ok = await fetch(base + "/ok")
+    .then((x) => x.status)
+    .catch(() => 0);
+  assert.equal(ok, 200);
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("write after client disconnect returns false instead of throwing", async () => {
+  let late = null;
+  let aborted = 0;
+  const { srv, base } = await serve((app) =>
+    app.get("/e", (c) =>
+      streamSSE(c, (s) => {
+        s.onAbort(() => {
+          aborted++;
+          late = s.send("after");
+        });
+        s.send("first");
+      }),
+    ),
+  );
+  await new Promise((resolve) => {
+    const req = http.get(base + "/e", (res) => {
+      res.once("data", () => {
+        req.destroy();
+        resolve();
+      });
+    });
+  });
+  await wait(60);
+  assert.equal(aborted, 1);
+  assert.equal(late, false);
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("a res 'error' emission routes into _onClose (timer cleaned, onAbort fired)", async () => {
+  let aborted = 0;
+  let ticks = 0;
+  const { srv, base } = await serve((app) =>
+    app.get("/e", (c) =>
+      streamSSE(c, (s) => {
+        const t = setInterval(() => {
+          ticks++;
+          s.send("t");
+        }, 10);
+        s.onAbort(() => {
+          aborted++;
+          clearInterval(t);
+        });
+      }),
+    ),
+  );
+  // Destroy the raw socket mid-stream so the socket-level error/abrupt close
+  // path fires while the response is still writable from the server's view.
+  await new Promise((resolve) => {
+    http.get(base + "/e", (res) => {
+      res.once("data", () => {
+        res.socket.destroy();
+        resolve();
+      });
+    });
+  });
+  await wait(80);
+  assert.equal(aborted, 1, "onAbort fired via the close path");
+  const after = ticks;
+  await wait(60);
+  assert.equal(ticks, after, "timer stopped");
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("retry clamps non-numeric and negative values to 0", () => {
+  const seen = [];
+  const fake = Object.create(SSEStream.prototype);
+  fake.closed = false;
+  fake.maxPending = 1048576;
+  fake.windowMs = 1000;
+  fake._pending = 0;
+  fake._windowStart = Date.now();
+  fake._abortFns = [];
+  fake._fired = false;
+  fake.write = (chunk) => {
+    seen.push(chunk);
+    return true;
+  };
+  fake.retry(NaN);
+  fake.retry(-5);
+  fake.retry(1500);
+  assert.deepEqual(seen, ["retry: 0\n\n", "retry: 0\n\n", "retry: 1500\n\n"]);
+});
+
+test("onAbort fires exactly once whether registered before or after close", async () => {
+  const runs = [];
+  const fake = Object.create(SSEStream.prototype);
+  fake.closed = false;
+  fake.maxPending = 1048576;
+  fake.windowMs = 1000;
+  fake._pending = 0;
+  fake._windowStart = Date.now();
+  fake._abortFns = [];
+  fake._fired = false;
+  fake.onAbort((() => runs.push("before")).bind(null));
+  fake._onClose();
+  fake.onAbort((() => runs.push("after")).bind(null));
+  fake._onClose(); // second close event must not re-run anything
+  assert.deepEqual(runs, ["before", "after"]);
 });
