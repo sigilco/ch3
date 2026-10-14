@@ -134,6 +134,10 @@ export class WsConn {
     let n = r.length;
     if (n > 123) {
       n = 123;
+      // Never split a multibyte char: back up over continuation bytes.
+      while (n > 0 && (r[n] & 192) === 128) {
+        n--;
+      }
     }
     const b = Buffer.alloc(2 + n);
     b[0] = Math.floor(code / 256);

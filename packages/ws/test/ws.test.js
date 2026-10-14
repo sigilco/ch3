@@ -4,7 +4,7 @@ import * as http from "node:http";
 import * as net from "node:net";
 import { createHash } from "node:crypto";
 import { createRouter } from "@chttp/router";
-import { WsHandler, WsRouter } from "../dist/esm/index.js";
+import { WsConn, WsHandler, WsRouter } from "../dist/esm/index.js";
 import { clientFrame } from "./helpers.js";
 
 class Rec extends WsHandler {
@@ -442,4 +442,18 @@ test("send backlog cap drops a slow consumer with 1008", async () => {
   assert.ok(close, "handler close fired");
   assert.equal(close[1], 1008);
   server.close();
+});
+
+test("close reason truncation never splits a multibyte char", async () => {
+  // 122 ASCII bytes then a 3 byte char straddling the 123 byte limit.
+  const reason = "a".repeat(122) + "\u20ac";
+  const sent = [];
+  const fake = { write: (b) => sent.push(b), end() {}, destroy() {}, writableLength: 0 };
+  const conn = new WsConn(fake, "/", [], [], new Rec(), 1024, 2048);
+  conn.close(1000, reason);
+  const payload = sent[0].subarray(2);
+  const text = payload.subarray(2).toString("utf8");
+  assert.ok(payload.length - 2 <= 123);
+  assert.ok(!text.includes("\ufffd"));
+  assert.equal(text, "a".repeat(122));
 });
