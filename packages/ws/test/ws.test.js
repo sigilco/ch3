@@ -402,3 +402,21 @@ test("handler close() throw does not crash the process", async () => {
   c2.s.destroy();
   server.close();
 });
+
+test("many fragments reassemble into one intact message", async () => {
+  const h = new Rec();
+  const { server, port } = await start(h);
+  const c = await handshake(port, "/echo");
+  const n = 300;
+  let expect = "";
+  for (let i = 0; i < n; i++) {
+    const piece = "p" + (i % 10);
+    expect += piece;
+    c.s.write(clientFrame(i === 0 ? 1 : 0, Buffer.from(piece), { fin: i === n - 1 }));
+  }
+  await c.waitFrames(1);
+  assert.equal(c.frames()[0].payload.toString(), "echo:" + expect);
+  assert.deepEqual(h.events.filter((e) => e[0] === "message"), [["message", expect]]);
+  c.s.destroy();
+  server.close();
+});

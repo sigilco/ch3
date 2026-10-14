@@ -51,7 +51,8 @@ export class WsConn {
   _creason: string = "";
   // Fragmented message in progress.
   _fop: number = 0;
-  _fbuf: Buffer = Buffer.alloc(0);
+  // Fragments of the open message, joined by one concat at the final frame.
+  _fchunks: Buffer[] = [];
   _fbytes: number = 0;
 
   constructor(
@@ -233,12 +234,12 @@ export class WsConn {
       this._fail(1009);
       return;
     }
-    this._fbuf = Buffer.concat([this._fbuf, payload]);
+    this._fchunks.push(payload);
     if (fin) {
       const op = this._fop;
-      const whole = this._fbuf;
+      const whole = Buffer.concat(this._fchunks, this._fbytes);
       this._fop = 0;
-      this._fbuf = Buffer.alloc(0);
+      this._fchunks = [];
       this._fbytes = 0;
       this._deliver(op, whole);
     }
