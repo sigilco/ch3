@@ -2,11 +2,11 @@
 
 Pick one of three ways to ship a chttp app.
 
-| Option | Ships | Image or artifact | Cold start |
-| --- | --- | --- | --- |
-| Docker (`FROM scratch`) | one static binary | 1.24 MB | ~3 ms |
-| Binary only | one static binary | ~1.2 MB | ~3 ms |
-| Node | your JS plus `node_modules` | node runtime | 83 ms |
+| Option                  | Ships                       | Image or artifact | Cold start |
+| ----------------------- | --------------------------- | ----------------- | ---------- |
+| Docker (`FROM scratch`) | one static binary           | 1.24 MB           | ~3 ms      |
+| Binary only             | one static binary           | ~1.2 MB           | ~3 ms      |
+| Node                    | your JS plus `node_modules` | node runtime      | 83 ms      |
 
 ## Docker
 
