@@ -320,3 +320,85 @@ test("plain HTTP routes still work with withUpgrade", async () => {
   assert.equal(body, "ok");
   server.close();
 });
+
+test("handler throws are contained: open, message, binary", async () => {
+  class Boom extends WsHandler {
+    constructor(what) {
+      super();
+      this.what = what;
+    }
+    open(c) {
+      if (this.what === "open") throw new Error("boom open");
+    }
+    message(c, d) {
+      if (this.what === "message" && d === "hit") throw new Error("boom message");
+      c.send("echo:" + d);
+    }
+    binary(c, d) {
+      if (this.what === "binary") throw new Error("boom binary");
+      c.sendBinary(d);
+    }
+    close() {}
+  }
+  // open throws -> 1011 close frame, socket dropped, process alive.
+  {
+    const { server, port } = await start(new Boom("open"));
+    const c = await handshake(port, "/echo");
+    await c.waitFrames(1);
+    assert.equal(c.frames()[0].op, 8);
+    assert.equal(c.frames()[0].payload.readUInt16BE(0), 1011);
+    await new Promise((r) => c.s.once("close", r));
+    server.close();
+  }
+  // message throws -> 1011, and a fresh connection still round-trips.
+  {
+    const { server, port } = await start(new Boom("message"));
+    const c = await handshake(port, "/echo");
+    await new Promise((r) => setTimeout(r, 20));
+    c.s.write(clientFrame(1, Buffer.from("hit")));
+    await c.waitFrames(1);
+    assert.equal(c.frames()[0].op, 8);
+    assert.equal(c.frames()[0].payload.readUInt16BE(0), 1011);
+    c.s.on("error", () => {});
+    await new Promise((r) => c.s.once("close", r));
+    const c2 = await handshake(port, "/echo");
+    c2.s.write(clientFrame(1, Buffer.from("alive")));
+    await c2.waitFrames(1);
+    assert.equal(c2.frames()[0].payload.toString(), "echo:alive");
+    c2.s.destroy();
+    server.close();
+  }
+  // binary throws -> 1011.
+  {
+    const { server, port } = await start(new Boom("binary"));
+    const c = await handshake(port, "/echo");
+    await new Promise((r) => setTimeout(r, 20));
+    c.s.write(clientFrame(2, Buffer.from([9])));
+    await c.waitFrames(1);
+    assert.equal(c.frames()[0].op, 8);
+    assert.equal(c.frames()[0].payload.readUInt16BE(0), 1011);
+    c.s.on("error", () => {});
+    await new Promise((r) => c.s.once("close", r));
+    server.close();
+  }
+});
+
+test("handler close() throw does not crash the process", async () => {
+  class BoomClose extends Rec {
+    close() {
+      throw new Error("boom close");
+    }
+  }
+  const { server, port } = await start(new BoomClose());
+  const c = await handshake(port, "/echo");
+  c.s.write(clientFrame(8, Buffer.from([0x03, 0xe8])));
+  await new Promise((r) => c.s.once("close", r));
+  await new Promise((r) => setTimeout(r, 30));
+  // The server survived: a follow-up connection completes a full round trip.
+  const c2 = await handshake(port, "/echo");
+  c2.s.write(clientFrame(1, Buffer.from("still up")));
+  await c2.waitFrames(1);
+  assert.equal(c2.frames()[0].payload.toString(), "echo:still up");
+  c2.s.destroy();
+  server.close();
+});
