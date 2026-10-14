@@ -14,3 +14,4 @@ examples/*/dist/
 examples/*/main.ll
 !examples/env/
 examples/*/.vendor/
+.agents/notes/*-handoff*.md
