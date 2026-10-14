@@ -30,5 +30,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
-      - run: pnpm add -g scriptc@0.3.1
       - run: scripts/scriptc-gate.sh

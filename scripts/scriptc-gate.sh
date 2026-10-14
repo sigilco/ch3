@@ -14,7 +14,7 @@ GATES=(
 
 fail=0
 for gate in "${GATES[@]}"; do
-  out=$(scriptc coverage "$gate" 2>&1) || true
+  out=$(pnpm exec scriptc coverage "$gate" 2>&1) || true
   line=$(printf '%s\n' "$out" | grep -E 'compile statically' || true)
   if [[ "$line" == *"(100%)"* ]]; then
     printf 'ok   %s %s\n' "$gate" "$(printf '%s' "$line" | tr -s ' ')"
