@@ -19,12 +19,20 @@
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js"
     },
+    "./jsx-runtime": {
+      "types": "./dist/esm/jsx-runtime.d.ts",
+      "import": "./dist/esm/jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/esm/jsx-runtime.d.ts",
+      "import": "./dist/esm/jsx-runtime.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm run build && node --test test/html.test.js"
+    "test": "pnpm run build && node --test test/html.test.js test/jsx-runtime.test.js"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
