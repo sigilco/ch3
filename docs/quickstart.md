@@ -9,17 +9,36 @@ import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 
+function sleep(ms: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+// Sync handler: returns immediately, no microtask cost.
 app.get("/", (c) => c.text("hi"));
 app.get("/user/:id", (c) => c.json({ id: c.req.param("id") }));
-app.post("/echo", (c) => c.text(c.req.body()));
+
+// Async handler: await anything, the router waits for it to settle.
+app.get("/slow", async (c) => {
+  await sleep(100);
+  c.text("done");
+});
+
+// Declare { body: true } or c.req.body() returns "".
+app.post("/echo", (c) => c.text(c.req.body()), { body: true });
 app.notFound((c) => c.status(404).text("not found"));
 
 app.serve({ port: 3000 });
 ```
 
+Sync and async handlers mix freely on one router. Write the response on `c` in either style, you do not need to return it.
+
 ```sh
 node app.js
 curl localhost:3000/user/42
+curl localhost:3000/slow
+curl -d hello localhost:3000/echo
 ```
 
 ## Where to go next
