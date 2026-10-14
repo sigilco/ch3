@@ -64,13 +64,26 @@ test("withUpgrade: last registration wins", () => {
   assert.equal(b.calls.length, 1);
 });
 
-test("serve(): attaches upgrade listener only when registered", async () => {
-  const plain = createRouter().serve({ port: 0 });
-  assert.equal(plain.listenerCount("upgrade"), 0);
-  plain.close();
+test("serve(): never attaches an upgrade listener (wire it yourself)", async () => {
+  // serve() must stay attach-free: any "upgrade" attach built inside the
+  // package defers 2 SC1090 sites under scriptc npm-static compilation,
+  // for every app importing the router. Upgrade users wire the listener
+  // in their own program (see docs/upgrade-contract.md).
   const u = new Recorder(true);
   const srv = createRouter().withUpgrade(u).serve({ port: 0 });
-  assert.equal(srv.listenerCount("upgrade"), 1);
+  assert.equal(srv.listenerCount("upgrade"), 0);
+  await new Promise((r) => srv.on("listening", r));
+  assert.equal(u.calls.length, 0);
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("documented wiring: serve() + typed upgradeHandler alias fires", async () => {
+  const u = new Recorder(true);
+  const app = createRouter().withUpgrade(u);
+  const srv = app.serve({ port: 0 });
+  const up = app.upgradeHandler();
+  srv.on("upgrade", up);
   await new Promise((r) => srv.on("listening", r));
   const port = srv.address().port;
   const sock = net.connect(port, "127.0.0.1");
