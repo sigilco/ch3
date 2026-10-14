@@ -36,6 +36,20 @@ Like kitajs, children are pre-rendered markup and are not escaped by `h`: a stri
 
 Differences from kitajs on purpose: the `html` tag escapes only interpolations (kitajs `escape` escapes the whole string, static text included), attribute values escape `&`, `<`, `"` and `'` (kitajs escapes only `"`), and there are no attribute objects, async children, or function typed element names.
 
+## Escaping footguns
+
+> **Warning:** `@chttp/html` is not auto escaping. Anything you pass as a string child is emitted as markup.
+>
+> - `h("p", [], [userText])` writes `userText` verbatim, so `<script>` in it executes. Wrap untrusted text in `escapeHtml(...)`, use the `html` tag, or add the `safe` attribute pair.
+> - `safe` escapes all joined children, including nested elements you rendered with `h`, so do not mix trusted markup and `safe` in one parent.
+> - Attribute escaping is not URL validation. `h("a", ["href", userUrl], [...])` happily emits `href="javascript:alert(1)"`. Check the scheme (allow `http:`, `https:`, `mailto:` or relative) before building the element.
+> - `html` escapes interpolations only. Static template text and everything passed through `raw` are trusted. Interpolating the output of another `html` call escapes it a second time, so compose rendered fragments with `h`, `Fragment` or `raw`.
+> - `escapeHtml` is not idempotent: `escapeHtml(escapeHtml("<"))` is `&amp;lt;`. Escape once, at the point you build the element.
+> - `escapeHtml` is only correct for text nodes and quoted attribute values. It does nothing for unquoted attributes (always quoted here), `<script>` or `<style>` bodies, inline event handlers, or CSS and URL contexts.
+> - The `BARE` sentinel is the single character `\u0000`. An untrusted value equal to it turns a valued attribute into a bare one.
+
+Tag and attribute names are validated and throw, so they cannot be used for injection, but they are not escaped: never derive them from a lookup that can return an unvalidated string you intended as a value. These behaviors are pinned by the `footgun:` tests in `packages/html/test/html.test.js`.
+
 ## Namespace form
 
 `import * as Html from "@chttp/html"` gives kitajs style call sites (`Html.escapeHtml`, `Html.createElement`, `Html.Fragment`). It lowers like `import * as v from "@chttp/val"`. A namespace object of functions would be a function-in-record, which the subset bans, so there is no default export.

@@ -115,3 +115,85 @@ test("createElement, Fragment and components", () => {
   assert.equal(Html.isValidTag("h1"), true);
   assert.equal(Html.isValidAttrName("a-b"), true);
 });
+
+// Footgun tests: these pin the documented escaping model (see docs/html.md "Escaping footguns").
+test("footgun: string children are markup, h does not escape them", () => {
+  const evil = "<script>alert(1)</script>";
+  assert.equal(h("p", [], [evil]), `<p>${evil}</p>`);
+  assert.equal(h("p", [], [escapeHtml(evil)]), "<p>&lt;script>alert(1)&lt;/script></p>");
+  assert.equal(h("p", ["safe", "true"], [evil]), "<p>&lt;script>alert(1)&lt;/script></p>");
+  assert.equal(createElement("p", [], evil), `<p>${evil}</p>`);
+  assert.equal(Fragment([evil]), evil);
+});
+
+test("footgun: safe escapes joined kids, so it also escapes nested markup", () => {
+  const nested = h("b", [], ["bold"]);
+  assert.equal(h("p", ["safe", "true"], [nested]), "<p>&lt;b>bold&lt;/b></p>");
+  assert.equal(h("p", ["safe", "false"], [nested]), "<p><b>bold</b></p>");
+});
+
+test("footgun: escaping is not URL validation, javascript: hrefs pass through", () => {
+  assert.equal(
+    h("a", ["href", "javascript:alert(1)"], ["x"]),
+    '<a href="javascript:alert(1)">x</a>',
+  );
+  assert.equal(
+    h("a", ["href", "JaVaScRiPt:alert(1)"], ["x"]),
+    '<a href="JaVaScRiPt:alert(1)">x</a>',
+  );
+  assert.equal(
+    h("a", ["href", "data:text/html,<script>1</script>"], ["x"]),
+    '<a href="data:text/html,&lt;script>1&lt;/script>">x</a>',
+  );
+  assert.equal(h("img", ["src", "javascript:alert(1)"], []), '<img src="javascript:alert(1)"/>');
+});
+
+test("footgun: attribute values are always quoted and escaped, breakout fails", () => {
+  const out = h("div", ["title", `" onclick="alert(1)`], []);
+  assert.equal(out, '<div title="&#34; onclick=&#34;alert(1)"></div>');
+  const single = h("div", ["title", `' onclick='alert(1)`], []);
+  assert.equal(single, '<div title="&#39; onclick=&#39;alert(1)"></div>');
+  assert.equal(h("div", ["title", "a>b"], []), '<div title="a>b"></div>');
+});
+
+test("footgun: attribute names and tags are validated, user keys cannot inject", () => {
+  assert.throws(() => h("div", [`x" onclick="alert(1)`, "1"], []), /invalid attribute name/);
+  assert.throws(() => h("div", ["a b", "1"], []), /invalid attribute name/);
+  assert.throws(() => h("div", ["", "1"], []), /invalid attribute name/);
+  assert.throws(() => h("script><img", [], []), /invalid tag name/);
+  assert.throws(() => h("", [], []), /invalid tag name/);
+});
+
+test("footgun: the BARE sentinel as a value emits a bare attribute", () => {
+  assert.equal(h("input", ["disabled", BARE], []), "<input disabled/>");
+  assert.equal(h("input", ["value", "\u0000"], []), "<input value/>");
+});
+
+test("footgun: raw and static template text are trusted, only interpolations escape", () => {
+  const evil = "<img src=x onerror=alert(1)>";
+  assert.equal(raw`<p>${evil}</p>`, `<p>${evil}</p>`);
+  assert.equal(html`<p>${evil}</p>`, "<p>&lt;img src=x onerror=alert(1)></p>");
+  assert.equal(html`${evil}`, "&lt;img src=x onerror=alert(1)>");
+  assert.equal(html`<b>static</b>`, "<b>static</b>");
+});
+
+test("footgun: nested html output is escaped again, compose with raw or h instead", () => {
+  const inner = html`<b>${"x"}</b>`;
+  assert.equal(html`<p>${inner}</p>`, "<p>&lt;b>x&lt;/b></p>");
+  assert.equal(raw`<p>${inner}</p>`, "<p><b>x</b></p>");
+  assert.equal(h("p", [], [inner]), "<p><b>x</b></p>");
+});
+
+test("footgun: escapeHtml is not idempotent, double escaping corrupts entities", () => {
+  assert.equal(escapeHtml(escapeHtml("<")), "&amp;lt;");
+  assert.equal(escapeHtml("&amp;"), "&amp;amp;");
+});
+
+test("footgun: escapeHtml is for HTML text and quoted attributes only", () => {
+  // Backticks and = are untouched: unsafe in unquoted attributes or script/style contexts.
+  assert.equal(escapeHtml("`a=b`"), "`a=b`");
+  assert.equal(
+    h("script", [], [escapeHtml("</script><b>")]),
+    "<script>&lt;/script>&lt;b></script>",
+  );
+});
