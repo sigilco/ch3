@@ -189,3 +189,7 @@ npm test          # node --test test/
 ## License
 
 Published under the [Apache-2.0](LICENSE) license.
+
+## 💛 Support
+
+chttp is maintained in spare time. If it saves you work, consider [sponsoring maintenance on Polar](https://buy.polar.sh/polar_cl_Mv1gdlG7bw3I70EC9IHtfeSHJj4PEKvA7JAUz23CFhj). One-time or monthly, pay-what-you-want.
