@@ -28,10 +28,7 @@ app.get('/a', (c) => c.text('a'))
       new RegExp("^export const ROUTE_CONTRACT_VERSION = " + String(CHTTP_VERSION) + ";$", "m"),
     );
     // the dispatch instance carries the same stamp for withDispatch to check
-    assert.match(
-      g,
-      new RegExp("^\\s*ROUTE_CONTRACT_VERSION = " + String(CHTTP_VERSION) + "$", "m"),
-    );
+    assert.match(g, new RegExp("^\\s*ROUTE_CONTRACT_VERSION = " + String(CHTTP_VERSION) + "$", "m"));
   });
 });
 
