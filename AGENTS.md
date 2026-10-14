@@ -6,6 +6,7 @@ chttp is a minimal HTTP router for `node:http`, async-first, zero dependencies, 
 
 - `pnpm test` - all workspace tests
 - `pnpm --filter @chttp/router build` - build runtime package
+- `pnpm smoke:pack` - pack router and val, compile the tarballs to an ELF with scriptc, curl it (run `pnpm -r build` first)
 - `pnpm lint` - oxlint (type-aware)
 - `pnpm fmt` - oxfmt
 - `pnpm --filter @chttp/unplugin test` - plugin tests

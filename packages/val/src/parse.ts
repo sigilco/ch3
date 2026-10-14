@@ -1,6 +1,7 @@
 // Entry-point parsing, error type, and issue reporting helpers.
 
-import { VFail, VIssue, VSchema, VSafeResult } from "./types.ts";
+import type { VSafeResult } from "./types.ts";
+import { VFail, VIssue, VSchema } from "./types.ts";
 
 // ---------------------------------------------------------------- errors
 
