@@ -1,69 +1,41 @@
 # Deploy
 
-A chttp app compiles to one static ELF, so deploying is a file copy. The reference template is [`examples/deploy-docker`](https://github.com/sigilco/chttp/tree/main/examples/deploy-docker): a multi-stage Dockerfile that ships a `FROM scratch` image of **1.24 MB**.
+Pick one of three ways to ship a chttp app.
+
+| Option | Ships | Image or artifact | Cold start |
+| --- | --- | --- | --- |
+| Docker (`FROM scratch`) | one static binary | 1.24 MB | ~3 ms |
+| Binary only | one static binary | ~1.2 MB | ~3 ms |
+| Node | your JS plus `node_modules` | node runtime | 83 ms |
+
+## Docker
+
+Copy [`examples/deploy-docker/Dockerfile`](https://github.com/sigilco/chttp/blob/main/examples/deploy-docker/Dockerfile) next to your app. It builds the binary in an alpine stage and copies it into `scratch`.
 
 ```sh
-cd examples/deploy-docker
-docker build -t chttp-deploy .
-docker run --rm -p 8080:8080 chttp-deploy
+docker build -t my-app .
+docker run --rm -p 8080:8080 my-app
 ```
 
-## Why scratch works
+The image has no shell, so debug with a different base if you need one.
 
-The binary is fully static, so the runtime image needs no libc, node or shell:
+## Binary only
+
+Build, copy the file, run it. No runtime needed on the host.
 
 ```sh
-$ ldd server
-/lib/ld-musl-aarch64.so.1: server: Not a valid dynamic program
+scriptc build src/main.ts -o app --strip
+./app
 ```
 
-Build inside the container, not on your host. scriptc 0.3.1 has no `--target` flag, so building on an alpine (musl) stage is what guarantees a static linux binary. Copy the result into `scratch`.
+scriptc 0.3.1 cannot cross-compile (no `--target`), so build on the OS and architecture you deploy to. For a linux server, build in CI on linux or inside an alpine container. An alpine build is fully static (musl), so it runs on any linux of the same architecture.
 
-Runtime details in the template:
+## Node
 
-- `USER 65532:65532` runs non-root. The uid is numeric because scratch has no `/etc/passwd`.
-- `ENTRYPOINT ["/server"]` with `CMD ["8080"]` lets you override the port: `docker run chttp-deploy 9090`.
-- There is no shell, so healthchecks and debug commands must run the binary itself (see below) or use a different base.
+No build step. Deploy the JS like any node service:
 
-## Size and footprint
-
-| Image                                    | Size                   |
-| ---------------------------------------- | ---------------------- |
-| scratch runtime                          | **1.24 MB**            |
-| alpine:3 runtime (adds shell, `wget`)    | 14.7 MB                |
-| `node:22-alpine` running the app on node | ~234 MB                |
-| `node:22-alpine` build stage             | 234 MB (never shipped) |
-
-|                    | chttp on node | chttp ELF in scratch |
-| ------------------ | ------------- | -------------------- |
-| cold start         | 83 ms         | ~3 ms                |
-| RSS after 100k req | 116 MB        | 4 MB                 |
-
-Idle RSS of the two-route template is 636 KiB in `docker stats`. Full matrix: [bench/RESULTS-v2.md](https://github.com/sigilco/chttp/blob/main/bench/RESULTS-v2.md).
-
-## Healthchecks
-
-`scratch` has no curl or wget. Pick one:
-
-**Binary self-check (template default).** The app exits 0 on `--health` before binding a port:
-
-```ts
-if (process.argv.length > 2 && process.argv[2] === "--health") {
-  process.exit(0);
-}
+```sh
+node app.js
 ```
 
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --start-period=2s --retries=3 \
-  CMD ["/server", "--health"]
-```
-
-This proves the binary starts, not that the socket accepts. It stays green while a live process is wedged.
-
-**Network probe (alpine runtime).** Exercises the real HTTP path:
-
-```dockerfile
-HEALTHCHECK CMD wget -q --spider http://127.0.0.1:8080/ || exit 1
-```
-
-Need curl? Use a distroless or wolfi base.
+Use this when you need npm packages outside the scriptc subset. See [Run targets](targets.md).
