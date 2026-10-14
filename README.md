@@ -1,5 +1,7 @@
 # chttp
 
+[![ci](https://github.com/sigilco/chttp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sigilco/chttp/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/@chttp/router)](https://www.npmjs.com/package/@chttp/router) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![scriptc static](https://img.shields.io/badge/scriptc%20static-100%25-brightgreen)](scripts/scriptc-gate.sh)
+
 A minimal async-first HTTP router for `node:http`. Handlers and middleware
 may be `async`; the router core ships no runtime dependencies.
 
@@ -7,7 +9,7 @@ The package is authored inside the **scriptc compilable subset**
 ([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
 native-ELF compiler): the same source lowers statically into a single
 binary via `scriptc build --npm-static @chttp/router` with zero deferred sites
-(100% static coverage, scriptc 0.3.1).
+(100% static coverage).
 
 ## 🚀 Quick start
 
