@@ -448,7 +448,7 @@ test("close reason truncation never splits a multibyte char", async () => {
   // 122 ASCII bytes then a 3 byte char straddling the 123 byte limit.
   const reason = "a".repeat(122) + "\u20ac";
   const sent = [];
-  const fake = { write: (b) => sent.push(b), end() {}, destroy() {}, writableLength: 0 };
+  const fake = { write: (b) => sent.push(b), end() {}, destroy() {} };
   const conn = new WsConn(fake, "/", [], [], new Rec(), 1024, 2048);
   conn.close(1000, reason);
   const payload = sent[0].subarray(2);

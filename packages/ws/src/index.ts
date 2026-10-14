@@ -54,8 +54,12 @@ export class WsConn {
   // Fragments of the open message, joined by one concat at the final frame.
   _fchunks: Buffer[] = [];
   _fbytes: number = 0;
-  // Cap on unflushed outbound bytes before a slow consumer is dropped.
+  // Cap on outbound bytes per one second window before a slow consumer is
+  // dropped. scriptc 0.3.1 cannot observe backpressure (writableLength, write()
+  // result and "drain" are refused), so this is a stand-in, as in @chttp/stream.
   _maxBacklog: number = 4194304;
+  _wbytes: number = 0;
+  _wstart: number = 0;
 
   constructor(
     socket: Socket,
@@ -119,8 +123,14 @@ export class WsConn {
     if (this._state !== 0) {
       return;
     }
-    if (this.socket.writableLength + data.length > this._maxBacklog) {
-      // Slow consumer: the backlog would never flush, so drop it (1008).
+    const now = Date.now();
+    if (now - this._wstart >= 1000) {
+      this._wstart = now;
+      this._wbytes = 0;
+    }
+    this._wbytes += data.length;
+    if (this._wbytes > this._maxBacklog) {
+      // Slow consumer: treat a window flood as a backlog that never flushes, drop it (1008).
       this._state = 1;
       this.socket.destroy();
       this._finish(1008, "");
