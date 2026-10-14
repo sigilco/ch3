@@ -493,3 +493,50 @@ test("405 surfaces through onError with allow list on the error", () => {
   assert.equal(res.body, "custom 405");
   assert.equal(res.headers["allow"], "GET,HEAD");
 });
+
+test("c.bytes writes the buffer with content-type and byte length", () => {
+  const app = createRouter();
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff]);
+  app.get("/img", (c) => c.bytes(png, "image/png"));
+  const { req, emit } = mkReq({ url: "/img" });
+  const res = mkRes();
+  let out = null;
+  res.end = function (b) {
+    this.ended = true;
+    this.headersSent = true;
+    out = b;
+  };
+  app.handler()(req, res);
+  emit();
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.headers["content-type"], "image/png");
+  assert.equal(res.headers["content-length"], "6");
+  assert.ok(Buffer.isBuffer(out));
+  assert.deepEqual([...out], [...png]);
+});
+
+test("c.bytes honours status() and marks the response sent", () => {
+  const app = createRouter();
+  app.get("/b", (c) => c.status(201).bytes(Buffer.alloc(0), "application/octet-stream"));
+  const res = call(app, { url: "/b" });
+  assert.equal(res.statusCode, 201);
+  assert.equal(res.headers["content-length"], "0");
+  assert.equal(res.ended, true);
+});
+
+test("c.bytes is HEAD-safe over real http", async () => {
+  const app = createRouter();
+  const data = Buffer.from([1, 2, 3, 4, 5]);
+  app.get("/bin", (c) => c.bytes(data, "application/octet-stream"));
+  const srv = app.serve({ port: 0 });
+  await new Promise((r) => srv.on("listening", r));
+  const base = "http://127.0.0.1:" + srv.address().port + "/bin";
+  const g = await fetch(base);
+  assert.deepEqual([...new Uint8Array(await g.arrayBuffer())], [1, 2, 3, 4, 5]);
+  assert.equal(g.headers.get("content-length"), "5");
+  const h = await fetch(base, { method: "HEAD" });
+  assert.equal(h.status, 200);
+  assert.equal(h.headers.get("content-length"), "5");
+  assert.equal((await h.arrayBuffer()).byteLength, 0);
+  srv.close();
+});

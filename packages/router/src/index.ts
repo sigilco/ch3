@@ -278,6 +278,18 @@ export class Ctx<P extends string = string> {
     return this;
   }
 
+  // Binary body. A separate method (not a string | Buffer union on
+  // _send): a mixed-arm union is SC2009 under scriptc. HEAD-safe: node
+  // drops the body for HEAD while keeping content-length.
+  bytes(b: Buffer, ct: string): Ctx<P> {
+    this.res.statusCode = this._status;
+    this.res.setHeader("content-type", String(ct));
+    this.res.setHeader("content-length", String(b.length));
+    this.res.end(b);
+    this.sent = true;
+    return this;
+  }
+
   _send(s: string, ct: string): Ctx<P> {
     const b = String(s);
     this.res.statusCode = this._status;
