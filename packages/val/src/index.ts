@@ -34,6 +34,8 @@ import type { InferOutput } from "./schemas.ts";
 import { VError } from "./parse.ts";
 import { assert, flatten, is, parse, safeParse, summarize } from "./parse.ts";
 import type { VFlatIssues } from "./parse.ts";
+import type { JsonSchemaNode, JsonType } from "./json-schema.ts";
+import { toOpenApiSchema, toJsonSchema } from "./json-schema.ts";
 
 export { StdProps };
 export { VIssue };
@@ -49,6 +51,10 @@ export { assert };
 export { flatten };
 export { summarize };
 export type { VFlatIssues };
+export type { JsonSchemaNode };
+export type { JsonType };
+export { toOpenApiSchema };
+export { toJsonSchema };
 
 export {
   any,
