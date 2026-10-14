@@ -38,7 +38,7 @@ Baked data must be an array of records, not a path-keyed object: the subset cann
 | MIME | Built-in table by extension, `application/octet-stream` otherwise |
 | Validators | Quoted ETag on every response, `Last-Modified` when the mtime is known. `If-None-Match` (including `W/` and `*`) answers 304 with no body |
 | Cache-Control | `public, max-age=31536000, immutable` for hashed filenames, `no-cache` for HTML, `opts.cacheControl` (default `no-cache`) for the rest |
-| Compression | If `app.js.br` or `app.js.gz` sit next to `app.js` (or are in `encodings`), the client's `accept-encoding` picks `br` over `gzip`; `Vary: accept-encoding` is always set for such assets. q-values are not parsed |
+| Compression | If `app.js.br` or `app.js.gz` sit next to `app.js` (or are in `encodings`), the client's `accept-encoding` picks `br` over `gzip`; `Vary: accept-encoding` is always set for such assets. Codings match exactly and case-insensitively, never by substring. `q=0` (or `q=0.0`, `q=0.000`) excludes a coding; other q-values are not ranked, so the fixed br-over-gzip preference decides |
 | SPA fallback | With `spa: true`: GET or HEAD, `accept` contains `text/html`, and the path has no extension serves the index file. Missing assets with an extension stay 404 |
 | API prefixes | Paths under `opts.api` (default `["/api"]`) never reach the filesystem or the fallback, and an unmatched one answers `{"error":"not_found"}` with status 404 |
 

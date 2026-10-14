@@ -285,3 +285,38 @@ test("symlink staying inside the webroot still serves", { skip: !ctx.symlinks },
   assert.equal(r.body.toString(), (await req(ctx.main.port, "/app.js")).body.toString());
 });
 
+test("q=0 excludes a coding: gzip;q=0 falls back to identity", async () => {
+  const plain = await req(ctx.main.port, "/app.js");
+  const r = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "gzip;q=0" },
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.toString(), plain.body.toString());
+  assert.notEqual(r.body.toString(), "GZ-BYTES");
+  assert.equal(r.headers["content-encoding"], undefined);
+});
+
+test("q=0 on one coding still allows the next: br;q=0.0, gzip -> gzip", async () => {
+  const r = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "br;q=0.0, gzip" },
+  });
+  assert.equal(r.body.toString(), "GZ-BYTES");
+  assert.equal(r.headers["content-encoding"], "gzip");
+});
+
+test("codings match exactly, never by substring", async () => {
+  const plain = await req(ctx.main.port, "/app.js");
+  const r = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "xgzip" },
+  });
+  assert.equal(r.body.toString(), plain.body.toString());
+  assert.notEqual(r.body.toString(), "GZ-BYTES");
+  assert.equal(r.headers["content-encoding"], undefined);
+  // Same for the br token: "brotli" is not "br".
+  const b = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "brotli" },
+  });
+  assert.equal(b.headers["content-encoding"], undefined);
+  assert.notEqual(b.body.toString(), "BR-BYTES");
+});
+
