@@ -1,0 +1,22 @@
+{
+  "name": "chttp-example-elf-roundtrip",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:server": "scriptc build src/server.ts -o server --optimization speed",
+    "build:client": "node scripts/emit-client.mjs && tsc -p tsconfig.json --noEmit",
+    "verify:elf": "node scripts/verify-elf.mjs",
+    "verify:node": "node scripts/verify-node.mjs"
+  },
+  "dependencies": {
+    "@chttp/router": "0.1.0",
+    "@chttp/val": "0.1.0"
+  },
+  "devDependencies": {
+    "@chttp/unplugin": "0.1.0",
+    "@types/node": "^24.0.0",
+    "scriptc": "0.3.1",
+    "typescript": "^5.9.0"
+  }
+}

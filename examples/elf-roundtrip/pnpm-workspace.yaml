@@ -1,0 +1,7 @@
+packages: []
+overrides:
+  '@chttp/router': link:../../packages/router
+  '@chttp/val': link:../../packages/val
+  '@chttp/unplugin': link:../../packages/unplugin
+allowBuilds:
+  esbuild: true
