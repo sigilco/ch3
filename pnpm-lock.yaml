@@ -248,6 +248,19 @@ importers:
         specifier: 0.3.1
         version: 0.3.1
 
+  examples/integrations/otlp-traces:
+    dependencies:
+      '@chttp/router':
+        specifier: workspace:*
+        version: link:../../../packages/router
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      scriptc:
+        specifier: 0.3.1
+        version: 0.3.1
+
   examples/integrations/prometheus-metrics:
     dependencies:
       '@chttp/router':
