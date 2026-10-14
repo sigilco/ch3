@@ -37,6 +37,8 @@ jobs:
             [ "$V" = "$TAG" ] || { echo "version mismatch: $pkg at $V, tag $TAG"; exit 1; }
           done
       - name: Publish all workspace packages
+        # Must be pnpm, not npm: only pnpm rewrites workspace:^ ranges to real
+        # semver ranges in the published package.json.
         run: pnpm -r --filter "./packages/*" publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

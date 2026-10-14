@@ -20,6 +20,8 @@ All `packages/*` publish at one shared version via pnpm native versioning (`vers
 2. At release: `pnpm version -r` (bumps the fixed group, consumes intents, writes CHANGELOGs), commit, tag `v<version>`.
 3. Tag push triggers `.github/workflows/release.yml`: verifies every package.json matches the tag, publishes all seven.
 
+Publish and pack with pnpm only (`pnpm publish`, `pnpm pack`), never `npm publish` or `npm pack`. Internal ranges are `workspace:^` and only pnpm rewrites them to real semver ranges in the tarball; npm would ship the `workspace:` protocol and break installs.
+
 ## Scriptc subset rules (packages/router/src)
 
 These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
