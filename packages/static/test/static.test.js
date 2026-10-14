@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { createHash, randomBytes } from "node:crypto";
-import { mkdtempSync, mkdirSync, writeFileSync, utimesSync } from "node:fs";
+import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRouter } from "@chttp/router";
@@ -254,4 +254,104 @@ test("isHashedName / mimeFor", () => {
   assert.equal(mimeFor("a/b.unknown"), "application/octet-stream");
   assert.equal(mimeFor("Makefile"), "application/octet-stream");
   assert.equal(mimeFor("x.constructor"), "application/octet-stream");
+});
+
+// A file strictly outside the root for the symlink containment tests.
+const outside = join(root, "..", "chttp-static-secret-outside.txt");
+writeFileSync(outside, "OUTSIDE-SECRET");
+
+try {
+  symlinkSync(outside, join(root, "escape.txt"));
+  symlinkSync(join(root, "app.js"), join(root, "inner.txt"));
+  ctx.symlinks = true;
+} catch (_e) {
+  // Filesystem refuses symlinks; the containment tests skip below.
+}
+
+test("symlink escaping the webroot is not served (404)", { skip: !ctx.symlinks }, async () => {
+  const r = await req(ctx.main.port, "/escape.txt");
+  assert.equal(r.status, 404);
+  assert.ok(!r.body.toString().includes("OUTSIDE-SECRET"));
+  // And through the source directly, encoded variants included.
+  const d = new DiskAssets(root);
+  assert.equal(d.get("escape.txt"), null);
+  assert.equal(d.get("docs/../escape.txt"), null);
+});
+
+test("symlink staying inside the webroot still serves", { skip: !ctx.symlinks }, async () => {
+  const r = await req(ctx.main.port, "/inner.txt");
+  assert.equal(r.status, 200);
+  // inner.txt links to app.js, so it serves whatever app.js holds now.
+  assert.equal(r.body.toString(), (await req(ctx.main.port, "/app.js")).body.toString());
+});
+
+test("q=0 excludes a coding: gzip;q=0 falls back to identity", async () => {
+  const plain = await req(ctx.main.port, "/app.js");
+  const r = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "gzip;q=0" },
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.toString(), plain.body.toString());
+  assert.notEqual(r.body.toString(), "GZ-BYTES");
+  assert.equal(r.headers["content-encoding"], undefined);
+});
+
+test("q=0 on one coding still allows the next: br;q=0.0, gzip -> gzip", async () => {
+  const r = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "br;q=0.0, gzip" },
+  });
+  assert.equal(r.body.toString(), "GZ-BYTES");
+  assert.equal(r.headers["content-encoding"], "gzip");
+});
+
+test("codings match exactly, never by substring", async () => {
+  const plain = await req(ctx.main.port, "/app.js");
+  const r = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "xgzip" },
+  });
+  assert.equal(r.body.toString(), plain.body.toString());
+  assert.notEqual(r.body.toString(), "GZ-BYTES");
+  assert.equal(r.headers["content-encoding"], undefined);
+  // Same for the br token: "brotli" is not "br".
+  const b = await req(ctx.main.port, "/app.js", {
+    headers: { "accept-encoding": "brotli" },
+  });
+  assert.equal(b.headers["content-encoding"], undefined);
+  assert.notEqual(b.body.toString(), "BR-BYTES");
+});
+
+test("drive-letter tails answer 403", async () => {
+  const r = await req(ctx.pre.port, "/static/C:/etc/passwd");
+  assert.equal(r.status, 403);
+  assert.equal((await req(ctx.pre.port, "/static/C%3A/etc/passwd")).status, 403);
+});
+
+test("empty file: 200, zero length, valid etag", async () => {
+  writeFileSync(join(root, "empty.txt"), "");
+  const r = await req(ctx.main.port, "/empty.txt");
+  assert.equal(r.status, 200);
+  assert.equal(r.headers["content-length"], "0");
+  assert.equal(r.body.length, 0);
+  assert.match(r.headers.etag, /^"[0-9a-f]{40}"$/);
+  // The etag round-trips through If-None-Match like any other asset.
+  assert.equal(
+    (await req(ctx.main.port, "/empty.txt", { headers: { "if-none-match": r.headers.etag } }))
+      .status,
+    304,
+  );
+});
+
+test("query strings are stripped by the router, asset still served", async () => {
+  const plain = await req(ctx.main.port, "/app.js");
+  const r = await req(ctx.main.port, "/app.js?v=2");
+  assert.equal(r.status, 200);
+  assert.equal(r.body.toString(), plain.body.toString());
+});
+
+test("percent-encoded dotfile stays hidden", async () => {
+  // The router decodes %2e, so static sees ".env" and answers 404
+  // (dotfiles 404, never 403, so the filesystem is never probed).
+  const r = await req(ctx.pre.port, "/static/%2eenv");
+  assert.equal(r.status, 404);
+  assert.ok(!r.body.toString().includes("SECRET"));
 });

@@ -24,12 +24,12 @@ const IMMUTABLE_CC = "public, max-age=31536000, immutable";
 
 // Splat tail checks. `rel` is already percent-decoded by the router, so
 // `%2e%2e` and `..%2f` arrive as `..` segments. Rejects parent segments,
-// backslashes, NUL, and absolute tails.
+// backslashes, NUL, drive-letter tails and absolute tails.
 function traversal(rel: string): boolean {
   if (rel.charAt(0) === "/") {
     return true;
   }
-  if (rel.indexOf("\\") !== -1 || rel.indexOf("\0") !== -1) {
+  if (rel.indexOf("\\") !== -1 || rel.indexOf("\0") !== -1 || rel.indexOf(":") !== -1) {
     return true;
   }
   const segs = rel.split("/");
@@ -182,12 +182,13 @@ export class StaticServer {
     return c.bytes(body, a.type);
   }
 
-  // Brotli beats gzip when the client lists both. Substring match on the
-  // coding token; q-values are not parsed.
+  // Brotli beats gzip when the client lists both: fixed br-then-gzip
+  // preference, so q-values are honoured only as an exclusion (q=0 drops a
+  // coding, anything else keeps it) and match exactly, never by substring.
   pick(a: Asset, ae: string): AssetVariant | null {
     const order = ["br", "gzip"];
     for (let i = 0; i < order.length; i++) {
-      if (ae.indexOf(order[i]) === -1) {
+      if (!acceptable(ae, [order[i]])) {
         continue;
       }
       for (let j = 0; j < a.encodings.length; j++) {
@@ -198,6 +199,64 @@ export class StaticServer {
     }
     return null;
   }
+}
+
+// Is the (single) content coding accepted by this accept-encoding header?
+// Members are comma-separated; each may carry `;q=` parameters. A member
+// with q=0 (any number of zeros after the dot) is excluded outright; every
+// other q-value ranks as acceptable because ranking is not attempted.
+// `*` keeps its old meaning: any coding not explicitly excluded matches.
+// Matching is exact on the lowercased token, never a substring test.
+function acceptable(ae: string, encs: string[]): boolean {
+  const parts = ae.split(",");
+  for (let i = 0; i < parts.length; i++) {
+    const member = parts[i];
+    const qi = member.indexOf(";");
+    let head: string = member;
+    if (qi !== -1) {
+      head = member.slice(0, qi);
+    }
+    const coding = head.trim().toLowerCase();
+    // q is the first parameter; the value runs to the next ";" when other
+    // parameters follow, and matching it is case-insensitive.
+    let excluded = false;
+    if (qi !== -1) {
+      const params = member.slice(qi + 1).toLowerCase();
+      const pi = params.indexOf("q=");
+      if (pi !== -1) {
+        let v = params.slice(pi + 2);
+        const si = v.indexOf(";");
+        if (si !== -1) {
+          v = v.slice(0, si);
+        }
+        v = v.trim();
+        // Exclusion is "0" or "0" then "." and zeros only ("0.000"): the
+        // whole qvalue range the RFC grammar allows for q=0.
+        if (v.charAt(0) === "0") {
+          excluded = true;
+          for (let k = 1; k < v.length; k++) {
+            const ch = v.charAt(k);
+            if (ch !== "." && ch !== "0") {
+              excluded = false;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (excluded) {
+      continue;
+    }
+    if (coding === "*") {
+      return true;
+    }
+    for (let j = 0; j < encs.length; j++) {
+      if (coding === encs[j]) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 // Register GET (and HEAD, via the router's fallback) under `prefix`:
