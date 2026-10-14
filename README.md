@@ -176,7 +176,7 @@ app.post("/order", (c) => {
 
 - [Architecture](ARCHITECTURE.md): why it compiles, the subset rules
 - [Validation](docs/validation.md): Standard Schema in node vs ELF, `@chttp/val`
-- [Route contract](docs/route-contract.md): the generated-dispatch seam
+- [Route contract](contracts/route-contract.md): the generated-dispatch seam (internal)
 - Full docs site: https://chttpjs.pages.dev/
 
 ## 🤖 Agent skills

@@ -609,7 +609,7 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
   };
 
   // Third-arg options on verb/on registrations: { body: true } declares
-  // body use (docs/route-contract.md). Non-literal opts bail the route.
+  // body use (contracts/route-contract.md). Non-literal opts bail the route.
   const optsBody = (optArg: Expression | undefined, node: Node): { ok: boolean; body: boolean } => {
     if (optArg === undefined) {
       return { ok: true, body: false };

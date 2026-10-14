@@ -41,7 +41,7 @@ app.post("/echo", (c) => c.text(c.req.body()), { body: true });
 app.get("/files/*", (c) => c.text(c.req.param("*")));
 ```
 
-At `buildStart` (and on each transform/watch event for the file) the plugin writes `src/.chttp/routes.gen.ts` satisfying `docs/route-contract.md`:
+At `buildStart` (and on each transform/watch event for the file) the plugin writes `src/.chttp/routes.gen.ts` satisfying `contracts/route-contract.md`:
 
 - `export class CompiledRoutes extends GenDispatch` whose `dispatch(req, res)` runs per-method sections with route checks ordered by the same precedence as the runtime trie (static before param before wildcard, then registration order).
 - `routeTable`: full-shape literals `{ method, path, kind, handlerIdx, needsBody }[]`.

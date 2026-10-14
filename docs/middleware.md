@@ -182,5 +182,3 @@ app.use(async (c: Ctx, next: () => unknown): Promise<void> => {
 ```
 
 Clients that understand `x-request-start` (or a tracing proxy reading it) can compute end-to-end duration from the timestamp. If you control the handlers, the alternative is sending the header from the handler itself, where the duration is known before the send.
-
-Next: [Errors](errors.md).

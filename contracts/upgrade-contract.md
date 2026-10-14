@@ -1,6 +1,6 @@
 # Upgrade dispatch contract
 
-Status: draft for 0.x. This is the seam between `packages/router/src/upgrade.ts` (`UpgradeDispatch`) and protocol packages that take over a connection after an HTTP `Upgrade` request, such as `@chttp/ws`. It is independent of `docs/route-contract.md`, which stays frozen.
+Status: draft for 0.x. This is the seam between `packages/router/src/upgrade.ts` (`UpgradeDispatch`) and protocol packages that take over a connection after an HTTP `Upgrade` request, such as `@chttp/ws`. It is independent of `contracts/route-contract.md`, which stays frozen.
 
 ## The seam in one paragraph
 

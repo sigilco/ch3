@@ -31,7 +31,7 @@ These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
 - No `new Function`/`eval`, no non-program `instanceof`, no object/method-shorthand.
 - Concrete types on all route/middleware tables; no `any[]`/`unknown[]` (SC1090).
 
-`docs/route-contract.md` is the frozen seam contract between runtime and generated dispatch. Do not diverge from it.
+`contracts/route-contract.md` is the frozen seam contract between runtime and generated dispatch. Do not diverge from it.
 
 ## Conventions
 

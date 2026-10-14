@@ -1,4 +1,4 @@
-// Compiled-path entry (docs/route-contract.md): the generated dispatch is
+// Compiled-path entry (contracts/route-contract.md): the generated dispatch is
 // registered once via withDispatch — app.serve/app.handler try it FIRST on
 // every request, and a `false` return declines to the internal dispatch,
 // which covers bailed routes, notFound, and misses.

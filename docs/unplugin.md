@@ -24,7 +24,7 @@ The emitted module carries a `ROUTE_CONTRACT_VERSION` stamp (module header const
 
 ## What the plugin does
 
-At `buildStart` (and on each watch event for the file) the plugin scans route modules (default `**/*.chttp.ts`, `**/*.chttp.js`) and emits `.chttp/routes.gen.ts` next to them, satisfying the [generated-dispatch contract](route-contract.md):
+At `buildStart` (and on each watch event for the file) the plugin scans route modules (default `**/*.chttp.ts`, `**/*.chttp.js`) and emits `.chttp/routes.gen.ts` next to them, satisfying the generated-dispatch contract (`contracts/route-contract.md` in the repo):
 
 - `export class CompiledRoutes extends GenDispatch` whose `dispatch(req, res)` runs per-method sections ordered like the runtime trie (static before param before wildcard, then registration order).
 - `routeTable`: full-shape literals `{ method, path, kind, handlerIdx, needsBody }[]`.

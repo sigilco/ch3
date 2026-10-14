@@ -4,7 +4,7 @@ Build-time route lowering for chttp. Emits a specialized dispatch module so requ
 
 ## Contract
 
-- `docs/route-contract.md` is the frozen emit contract. Emitted modules must satisfy it exactly. Do not edit it unilaterally.
+- `contracts/route-contract.md` is the frozen emit contract. Emitted modules must satisfy it exactly. Do not edit it unilaterally.
 - Bail, never guess. If route analysis is uncertain about any route, emit nothing for it and let runtime fallback handle it, plus a build warning. Never emit a wrong route.
 
 ## Generated files

@@ -1,50 +1,38 @@
-# Introduction
+# What is chttp
 
-chttp is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source compiles to a native ELF.
+chttp is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source also compiles to a single native ELF.
 
 ```ts
 import { createRouter } from "@chttp/router";
 
 const app = createRouter();
-
-app.get("/", (c) => c.text("hi"));
-app.get("/user/:id", (c) => c.json({ id: c.req.param("id") }));
-app.post("/echo", (c) => c.text(c.req.body()));
-
-app.get("/slow", async (c) => {
-  const user = await fetchUser(c.req.param("id"));
-  return c.json(user);
-});
-
-app.notFound((c) => c.status(404).text("not found"));
-
+app.get("/user/:id", async (c) => c.json(await fetchUser(c.req.param("id"))));
 app.serve({ port: 3000 });
 ```
 
-Handlers and middleware may be `async`; dispatch settles a `Promise` return under the same error path as sync code, and sync handlers complete without scheduling a microtask.
+## Why it exists
 
-## Install
+- Small: zero runtime dependencies, one core file.
+- Async-first: handlers and middleware may return a `Promise`. Sync handlers still finish without scheduling a microtask.
+- Two targets, one source: run on node, or compile to a ~1 MB native binary with a 3 ms cold start.
 
-::: tabs
+## Mental model
 
-== tab "npm"
+- An `App` holds a route trie. Routes are registered per method and path.
+- A request is matched, then runs a chain: middleware, then one handler.
+- Handlers write through `c` (`c.json`, `c.text`, `c.html`, `c.redirect`), which sets status, headers and ends the response.
+- Any throw or rejection in the chain lands in `app.onError`.
+- Request access is synchronous: the body is pre-buffered, so `c.req.body()` never awaits.
 
-```sh
-npm i @chttp/router
-```
+## Node or native
 
-== tab "pnpm"
+|                    | node      | native ELF          |
+| ------------------ | --------- | ------------------- |
+| Build step         | none      | `scriptc build`     |
+| Cold start         | 83 ms     | 3 ms                |
+| RSS after 100k req | 116 MB    | 4 MB                |
+| npm ecosystem      | all of it | scriptc subset only |
 
-```sh
-pnpm add @chttp/router
-```
+Pick node for the ecosystem, native for small images and fast starts. Numbers and method: [Benchmarks](benchmarks.md).
 
-== tab "bun"
-
-```sh
-bun add @chttp/router
-```
-
-:::
-
-Next: [Routing](routing.md). For request validation see [Validation](validation.md). For the bundler and native-compile pipeline see [Route lowering plugin](unplugin.md).
+Next: [Quickstart](quickstart.md).

@@ -1,5 +1,5 @@
 // @chttp/ws: WebSocket router on top of the @chttp/router upgrade seam
-// (docs/upgrade-contract.md). Spec: docs/websocket.md.
+// (contracts/upgrade-contract.md). Spec: docs/websocket.md.
 //
 // Handlers are WsHandler subclasses held in parallel arrays next to their
 // path patterns, never a record of functions. Path matching is a small own

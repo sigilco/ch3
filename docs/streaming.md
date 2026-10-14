@@ -20,7 +20,7 @@ app.get("/clock", (c) =>
 
 `streamSSE(c, fn)` sends the status line and headers, flushes them, marks the response as sent (`c.sent = true`), then returns `fn(stream)`. Marking it sent matters: the router answers 500 when a handler settles without writing anything, and a stream callback usually returns before the first byte. Because the helper returns whatever `fn` returns, an `async` callback is awaited by the router like any async handler.
 
-The response keeps the current status (200 by default; set `c.status(...)` before the call to change it) as `text/event-stream` with `cache-control: no-cache, no-transform` and `x-accel-buffering: no`. Headers set with `c.header(...)` before the call are kept.
+The response is `200 text/event-stream` with `cache-control: no-cache, no-transform` and `x-accel-buffering: no`. Headers set with `c.header(...)` before the call are kept.
 
 ## SSEStream
 
@@ -34,7 +34,7 @@ The response keeps the current status (200 by default; set `c.status(...)` befor
 | `close()` | ends the response |
 | `onAbort(fn)` | runs `fn` once when the connection closes |
 
-Multi-line data is split on LF, CRLF or CR into one `data:` line each, as the SSE spec requires. CR and LF are stripped from `event` and `id`, so a value cannot inject extra fields. Every write returns `true` while the stream is open, and `false` once it is closed — either by your own `close()`, the client leaving, or the pending cap tripping.
+Multi-line data is split on LF, CRLF or CR into one `data:` line each, as the SSE spec requires. CR and LF are stripped from `event` and `id`, so a value cannot inject extra fields. Every write returns `true` while the stream is open and `false` once it is closed.
 
 `onAbort` is wired to the response `close` event. It fires when the client leaves and also after your own `close()`, so it is the one place to clear timers and drop subscriptions. Registering after the connection closed runs the callback immediately.
 
@@ -65,7 +65,7 @@ streamSSE(c, (s) => {
 });
 ```
 
-This is a rate limiter, not a queue bound: the cap counts bytes written per window, so a slow consumer with a steady producer still grows buffered output by roughly `maxPending` bytes per `windowMs` (1 MiB/s by default). Bounding the cumulative buffer needs true backpressure (`write()` returning `false`, the `drain` event), which lands once scriptc models drain.
+This is a rate window, not true queue depth. Once scriptc models `drain`, the cap will track real pending bytes.
 
 ## Compiling and testing
 
@@ -76,5 +76,3 @@ curl -N http://localhost:3000/clock
 ```
 
 Stop `curl` and the interval is cleared by the `onAbort` handler. Always register that handler when your callback starts a timer.
-
-Next: [Unplugin](unplugin.md).

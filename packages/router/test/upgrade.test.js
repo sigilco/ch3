@@ -68,7 +68,7 @@ test("serve(): never attaches an upgrade listener (wire it yourself)", async () 
   // serve() must stay attach-free: any "upgrade" attach built inside the
   // package defers 2 SC1090 sites under scriptc npm-static compilation,
   // for every app importing the router. Upgrade users wire the listener
-  // in their own program (see docs/upgrade-contract.md).
+  // in their own program (see contracts/upgrade-contract.md).
   const u = new Recorder(true);
   const srv = createRouter().withUpgrade(u).serve({ port: 0 });
   assert.equal(srv.listenerCount("upgrade"), 0);

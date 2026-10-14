@@ -85,7 +85,7 @@ export class ReqView<P extends string = string> {
     return null;
   }
 
-  // Generated dispatch (docs/route-contract.md) installs pre-materialized
+  // Generated dispatch (contracts/route-contract.md) installs pre-materialized
   // decoded pairs — flat [name, value, ...] including '*' for a splat.
   _seedPm(pm: string[]): void {
     this._pm = pm;
@@ -336,7 +336,7 @@ export type Middleware = (c: Ctx, next: Next) => unknown;
 
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
-// for routes that asked for it (docs/route-contract.md).
+// for routes that asked for it (contracts/route-contract.md).
 export interface RouteOpts {
   body?: boolean;
 }
@@ -569,7 +569,7 @@ function defaultNotFound(c: Ctx): void {
   c.text("Not Found");
 }
 
-// Contract helpers for generated dispatch modules (docs/route-contract.md):
+// Contract helpers for generated dispatch modules (contracts/route-contract.md):
 // _guard runs a handler body under the standard 500 path — a thrown error,
 // a rejected promise, or a settled chain that wrote no response all answer
 // 500 (the exact internal-dispatch rule: _guard delegates to runChain).
@@ -855,12 +855,12 @@ export class App {
   _pi: number[][];
   _sp: number[];
   _bodyF: number[];
-  // Generated-dispatch seam (docs/route-contract.md): a plain function
+  // Generated-dispatch seam (contracts/route-contract.md): a plain function
   // field, not an interface-typed field — an interface with a method member
   // would fence eager program-code instantiation the same way a function
   // inside a record does. Default returns false (never registered).
   _gen: DispatchFn;
-  // Upgrade seam (docs/upgrade-contract.md), same closure-field shape as
+  // Upgrade seam (contracts/upgrade-contract.md), same closure-field shape as
   // _gen. serve() never attaches an "upgrade" listener: any attach built
   // inside package dist JS defers 2 SC1090 sites for EVERY npm app
   // importing the router (scriptc cannot recover the listener's parameter
@@ -898,7 +898,7 @@ export class App {
   // eager program-code instantiation (SC2001). The generic rode along
   // for literal-param inference, but param() is string-typed regardless
   // — no type-safety is lost. `opts.body` declares body use; without it
-  // c.req.body() returns '' (docs/route-contract.md).
+  // c.req.body() returns '' (contracts/route-contract.md).
   get(path: string, h: Handler, opts?: RouteOpts): App {
     return this._add("GET", path, h, bodyFlag(opts));
   }
@@ -964,7 +964,7 @@ export class App {
     return this;
   }
 
-  // Registers a generated dispatch module (docs/route-contract.md). The
+  // Registers a generated dispatch module (contracts/route-contract.md). The
   // stored field is a closure so `d` only has to satisfy the GenDispatch
   // class shape at the call site — subclasses, duck-typed objects, and the
   // emitted `class X extends GenDispatch` all work.
@@ -990,7 +990,7 @@ export class App {
     return this;
   }
 
-  // Registers an upgrade dispatch (docs/upgrade-contract.md). Last call
+  // Registers an upgrade dispatch (contracts/upgrade-contract.md). Last call
   // wins. The listener is only attached by serve()/upgradeHandler() users
   // when one is registered, so apps without it keep node's default.
   withUpgrade(u: UpgradeDispatch): App {
