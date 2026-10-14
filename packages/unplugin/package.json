@@ -39,8 +39,8 @@
     "test": "node --test test/*.test.ts"
   },
   "peerDependencies": {
-    "@chttp/router": "^0.1.0",
-    "@chttp/val": "*"
+    "@chttp/router": "workspace:^",
+    "@chttp/val": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@chttp/val": {

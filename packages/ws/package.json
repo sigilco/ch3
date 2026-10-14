@@ -29,7 +29,7 @@
     "test": "npm run build && node --test test/frame.test.js test/ws.test.js"
   },
   "peerDependencies": {
-    "@chttp/router": "^0.1.0"
+    "@chttp/router": "workspace:^"
   },
   "devDependencies": {
     "@chttp/router": "workspace:^",

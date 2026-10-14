@@ -49,6 +49,6 @@
   },
   "sideEffects": false,
   "peerDependencies": {
-    "@chttp/router": "^0.1.0"
+    "@chttp/router": "workspace:^"
   }
 }
