@@ -3,6 +3,7 @@ packages:
   - examples/demo
   - examples/sse-clock
   - examples/ws-echo
+  - examples/rate-limit
   - bench
   - fixtures/*
 allowBuilds:
