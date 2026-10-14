@@ -2,6 +2,10 @@
 
 Read this before writing or changing chttp code. The core is authored in the scriptc compilable subset, so some normal TypeScript is banned.
 
+## Give an agent the docs
+
+These docs are published for agents too: [llms.txt](https://chttpjs.pages.dev/llms.txt) is the page index, [llms-full.txt](https://chttpjs.pages.dev/llms-full.txt) is every page in one file. Point your agent at either.
+
 ## Subset rules for `packages/router/src`
 
 - `| null` unions only. Never `undefined`.
