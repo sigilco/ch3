@@ -54,7 +54,7 @@ app.get("/log", (c) =>
 
 ## Slow consumers
 
-scriptc 0.3.1 cannot observe backpressure: the result of `write()`, the `drain` event and `writableLength` are all refused at compile time. A client that stops reading would otherwise make the server buffer without bound.
+scriptc cannot observe backpressure: the result of `write()`, the `drain` event and `writableLength` are all refused at compile time. A client that stops reading would otherwise make the server buffer without bound.
 
 As a stand-in, every stream has a pending-bytes cap. If more than `maxPending` bytes (default 1 MiB) are written inside one `windowMs` window (default 1000 ms), the stream is closed and the write returns `false`. Both are plain fields, so tune them per stream:
 
