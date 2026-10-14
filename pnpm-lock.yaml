@@ -229,6 +229,25 @@ importers:
         specifier: workspace:*
         version: link:../../packages/router
 
+  examples/integrations/logging-file-audit:
+    dependencies:
+      '@chttp/router':
+        specifier: workspace:*
+        version: link:../../../packages/router
+      '@logtape/logtape':
+        specifier: ^1.0.0
+        version: 1.3.11
+    devDependencies:
+      '@logtape/file':
+        specifier: ^1.0.0
+        version: 1.3.11(@logtape/logtape@1.3.11)
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      scriptc:
+        specifier: 0.3.1
+        version: 0.3.1
+
   examples/rate-limit:
     dependencies:
       '@chttp/router':
@@ -690,6 +709,14 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@logtape/file@1.3.11':
+    resolution: {integrity: sha512-kN7kH1opSW28/jsyGG+BvmMeZs1oDwG9XeiQbTRe+Q6tO4H9yRf8VTwdumrHRvv3UkJ84B3JGMTBPjkfx8lAgA==}
+    peerDependencies:
+      '@logtape/logtape': ^1.3.11
+
+  '@logtape/logtape@1.3.11':
+    resolution: {integrity: sha512-mxkQOyySbjNGweavPudypBf0qZJxLOTXl2NAXYnsZF/ds5dQpTLA7YMSJbc8uFWlTkG+YjAnVL8tQWivIVPOJg==}
 
   '@minimistjs/subarg@1.0.0':
     resolution: {integrity: sha512-Q/ONBiM2zNeYUy0mVSO44mWWKYM3UHuEK43PKIOzJCbvUnPoMH1K+gk3cf1kgnCVJFlWmddahQQCmrmBGlk9jQ==}
@@ -2226,6 +2253,12 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@logtape/file@1.3.11(@logtape/logtape@1.3.11)':
+    dependencies:
+      '@logtape/logtape': 1.3.11
+
+  '@logtape/logtape@1.3.11': {}
 
   '@minimistjs/subarg@1.0.0':
     dependencies:
