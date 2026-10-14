@@ -15,7 +15,7 @@ export interface ExtractOptions {
   // Exported binding carrying the router instance: a name, or 'default'.
   appExport?: string;
   // Extra module specifiers to treat as chttp imports (default
-  // ['chttp'] plus '<pkg>/*' subpaths).
+  // ['@chttp/router'] plus '<pkg>/*' subpaths).
   imports?: string[];
   // Parser backend name; resolved through the registry in ./parse/.
   // Default 'classic'. 'tsgo' is experimental.
@@ -123,7 +123,7 @@ function replayMount(
   }
 }
 
-const DEFAULT_IMPORTS = ["chttp"];
+const DEFAULT_IMPORTS = ["@chttp/router"];
 
 function isChttpSpecifier(spec: string, extra: string[]): boolean {
   const all = DEFAULT_IMPORTS.concat(extra);

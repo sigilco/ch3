@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { ROUTE_CONTRACT_VERSION as CHTTP_VERSION } from "chttp";
+import { ROUTE_CONTRACT_VERSION as CHTTP_VERSION } from "@chttp/router";
 import { ROUTE_CONTRACT_VERSION as UNPLUGIN_VERSION } from "../src/contract.ts";
 import { getParser } from "../src/parse/index.ts";
 import { extractModule } from "../src/extract.ts";
@@ -16,12 +16,12 @@ describe("contract version", () => {
     const g = emitGenModule(
       extractModule(
         "/app/src/routes.chttp.ts",
-        `import { createRouter } from 'chttp'
+        `import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/a', (c) => c.text('a'))
 `,
       ),
-      { importFrom: "chttp", modulePath: "/app/src/routes.chttp.ts" },
+      { importFrom: "@chttp/router", modulePath: "/app/src/routes.chttp.ts" },
     );
     assert.match(
       g,

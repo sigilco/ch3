@@ -1,6 +1,6 @@
 packages: []
 overrides:
-  chttp: link:../../packages/chttp
+  '@chttp/router': link:../../packages/router
   '@chttp/unplugin': link:../../packages/unplugin
 allowBuilds:
   esbuild: true

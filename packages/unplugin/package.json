@@ -39,7 +39,7 @@
     "test": "node --test test/*.test.ts"
   },
   "peerDependencies": {
-    "chttp": "^0.1.0"
+    "@chttp/router": "^0.1.0"
   },
   "dependencies": {
     "unplugin": "^3.4.0",
@@ -50,7 +50,7 @@
     "@types/picomatch": "^4.0.3",
     "typescript": "^5.9.0",
     "typescript-next": "npm:typescript@next",
-    "chttp": "workspace:^"
+    "@chttp/router": "workspace:^"
   },
   "engines": {
     "node": ">=22"

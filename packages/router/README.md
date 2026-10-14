@@ -3,7 +3,7 @@
 Minimal async-first HTTP router for `node:http`, zero dependencies, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset. The same source lowers to a native ELF directly, no plugin required.
 
 ```ts
-import { createRouter } from "chttp";
+import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 
@@ -24,7 +24,7 @@ app.serve({ port: 3000 });
 ## Install
 
 ```sh
-npm i chttp
+npm i @chttp/router
 ```
 
 ## Compile to native

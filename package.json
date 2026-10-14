@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter chttp build",
+    "build": "pnpm --filter @chttp/router build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "lint": "oxlint packages examples/demo bench/lib bench/apps",

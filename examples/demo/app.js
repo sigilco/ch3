@@ -1,6 +1,6 @@
 // chttp demo — same file runs under node, bun, and `scriptc build`.
 // Usage: <runtime> app.js [port]   (default 3000)
-import { createRouter } from "chttp";
+import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 

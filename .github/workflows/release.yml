@@ -32,7 +32,7 @@ jobs:
       - name: Verify tag matches package versions
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          for pkg in chttp @chttp/val @chttp/unplugin; do
+          for pkg in @chttp/router @chttp/val @chttp/unplugin; do
             V=$(node -p "require('./packages/${pkg#@chttp/}/package.json').version")
             [ "$V" = "$TAG" ] || { echo "version mismatch: $pkg at $V, tag $TAG"; exit 1; }
           done

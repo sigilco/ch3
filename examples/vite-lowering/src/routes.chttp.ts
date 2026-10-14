@@ -2,7 +2,7 @@
 // `*.chttp.ts` filename convention. Every literal registration below is
 // lowered into .chttp/routes.gen.ts; the non-literal one stays on the
 // runtime path and still works through the fallback.
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 
 export const app = createRouter()
 

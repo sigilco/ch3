@@ -1,6 +1,6 @@
 # chttp examples
 
-Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i chttp` project: the basic templates compile straight to a native ELF via `scriptc build` (chttp lowers directly like any scriptc-subset library, no bundler or plugin required); `vite-elf` shows the bundler pipeline with `unplugin-scriptc`, and `vite-lowering` the elect build-time route lowering with a plain JS dist.
+Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i @chttp/router` project: the basic templates compile straight to a native ELF via `scriptc build` (chttp lowers directly like any scriptc-subset library, no bundler or plugin required); `vite-elf` shows the bundler pipeline with `unplugin-scriptc`, and `vite-lowering` the elect build-time route lowering with a plain JS dist.
 
 | Template | Shows |
 | --- | --- |
@@ -13,7 +13,7 @@ Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i
 
 ```sh
 cd examples/hello
-npm install          # installs chttp + scriptc (once chttp 0.1.0 is published)
+npm install          # installs @chttp/router + scriptc (once @chttp/router 0.1.0 is published)
 npm run build        # scriptc build src/main.ts -o app
 ./app                # ELF listening on :3000
 ```

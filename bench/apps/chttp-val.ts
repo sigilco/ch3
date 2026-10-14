@@ -1,6 +1,6 @@
 // chttp + @chttp/val validation subject — the subset-native Standard Schema
 // library, same route + payload as chttp-valibot for a like-for-like cell.
-import { createRouter } from "../../packages/chttp/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 import * as v from "../../packages/val/src/index.ts";
 
 const Item = v.strictObject({

@@ -1,4 +1,4 @@
-import { createRouter } from "chttp";
+import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 

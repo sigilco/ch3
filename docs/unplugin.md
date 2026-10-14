@@ -16,11 +16,11 @@ Full option reference: [packages/unplugin/PLUGIN.md](https://github.com/sigilco/
 
 **JS dist (plugin standalone).** With plain vite or rollup the plugin works on its own: it emits `.chttp/routes.gen.ts`, your bundler bundles the app as ordinary JavaScript, and you run it on node. No scriptc anywhere in the pipeline. See `examples/vite-lowering`.
 
-**ELF (compose with unplugin-scriptc).** The emitted dispatch is authored inside the scriptc-compilable subset, so it composes with [`unplugin-scriptc`](https://github.com/sigilco/unplugin-scriptc): `chttpPlugin` lowers routes, `scriptcPlugin` runs `scriptc coverage` and `scriptc build` in the same pipeline. Compiled dispatch requires chttp as program code (vendored source or workspace layout); see the "Compiling with scriptc" section of [PLUGIN.md](https://github.com/sigilco/chttp/blob/main/packages/unplugin/PLUGIN.md).
+**ELF (compose with unplugin-scriptc).** The emitted dispatch is authored inside the scriptc-compilable subset, so it composes with [`unplugin-scriptc`](https://github.com/sigilco/unplugin-scriptc): `chttpPlugin` lowers routes, `scriptcPlugin` runs `scriptc coverage` and `scriptc build` in the same pipeline. Compiled dispatch requires chttp as program code (vendored source or workspace layout); see the "Compiling with scriptc" section of [PLUGIN.md](https://github.com/sigilco/chttp/blob/main...
 
 ## Contract stamping
 
-The emitted module carries a `ROUTE_CONTRACT_VERSION` stamp (module header constant plus an instance property), mirrored from chttp's exported `ROUTE_CONTRACT_VERSION`. `app.withDispatch(d)` validates the stamp once at startup: a numeric mismatch throws immediately, naming both versions. It means the dispatch was generated against a different route contract than the runtime implements, typically after upgrading one of the two packages; regenerate `.chttp/*.gen.ts` (upgrade `@chttp/unplugin` to match chttp, or align chttp). A missing stamp is accepted, covering dispatches generated before versioning existed. Details in [route-contract.md](route-contract.md).
+The emitted module carries a `ROUTE_CONTRACT_VERSION` stamp (module header constant plus an instance property), mirrored from chttp's exported `ROUTE_CONTRACT_VERSION`. `app.withDispatch(d)` validates the stamp once at startup: a numeric mismatch throws immediately, naming both versions. It means the dispatch was generated against a different route contract than the runtime implements, typically after upgrading one of the two packages; regenerate `.chttp/*.gen.ts` (upgrade `@chttp/unplugin` ...
 
 ## What the plugin does
 
@@ -58,7 +58,7 @@ Mark a routes module:
 
 ```ts
 // src/routes.chttp.ts
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 
 export const app = createRouter()
 
@@ -83,4 +83,4 @@ The factory is unplugin-based, so `chttpPlugin.rollup()`, `chttpPlugin.webpack()
 
 ## Parser option
 
-By default (`parser: "classic"`, the default) extraction parses route modules with the `typescript` package's tsc API. `parser: "tsgo"` switches to the typescript-go native compiler's client API (`typescript/sync`, available on `typescript@next` 7.x nightlies): parsing runs in a spawned native server process and the client decodes the binary AST into classic-shaped node objects. It is experimental: the nightly API breaks between versions, so pin the exact nightly you test. Without a resolvable nightly the plugin warns and falls back to `classic`, so a classic-only install never loads tsgo code. Option reference (including `include`, `root`, `appExport`) is in [PLUGIN.md](https://github.com/sigilco/chttp/blob/main/packages/unplugin/PLUGIN.md). For measured dev/build impact and a parser A/B (classic vs tsgo), see [bench/RESULTS-plugin.md](https://github.com/sigilco/chttp/blob/main/bench/RESULTS-plugin.md).
+By default (`parser: "classic"`, the default) extraction parses route modules with the `typescript` package's tsc API. `parser: "tsgo"` switches to the typescript-go native compiler's client API (`typescript/sync`, available on `typescript@next` 7.x nightlies): parsing runs in a spawned native server process and the client decodes the binary AST into classic-shaped node objects. It is experimental: the nightly API breaks between versions, so pin the exact nightly you test. Without a resolvab...

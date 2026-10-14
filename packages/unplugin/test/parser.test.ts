@@ -4,7 +4,7 @@ import { getParser, tsgoAvailable } from "../src/parse/index.ts";
 import { extractModule } from "../src/extract.ts";
 
 const SRC_BASIC = `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
@@ -52,7 +52,7 @@ describe("tsgo integration", { skip: !tsgoAvailable() }, () => {
   it("warns with the tsgo-computed line on bailed registrations", () => {
     const warns = extractModule(
       "routes.chttp.ts",
-      "import { createRouter } from 'chttp'\nexport const app = createRouter()\nconst dyn = '/d'\napp.get(dyn, (c) => c.text('x'))\n",
+      "import { createRouter } from '@chttp/router'\nexport const app = createRouter()\nconst dyn = '/d'\napp.get(dyn, (c) => c.text('x'))\n",
       { parser: "tsgo" },
     );
     assert.ok(

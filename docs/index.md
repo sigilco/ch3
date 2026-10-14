@@ -3,7 +3,7 @@
 chttp is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source compiles to a native ELF.
 
 ```ts
-import { createRouter } from "chttp";
+import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 
@@ -30,19 +30,19 @@ Handlers and middleware may be `async`; dispatch settles a `Promise` return unde
 == tab "npm"
 
 ```sh
-npm i chttp
+npm i @chttp/router
 ```
 
 == tab "pnpm"
 
 ```sh
-pnpm add chttp
+pnpm add @chttp/router
 ```
 
 == tab "bun"
 
 ```sh
-bun add chttp
+bun add @chttp/router
 ```
 
 :::

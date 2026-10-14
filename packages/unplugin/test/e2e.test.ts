@@ -14,7 +14,7 @@ import { emitGenModule, genFileName } from "../src/emit.ts";
 
 const CHTTP_SRC = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
-  "../../chttp/src/index.ts",
+  "../../router/src/index.ts",
 );
 
 interface FakeRes {
@@ -80,7 +80,7 @@ function fakeReq(method: string, url: string, body: string | null): FakeReq {
 }
 
 const ROUTES_SRC = `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 
 app.get('/json', (c) => c.json({ hello: 'world' }))
@@ -122,7 +122,7 @@ describe("e2e: generated dispatch executes against the real App", () => {
     const relChttp =
       "./" +
       path.relative(fs.realpathSync(dir), fs.realpathSync(CHTTP_SRC)).split(path.sep).join("/");
-    fs.writeFileSync(modPath, ROUTES_SRC.replace(/'chttp'/g, "'" + relChttp + "'"));
+    fs.writeFileSync(modPath, ROUTES_SRC.replace(/'@chttp\/router'/g, "'" + relChttp + "'"));
     const model = extractModule(modPath, fs.readFileSync(modPath, "utf8"), {
       imports: [relChttp],
     });

@@ -6,7 +6,7 @@ may be `async`; the router core ships no runtime dependencies.
 The package is authored inside the **scriptc compilable subset**
 ([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
 native-ELF compiler): the same source lowers statically into a single
-binary via `scriptc build --npm-static chttp` with zero deferred sites
+binary via `scriptc build --npm-static @chttp/router` with zero deferred sites
 (100% static coverage, scriptc 0.3.0).
 
 ## 🚀 Quick start
@@ -14,13 +14,13 @@ binary via `scriptc build --npm-static chttp` with zero deferred sites
 Install:
 
 ```bash
-npm i chttp
+npm i @chttp/router
 ```
 
 Import:
 
 ```ts
-import { createRouter } from "chttp";
+import { createRouter } from "@chttp/router";
 
 const app = createRouter();
 
@@ -116,7 +116,7 @@ Because chttp stays inside the scriptc subset, the same code compiles to a
 native ELF:
 
 ```sh
-scriptc build app.js --npm-static chttp --optimization=speed -o app-bin
+scriptc build app.js --npm-static @chttp/router --optimization=speed -o app-bin
 ./app-bin 3000
 ```
 
@@ -136,7 +136,7 @@ every cell: the router costs ~0.1-0.3 MB of binary and ~1 MB RSS.
 
 Two tiers, kept separate on purpose. chttp itself needs no plugin to go native: the core is authored in the scriptc compilable subset, so `scriptc build` lowers it directly like any subset library. The plugins below are elective additions:
 
-- `@chttp/unplugin` (separate package, [`packages/unplugin`](https://github.com/sigilco/chttp/tree/main/packages/unplugin)), via `chttpPlugin`: build-time dispatch specialization. It recovers the route table from imperative `app.get()`/`use()`/`route()` registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie walk. Works with plain vite/rollup (JS dist) and composes with `unplugin-scriptc` (ELF). Uncertain routes stay on runtime dispatch with a build warning. See [docs/unplugin.md](docs/unplugin.md).
+- `@chttp/unplugin` (separate package, [`packages/unplugin`](https://github.com/sigilco/chttp/tree/main/packages/unplugin)), via `chttpPlugin`: build-time dispatch specialization. It recovers the route table from imperative `app.get()`/`use()`/`route()` registrations and emits a `CompiledRoutes` dispatch that skips the runtime trie walk. Works with plain vite/rollup (JS dist) and composes with `unplugin-scriptc` (ELF). Uncertain routes stay on runtime dispatch with a build warning. See [doc...
 - `unplugin-scriptc`, via `scriptcPlugin`, which runs `scriptc coverage` diagnostics and `scriptc build` inside your bundler pipeline. See [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc).
 
 ```ts

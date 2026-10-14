@@ -30,13 +30,13 @@ export interface ChttpPluginOptions {
   // Project root to scan. Default: vite config.root, else process.cwd().
   root?: string;
   // Import specifier emitted in the gen file for `import type { App }`.
-  // Default: 'chttp'
+  // Default: '@chttp/router'
   importFrom?: string;
   // Exported binding carrying the router instance: a name, or 'default'.
   // Default: auto-detect.
   appExport?: string;
   // Extra module specifiers treated as chttp imports (in addition to
-  // 'chttp').
+  // '@chttp/router').
   imports?: string[];
   // Parser backend: 'classic' (default, the tsc 5.x/6.x API) or 'tsgo'
   // (experimental; requires a typescript 7.x nightly providing the
@@ -68,7 +68,7 @@ function walk(dir: string, out: string[]): void {
 
 export const chttpPlugin = createUnplugin((options?: ChttpPluginOptions) => {
   const include = options?.include ?? ["**/*.chttp.ts", "**/*.chttp.js"];
-  const importFrom = options?.importFrom ?? "chttp";
+  const importFrom = options?.importFrom ?? "@chttp/router";
   let root = options?.root ?? process.cwd();
 
   let parserName = options?.parser ?? "classic";

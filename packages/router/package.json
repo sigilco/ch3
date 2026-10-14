@@ -1,5 +1,5 @@
 {
-  "name": "chttp",
+  "name": "@chttp/router",
   "version": "0.1.0",
   "description": "Minimal async-first HTTP router authored inside the scriptc compilable subset",
   "keywords": [

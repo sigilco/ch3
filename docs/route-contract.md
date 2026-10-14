@@ -1,6 +1,6 @@
 # Generated dispatch contract
 
-Status: **frozen** — this is the seam between `packages/chttp/src/gen.ts` (`GenDispatch`) and `chttp` (route table + ctx machinery) and build-time code generators (the Vite/unplugin transform agent emits modules satisfying this contract). v0.3.0, 2026-10-13.
+Status: **frozen** — this is the seam between `packages/router/src/gen.ts` (`GenDispatch`) and `chttp` (route table + ctx machinery) and build-time code generators (the Vite/unplugin transform agent emits modules satisfying this contract). v0.3.0, 2026-10-13.
 
 ## The seam in one paragraph
 
@@ -9,7 +9,7 @@ Status: **frozen** — this is the seam between `packages/chttp/src/gen.ts` (`Ge
 ## Module shape
 
 ```ts
-import { GenDispatch } from 'chttp'
+import { GenDispatch } from '@chttp/router'
 
 // Emit a CLASS, not an object literal. Under scriptc's eager
 // program-code instantiation a function value inside a record
@@ -133,7 +133,7 @@ The contract majors with the package: any change to a member listed in the stabl
 
 ```ts
 // runtime (chttp)
-import { GenDispatch, ROUTE_CONTRACT_VERSION } from 'chttp'
+import { GenDispatch, ROUTE_CONTRACT_VERSION } from '@chttp/router'
 app.withDispatch(new CompiledRoutes(app)) // throws on stamp mismatch
 
 // emitted header (.chttp/routes.gen.ts)

@@ -77,7 +77,7 @@ function moduleSource(i, size) {
 
 // Barrel the plugin imports from: re-export the workspace chttp source the same
 // way fixtures/vite-app does, so the generated dispatch imports resolve.
-const CHTTP_BARREL = `export * from '../../../packages/chttp/src/index.ts'\n`;
+const CHTTP_BARREL = `export * from '../../../packages/router/src/index.ts'\n`;
 
 const sizes = process.argv.slice(2).map(Number).filter((n) => n > 0);
 const list = sizes.length > 0 ? sizes : [10, 100, 1000];

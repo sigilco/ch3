@@ -10,7 +10,7 @@ import {
   dec,
   _guard,
   _buffer,
-} from "../../packages/chttp/src/index.ts";
+} from "../../packages/router/src/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from "./common.mjs";
 

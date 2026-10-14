@@ -1,7 +1,7 @@
 // chttp + valibot validation subject — canonical-style app plus a POST
 // route that JSON.parses the body and safeParses it against a Standard
 // Schema (valibot). Mirrors real REST usage: parse -> validate -> 200/400.
-import { createRouter } from "../../packages/chttp/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 import * as v from "valibot";
 
 const Item = v.strictObject({

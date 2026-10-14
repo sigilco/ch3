@@ -11,7 +11,7 @@
       }
     },
     {
-      "files": ["packages/chttp/src/index.ts"],
+      "files": ["packages/router/src/index.ts"],
       "rules": {
         "eslint/no-unused-vars": "off"
       }
@@ -22,7 +22,7 @@
     "**/dist/**",
     "bench/ceilings/**",
     "**/mongoose.c",
-    "packages/chttp/test/fixtures/**",
+    "packages/router/test/fixtures/**",
     "packages/unplugin/test/fixtures/**"
   ]
 }

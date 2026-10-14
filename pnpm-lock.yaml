@@ -212,15 +212,15 @@ importers:
 
   examples/demo:
     dependencies:
-      chttp:
+      '@chttp/router':
         specifier: workspace:*
-        version: link:../../packages/chttp
+        version: link:../../packages/router
 
   fixtures/vite-app:
     dependencies:
-      chttp:
+      '@chttp/router':
         specifier: workspace:*
-        version: link:../../packages/chttp
+        version: link:../../packages/router
     devDependencies:
       '@chttp/unplugin':
         specifier: workspace:*
@@ -229,7 +229,7 @@ importers:
         specifier: ^7.0.0
         version: 7.3.7(@types/node@24.19.2)(yaml@2.9.1)
 
-  packages/chttp:
+  packages/router:
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -247,15 +247,15 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0(esbuild@0.28.2)(rollup@4.64.5)(vite@7.3.7(@types/node@24.19.2)(yaml@2.9.1))
     devDependencies:
+      '@chttp/router':
+        specifier: workspace:^
+        version: link:../router
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.2
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
-      chttp:
-        specifier: workspace:^
-        version: link:../chttp
       typescript:
         specifier: ^5.9.0
         version: 5.9.3

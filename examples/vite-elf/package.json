@@ -8,7 +8,7 @@
     "start": "./dist/app"
   },
   "dependencies": {
-    "chttp": "0.1.0"
+    "@chttp/router": "0.1.0"
   },
   "devDependencies": {
     "unplugin-scriptc": "0.1.0",

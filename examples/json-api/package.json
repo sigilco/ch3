@@ -8,7 +8,7 @@
     "start": "./app"
   },
   "dependencies": {
-    "chttp": "0.1.0"
+    "@chttp/router": "0.1.0"
   },
   "devDependencies": {
     "scriptc": "0.3.0"

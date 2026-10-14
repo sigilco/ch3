@@ -1,6 +1,6 @@
 // chttp POST subject with body buffering but no parse — the floor for the
 // validation-cost comparison (buffer only, respond 200).
-import { createRouter } from "../../packages/chttp/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 
 const app = createRouter();
 

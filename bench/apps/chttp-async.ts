@@ -2,7 +2,7 @@
 // handler is `async`, so each request exercises the thenable settle path
 // (microtask scheduling + then/catch attach) under node, bun, and the
 // scriptc ELF build.
-import { createRouter } from "../../packages/chttp/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from "./common.mjs";
 
 const app = createRouter();

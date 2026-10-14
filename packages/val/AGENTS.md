@@ -1,6 +1,6 @@
 # val AGENTS.md
 
-`@chttp/val` — minimal Standard Schema library in the scriptc compilable subset. Same subset rules as `packages/chttp/src` (see root AGENTS.md), plus the constraints discovered while authoring this package:
+`@chttp/val` — minimal Standard Schema library in the scriptc compilable subset. Same subset rules as `packages/router/src` (see root AGENTS.md), plus the constraints discovered while authoring this package:
 
 - **No `unknown`/`any`/`object`/`{[k]: unknown}`/`unknown[]` class fields — ever.** The field type must be concrete (number, string, boolean, concrete arrays/records/unions, program classes). Arbitrary values may only exist as function parameters, return types, local variables, or members of plain records. This is why results are records, `VIssue` has no `input`, and `literal`/`optional` defaults live in typed slots (dkind + s/n/b).
 - **No generics on schema classes.** A phantom field `_t: T` instantiates `unknown` and rejects the class; method-return narrowing only works toward subclasses, not primitives. `InferOutput` is a type-level conditional over the concrete classes instead.

@@ -87,7 +87,7 @@ function setupVariant() {
   // path rooted at the real fixture; rewrite them to the same absolute target
   // from the bench copy's depth.
   const fixBarrel = join(FIXTURE, "src", "chttp.ts");
-  const barrelTarget = "packages/chttp/src/index.ts";  // import specifiers resolve from dirname(file): src/chttp.ts sits 4 dirs
+  const barrelTarget = "packages/router/src/index.ts";  // import specifiers resolve from dirname(file): src/chttp.ts sits 4 dirs
   // under the repo here (bench/plugin/vite-app-1000/src), corpus barrel 5.
   writeFileSync(
     join(BENCH_FIXTURE, "src", "chttp.ts"),

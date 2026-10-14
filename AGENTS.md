@@ -1,11 +1,11 @@
 # chttp AGENTS.md
 
-chttp is a minimal HTTP router for `node:http`, async-first, zero dependencies, authored in the scriptc compilable subset so the same source compiles to a single native ELF. Workspace: `packages/chttp` (runtime) and `packages/unplugin` (build-time route-lowering plugin).
+chttp is a minimal HTTP router for `node:http`, async-first, zero dependencies, authored in the scriptc compilable subset so the same source compiles to a single native ELF. Workspace: `packages/router` (runtime) and `packages/unplugin` (build-time route-lowering plugin).
 
 ## Commands
 
 - `pnpm test` - all workspace tests
-- `pnpm --filter chttp build` - build runtime package
+- `pnpm --filter @chttp/router build` - build runtime package
 - `pnpm lint` - oxlint (type-aware)
 - `pnpm fmt` - oxfmt
 - `pnpm --filter @chttp/unplugin test` - plugin tests
@@ -19,7 +19,7 @@ All `packages/*` publish at one shared version via pnpm native versioning (`vers
 2. At release: `pnpm version -r` (bumps the fixed group, consumes intents, writes CHANGELOGs), commit, tag `v<version>`.
 3. Tag push triggers `.github/workflows/release.yml`: verifies every package.json matches the tag, publishes all three.
 
-## Scriptc subset rules (packages/chttp/src)
+## Scriptc subset rules (packages/router/src)
 
 These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
 

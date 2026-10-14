@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "chttp": "workspace:*"
+    "@chttp/router": "workspace:*"
   }
 }

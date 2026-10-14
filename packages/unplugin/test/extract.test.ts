@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { extractModule } from "../src/extract.ts";
 
 const SRC_BASIC = `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
@@ -47,7 +47,7 @@ describe("extractModule basics", () => {
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.post('/made', (c) => c.status(201).header('x-a', 'b').json({ ok: true }))
 app.get('/redir', (c) => c.redirect('/json'))
@@ -74,7 +74,7 @@ app.get('/t', (c) => c.text('plain'))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/a', (c) => c.text('a')).post('/b', (c) => c.text('b'))
 app.on('DELETE', '/c', (c) => c.text('c'))
@@ -92,7 +92,7 @@ describe("middleware + mounts", () => {
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/early', (c) => c.text('e'))
 app.use((c, next) => { c.header('x', '1'); next() })
@@ -109,7 +109,7 @@ app.get('/late', (c) => c.text('l'))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/top', (c) => c.text('t'))
 const api = createRouter()
@@ -133,7 +133,7 @@ app.get('/after', (c) => c.text('a'))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 import other from './other.ts'
 export const app = createRouter()
 app.get('/before', (c) => c.text('b'))
@@ -158,7 +158,7 @@ describe("bail rules", () => {
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 const dyn = '/dyn'
 app.get('/a', (c) => c.text('a'))
@@ -181,7 +181,7 @@ app.get('/b', (c) => c.text('b'))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/before', (c) => c.text('b'))
 if (process.env.X) {
@@ -200,7 +200,7 @@ app.get('/after', (c) => c.text('a'))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 if (process.env.X) {
   app.get('/cond', (c) => c.text('c'))
@@ -216,7 +216,7 @@ app.get('/after', (c) => c.json({ id: c.req.query('x') }))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 const app = createRouter()
 app.get('/a', (c) => c.text('a'))
 `,
@@ -229,7 +229,7 @@ app.get('/a', (c) => c.text('a'))
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 const router = createRouter()
 router.get('/a', (c) => c.text('a'))
 export default router
@@ -244,7 +244,7 @@ export default router
     const m = extractModule(
       "routes.chttp.ts",
       `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/mid/*/x', (c) => c.text('m'))
 app.get('/ok', (c) => c.text('o'))

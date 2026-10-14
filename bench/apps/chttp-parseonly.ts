@@ -1,6 +1,6 @@
 // chttp + JSON.parse-only subject — identical to chttp-valibot but stops at
 // JSON.parse; isolates the schema-validation share of the validation cost.
-import { createRouter } from "../../packages/chttp/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 
 const app = createRouter();
 

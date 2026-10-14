@@ -5,12 +5,12 @@ import { emitGenModule } from "../src/emit.ts";
 
 const gen = (src: string): string =>
   emitGenModule(extractModule("/app/src/routes.chttp.ts", src), {
-    importFrom: "chttp",
+    importFrom: "@chttp/router",
     modulePath: "/app/src/routes.chttp.ts",
   });
 
 const SRC = `
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
@@ -41,8 +41,8 @@ describe("emitGenModule", () => {
       g,
       /\{ method: "POST", path: "\/echo", kind: "static", handlerIdx: 3, needsBody: true \}/,
     );
-    assert.match(g, /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "chttp"/);
-    assert.match(g, /import type \{ App \} from "chttp"/);
+    assert.match(g, /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "@chttp\/router"/);
+    assert.match(g, /import type \{ App \} from "@chttp\/router"/);
   });
 
   it("emits a no-Ctx static runner for literal sends", () => {
@@ -85,7 +85,7 @@ describe("emitGenModule", () => {
 
   it("sorts checks by path precedence (static < param < wildcard)", () => {
     const g = gen(`
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/a/*', (c) => c.text('w'))
 app.get('/a/b', (c) => c.text('s'))
@@ -100,7 +100,7 @@ app.get('/a/:x', (c) => c.text(c.req.param('x') || ''))
 
   it("puts *-method routes in every method section and the fallthrough", () => {
     const g = gen(`
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.all('/any', (c) => c.text('any'))
 app.get('/g', (c) => c.text('g'))
@@ -112,7 +112,7 @@ app.get('/g', (c) => c.text('g'))
 
   it("keeps a runtime method check only for declared-body * routes", () => {
     const g = gen(`
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.all('/u', (c) => c.text(c.req.body()), { body: true })
 `);
@@ -127,7 +127,7 @@ app.all('/u', (c) => c.text(c.req.body()), { body: true })
 
   it("emits a stub class when the router is not exported", () => {
     const g = gen(`
-import { createRouter } from 'chttp'
+import { createRouter } from '@chttp/router'
 const app = createRouter()
 app.get('/a', (c) => c.text('a'))
 `);

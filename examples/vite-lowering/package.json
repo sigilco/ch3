@@ -10,7 +10,7 @@
     "start:runtime": "node src/runtime.ts"
   },
   "dependencies": {
-    "chttp": "0.1.0"
+    "@chttp/router": "0.1.0"
   },
   "devDependencies": {
     "@chttp/unplugin": "0.1.0",
