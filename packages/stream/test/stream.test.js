@@ -286,12 +286,13 @@ test("async callback rejection without onError destroys and the server keeps ser
   await r.text().catch(() => undefined);
   await wait(30);
   // No crash, no unhandled rejection: the router answers the next request.
-  const ok = await fetch(base + "/ok").then((x) => x.status).catch(() => 0);
+  const ok = await fetch(base + "/ok")
+    .then((x) => x.status)
+    .catch(() => 0);
   assert.equal(ok, 200);
   srv.close();
   srv.closeAllConnections();
 });
-
 
 test("exports SSEStream class", () => {
   assert.equal(typeof SSEStream, "function");
@@ -335,7 +336,9 @@ test("async callback rejection without onError destroys and the server keeps ser
   await r.text().catch(() => undefined);
   await wait(30);
   // No crash, no unhandled rejection: the router answers the next request.
-  const ok = await fetch(base + "/ok").then((x) => x.status).catch(() => 0);
+  const ok = await fetch(base + "/ok")
+    .then((x) => x.status)
+    .catch(() => 0);
   assert.equal(ok, 200);
   srv.close();
   srv.closeAllConnections();
@@ -442,4 +445,3 @@ test("onAbort fires exactly once whether registered before or after close", asyn
   fake._onClose(); // second close event must not re-run anything
   assert.deepEqual(runs, ["before", "after"]);
 });
-
