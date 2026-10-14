@@ -55,6 +55,10 @@
     {
      "title": "Validation",
      "route": "validation"
+    },
+    {
+     "title": "HTML rendering",
+     "route": "html"
     }
    ]
   }
