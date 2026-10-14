@@ -17,6 +17,17 @@ minimumReleaseAgeExclude:
   - '@scriptc/*'
   - unplugin-scriptc
 versioning:
+  ignore:
+    - chttp-demo
+    - chttp-example-backpressure
+    - chttp-example-logging-file-audit
+    - chttp-example-otlp-traces
+    - chttp-example-prometheus-metrics
+    - chttp-example-rate-limit
+    - chttp-example-sse-clock
+    - chttp-example-webhook-server
+    - chttp-example-ws-echo
+    - chttp-vite-fixture
   fixed:
     - ["@chttp/router", "@chttp/val", "@chttp/unplugin", "@chttp/static", "@chttp/ws", "@chttp/stream", "@chttp/html"]
   changelog:

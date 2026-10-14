@@ -27,7 +27,7 @@
     "test": "pnpm run build && node --test test/static.test.js"
   },
   "peerDependencies": {
-    "@chttp/router": "^0.1.0"
+    "@chttp/router": "workspace:^"
   },
   "devDependencies": {
     "@chttp/router": "workspace:^",
