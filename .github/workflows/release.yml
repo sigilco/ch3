@@ -83,7 +83,8 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r build
+      # packages only: examples need scriptc's toolchain and are not published
+      - run: pnpm --filter "./packages/*" build
       # npm cannot roll back, so the guarantee is that a rerun converges:
       # skip versions already on the registry, keep going after a failure,
       # and exit non zero at the end with a summary.
