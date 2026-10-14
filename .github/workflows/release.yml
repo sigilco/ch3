@@ -27,12 +27,12 @@ jobs:
       - run: pnpm -r build
       - run: pnpm -r test
       # Versioning is fixed-group (pnpm-workspace.yaml versioning.fixed):
-      # all three packages share one version. The release tag must match
+      # all four packages share one version. The release tag must match
       # the version pnpm version -r wrote into every package.json.
       - name: Verify tag matches package versions
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          for pkg in @chttp/router @chttp/val @chttp/unplugin; do
+          for pkg in @chttp/router @chttp/val @chttp/unplugin @chttp/static; do
             V=$(node -p "require('./packages/${pkg#@chttp/}/package.json').version")
             [ "$V" = "$TAG" ] || { echo "version mismatch: $pkg at $V, tag $TAG"; exit 1; }
           done
