@@ -176,7 +176,7 @@ test("body buffers before handler only when route declares body: true", () => {
 
   // Same handler without the declaration: declared-body contract says
   // no buffering happens and body() returns ''. Deterministic opt-in —
-  // see docs/route-contract.md.
+  // see contracts/route-contract.md.
   const app2 = createRouter();
   app2.post("/echo", (c) => c.text("[" + c.req.body() + "]"));
   const res2 = call(app2, { method: "POST", url: "/echo" }, "ignored");

@@ -25,7 +25,7 @@ chttp itself is authored in the [scriptc](https://github.com/sigilco/scriptc) co
 - Plain vite/rollup: the generated dispatch bundles into your JS dist.
 - With [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc): the dispatch compiles to native code inside the ELF.
 
-Routes the analyzer cannot prove literal stay on the runtime router with a build warning. It never emits a wrong route. The emitted module satisfies the frozen contract in [`docs/route-contract.md`](https://github.com/sigilco/chttp/blob/main/docs/route-contract.md) and carries a `ROUTE_CONTRACT_VERSION` stamp that `app.withDispatch()` validates at startup, so a stale generated file fails loudly instead of misbehaving.
+Routes the analyzer cannot prove literal stay on the runtime router with a build warning. It never emits a wrong route. The emitted module satisfies the frozen contract in [`contracts/route-contract.md`](https://github.com/sigilco/chttp/blob/main/contracts/route-contract.md) and carries a `ROUTE_CONTRACT_VERSION` stamp that `app.withDispatch()` validates at startup, so a stale generated file fails loudly instead of misbehaving.
 
 ## Options
 

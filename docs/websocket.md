@@ -1,6 +1,6 @@
 # WebSocket
 
-`@chttp/ws` adds RFC 6455 WebSockets to `@chttp/router` through the upgrade seam described in [upgrade-contract](upgrade-contract). It depends on `@chttp/router` only and is authored in the scriptc compilable subset.
+`@chttp/ws` adds RFC 6455 WebSockets to `@chttp/router` through the upgrade seam described in `contracts/upgrade-contract.md` in the repo. It depends on `@chttp/router` only and is authored in the scriptc compilable subset.
 
 ## Usage
 

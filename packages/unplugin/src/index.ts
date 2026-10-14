@@ -2,7 +2,7 @@
 //
 // A routes module (default: any file matching `**\/*.chttp.{ts,js}`) is
 // analyzed at build start; the plugin writes
-// `<dir>/.chttp/<name>.gen.ts` satisfying docs/route-contract.md:
+// `<dir>/.chttp/<name>.gen.ts` satisfying contracts/route-contract.md:
 //   - `export class CompiledRoutes extends GenDispatch` — registered
 //     once via `app.withDispatch(new CompiledRoutes(app))` in the
 //     app-owning entry, tried first on every request,

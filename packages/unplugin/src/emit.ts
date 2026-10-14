@@ -1,6 +1,6 @@
 // Codegen: ModuleModel -> routes.gen.ts source text.
 //
-// The emitted module satisfies docs/route-contract.md: a `CompiledRoutes`
+// The emitted module satisfies contracts/route-contract.md: a `CompiledRoutes`
 // class extending GenDispatch, registered via `app.withDispatch(...)`.
 // It is what `scriptc build` sees on the app graph — so the same subset
 // rules apply as to src/index.ts: full-shape record literals, handlers

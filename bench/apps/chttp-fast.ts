@@ -1,6 +1,6 @@
 // chttp compiled-mode bench app — canonical routes + a hand-written
 // generated dispatch module (what the Vite/unplugin transform will emit,
-// per docs/route-contract.md). The same handler functions back both the
+// per contracts/route-contract.md). The same handler functions back both the
 // registered table and the generated matcher.
 import {
   createRouter,

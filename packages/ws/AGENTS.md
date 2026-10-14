@@ -1,6 +1,6 @@
 # ws AGENTS.md
 
-`@chttp/ws` is the WebSocket router on the `@chttp/router` upgrade seam (`docs/upgrade-contract.md`), authored in the scriptc compilable subset. Same subset rules as `packages/router/src` (root `AGENTS.md`), plus what this package learned:
+`@chttp/ws` is the WebSocket router on the `@chttp/router` upgrade seam (`contracts/upgrade-contract.md`), authored in the scriptc compilable subset. Same subset rules as `packages/router/src` (root `AGENTS.md`), plus what this package learned:
 
 - Depends on `@chttp/router` only. `WsRouter extends UpgradeDispatch`; the router does not export its trie, so `matchPattern` in `src/index.ts` is a small own exact + `:param` matcher.
 - Handlers are `WsHandler` subclasses held in parallel arrays (`_pats`, `_hs`). Never a record or array of functions.

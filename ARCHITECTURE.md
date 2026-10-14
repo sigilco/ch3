@@ -40,7 +40,7 @@ flowchart TD
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/router/src/index.ts` | The whole core: `App`, `Ctx`, `ReqView`, `compose`, `matchPath`, `addRoute`, error path, exported `createRouter()` factory                      |
 | `packages/router/src/gen.ts`   | The `GenDispatch` base class and `DispatchFn` type, the interface between runtime dispatch and build-generated route modules                    |
-| `packages/unplugin/src`     | Build-time plugin: extracts the literal route table from `*.chttp.ts` modules and emits a `routes.gen.ts` that satisfies `docs/route-contract.md` |
+| `packages/unplugin/src`     | Build-time plugin: extracts the literal route table from `*.chttp.ts` modules and emits a `routes.gen.ts` that satisfies `contracts/route-contract.md` |
 
 Inside `packages/router/src/index.ts`:
 
@@ -97,5 +97,5 @@ The `GenDispatch` seam (`packages/router/src/gen.ts`) is a base class whose defa
 
 Reference documents:
 
-- `docs/route-contract.md` is the frozen contract for generated dispatch modules: emitted class shape, param seeding, body flag handling, and error behavior.
+- `contracts/route-contract.md` is the frozen contract for generated dispatch modules: emitted class shape, param seeding, body flag handling, and error behavior.
 - `docs/unplugin.md` documents the build-time plugin: extraction rules, the module model, and the emitted code shape.

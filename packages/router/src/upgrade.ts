@@ -1,4 +1,4 @@
-// Upgrade dispatch seam. Spec: docs/upgrade-contract.md.
+// Upgrade dispatch seam. Spec: contracts/upgrade-contract.md.
 //
 // Protocol packages (@chttp/ws) subclass UpgradeDispatch and register the
 // instance with `app.withUpgrade(new X())`. Same shape as GenDispatch: a

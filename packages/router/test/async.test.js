@@ -176,7 +176,7 @@ test("mixed sync and async routes coexist", async () => {
   assert.equal(r2.body, "a");
 });
 
-// Contract helpers (docs/route-contract.md) — generated dispatch routes
+// Contract helpers (contracts/route-contract.md) — generated dispatch routes
 // run through _guard/_buffer, which must settle thenable chain results
 // the same way internal dispatch does.
 

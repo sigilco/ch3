@@ -1,6 +1,6 @@
 // Generated-dispatch contract — the stable seam between chttp and
 // build-time code generators (the Vite/unplugin transform). Spec:
-// docs/route-contract.md.
+// contracts/route-contract.md.
 //
 // Emitters generate `class X extends GenDispatch { dispatch(req,res){…} }`
 // and register `app.withDispatch(new X())`. Subclass method override is
@@ -9,7 +9,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 export type DispatchFn = (req: IncomingMessage, res: ServerResponse) => boolean;
 
-// Contract version (docs/route-contract.md, Contract versioning). Bumped
+// Contract version (contracts/route-contract.md, Contract versioning). Bumped
 // when the emit contract changes shape. Emitters stamp the same number
 // into generated modules and App.withDispatch refuses a mismatch.
 export const ROUTE_CONTRACT_VERSION = 1;
