@@ -861,9 +861,14 @@ export class App {
   // inside a record does. Default returns false (never registered).
   _gen: DispatchFn;
   // Upgrade seam (docs/upgrade-contract.md), same closure-field shape as
-  // _gen. _hasUp gates the "upgrade" listener in serve().
+  // _gen. serve() never attaches an "upgrade" listener: any attach built
+  // inside package dist JS defers 2 SC1090 sites for EVERY npm app
+  // importing the router (scriptc cannot recover the listener's parameter
+  // types from the emitted .js), including apps that never upgrade.
+  // Upgrade users wire server.on("upgrade", ...) in their own program —
+  // an inline annotated listener or a typed alias of upgradeHandler()
+  // both lower 100% under npm-static compilation.
   _up: (req: IncomingMessage, socket: Socket, head: Buffer) => boolean;
-  _hasUp: boolean;
 
   constructor() {
     this._nodes = [];
@@ -886,7 +891,6 @@ export class App {
     this._up = function (_r: IncomingMessage, _s: Socket, _h: Buffer): boolean {
       return false;
     };
-    this._hasUp = false;
   }
 
   // Verb methods take `path: string` + `Ctx`, not `<P extends string>`:
@@ -994,7 +998,6 @@ export class App {
     this._up = function (rq: IncomingMessage, sk: Socket, hd: Buffer): boolean {
       return g.upgrade(rq, sk, hd);
     };
-    this._hasUp = true;
     return this;
   }
 
@@ -1020,10 +1023,10 @@ export class App {
   serve(opts: { port: number }): Server;
   serve(opts: { port: number; host: string }): Server;
   serve(opts: { port: number; host?: string }): Server {
+    // No "upgrade" attach here (see the _up field note): apps that take
+    // upgrades wire server.on("upgrade", app.upgradeHandler()) themselves
+    // after serve() returns the server, typed at their own call site.
     const s = http.createServer(this.handler());
-    if (this._hasUp) {
-      s.on("upgrade", this.upgradeHandler());
-    }
     if (opts.host === null || opts.host === undefined) {
       s.listen(Number(opts.port));
     } else {
