@@ -168,3 +168,27 @@ test("validCloseCode", () => {
   for (const c of [0, 999, 1004, 1005, 1006, 1012, 1015, 2999, 5000])
     assert.equal(validCloseCode(c), false, String(c));
 });
+
+test("feed is linear: a trickled frame concatenates a bounded number of times", () => {
+  const data = Buffer.alloc(20000, 7);
+  const f = clientFrame(2, data);
+  const p = new WsParser(1 << 20, 1 << 21);
+  const orig = Buffer.concat;
+  let calls = 0;
+  Buffer.concat = (...a) => {
+    calls++;
+    return orig.apply(Buffer, a);
+  };
+  let got = null;
+  try {
+    for (let i = 0; i < f.length; i++) {
+      p.feed(f.subarray(i, i + 1));
+      if (p.next() === FRAME) got = p.payload;
+    }
+  } finally {
+    Buffer.concat = orig;
+  }
+  assert.ok(got && got.equals(data));
+  assert.ok(calls <= 4, "concat calls: " + calls);
+  assert.equal(p.queued, 0);
+});
