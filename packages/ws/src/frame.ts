@@ -19,6 +19,14 @@ export class WsParser {
   maxPayload: number;
   maxPending: number;
   pending: Buffer = Buffer.alloc(0);
+  // Chunks fed but not yet merged into pending, and their byte total.
+  // feed() only appends here; _contig() merges them once next() knows
+  // enough bytes have arrived for the current frame, so a frame trickling
+  // in byte by byte costs one concat per header stage, not one per chunk.
+  queue: Buffer[] = [];
+  queued: number = 0;
+  // Total bytes (pending plus queued) next() needs before it can progress.
+  need: number = 2;
   // Valid when next() returned P_FRAME.
   fin: boolean = false;
   opcode: number = 0;
@@ -35,21 +43,43 @@ export class WsParser {
   // Appends bytes read from the socket. Returns false when the pending
   // buffer would exceed maxPending; the caller must close with 1009.
   feed(chunk: Buffer): boolean {
-    if (this.pending.length + chunk.length > this.maxPending) {
+    if (this.pending.length + this.queued + chunk.length > this.maxPending) {
       return false;
     }
-    if (this.pending.length === 0) {
-      this.pending = chunk;
-    } else if (chunk.length > 0) {
-      this.pending = Buffer.concat([this.pending, chunk]);
+    if (chunk.length > 0) {
+      this.queue.push(chunk);
+      this.queued += chunk.length;
     }
     return true;
   }
 
+  // Merges queued chunks into pending with a single concat.
+  _contig(): void {
+    if (this.queued === 0) {
+      return;
+    }
+    if (this.pending.length === 0 && this.queue.length === 1) {
+      this.pending = this.queue[0];
+    } else {
+      const parts: Buffer[] = [this.pending];
+      for (let i = 0; i < this.queue.length; i++) {
+        parts.push(this.queue[i]);
+      }
+      this.pending = Buffer.concat(parts, this.pending.length + this.queued);
+    }
+    this.queue = [];
+    this.queued = 0;
+  }
+
   // Extracts at most one frame. Call in a loop until it returns P_NEED.
   next(): number {
+    if (this.pending.length + this.queued < this.need) {
+      return P_NEED;
+    }
+    this._contig();
     const p = this.pending;
     if (p.length < 2) {
+      this.need = 2;
       return P_NEED;
     }
     const b0 = p[0];
@@ -87,12 +117,14 @@ export class WsParser {
     let len = l7;
     if (l7 === 126) {
       if (p.length < 4) {
+        this.need = 4;
         return P_NEED;
       }
       len = p[2] * 256 + p[3];
       off = 4;
     } else if (l7 === 127) {
       if (p.length < 10) {
+        this.need = 10;
         return P_NEED;
       }
       const hi = p[2] * 16777216 + p[3] * 65536 + p[4] * 256 + p[5];
@@ -108,6 +140,7 @@ export class WsParser {
       return P_ERROR;
     }
     if (p.length < off + 4 + len) {
+      this.need = off + 4 + len;
       return P_NEED;
     }
     const m0 = p[off];
@@ -132,6 +165,7 @@ export class WsParser {
     this.opcode = opcode;
     this.payload = out;
     this.pending = p.subarray(start + len);
+    this.need = 2;
     return P_FRAME;
   }
 }
@@ -174,5 +208,5 @@ export function validCloseCode(code: number): boolean {
   if (code >= 1000 && code <= 1003) {
     return true;
   }
-  return code >= 1007 && code <= 1011;
+  return code >= 1007 && code <= 1014;
 }

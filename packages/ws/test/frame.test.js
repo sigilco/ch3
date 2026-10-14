@@ -163,8 +163,32 @@ test("encodeFrame: 7, 16 and 64-bit headers", () => {
 });
 
 test("validCloseCode", () => {
-  for (const c of [1000, 1001, 1002, 1003, 1007, 1011, 3000, 4999])
+  for (const c of [1000, 1001, 1002, 1003, 1007, 1011, 1012, 1013, 1014, 3000, 4999])
     assert.equal(validCloseCode(c), true, String(c));
-  for (const c of [0, 999, 1004, 1005, 1006, 1012, 1015, 2999, 5000])
+  for (const c of [0, 999, 1004, 1005, 1006, 1015, 2999, 5000])
     assert.equal(validCloseCode(c), false, String(c));
+});
+
+test("feed is linear: a trickled frame concatenates a bounded number of times", () => {
+  const data = Buffer.alloc(20000, 7);
+  const f = clientFrame(2, data);
+  const p = new WsParser(1 << 20, 1 << 21);
+  const orig = Buffer.concat;
+  let calls = 0;
+  Buffer.concat = (...a) => {
+    calls++;
+    return orig.apply(Buffer, a);
+  };
+  let got = null;
+  try {
+    for (let i = 0; i < f.length; i++) {
+      p.feed(f.subarray(i, i + 1));
+      if (p.next() === FRAME) got = p.payload;
+    }
+  } finally {
+    Buffer.concat = orig;
+  }
+  assert.ok(got && got.equals(data));
+  assert.ok(calls <= 4, "concat calls: " + calls);
+  assert.equal(p.queued, 0);
 });

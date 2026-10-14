@@ -4,7 +4,7 @@ import * as http from "node:http";
 import * as net from "node:net";
 import { createHash } from "node:crypto";
 import { createRouter } from "@chttp/router";
-import { WsHandler, WsRouter } from "../dist/esm/index.js";
+import { WsConn, WsHandler, WsRouter } from "../dist/esm/index.js";
 import { clientFrame } from "./helpers.js";
 
 class Rec extends WsHandler {
@@ -319,4 +319,141 @@ test("plain HTTP routes still work with withUpgrade", async () => {
   );
   assert.equal(body, "ok");
   server.close();
+});
+
+test("handler throws are contained: open, message, binary", async () => {
+  class Boom extends WsHandler {
+    constructor(what) {
+      super();
+      this.what = what;
+    }
+    open(c) {
+      if (this.what === "open") throw new Error("boom open");
+    }
+    message(c, d) {
+      if (this.what === "message" && d === "hit") throw new Error("boom message");
+      c.send("echo:" + d);
+    }
+    binary(c, d) {
+      if (this.what === "binary") throw new Error("boom binary");
+      c.sendBinary(d);
+    }
+    close() {}
+  }
+  // open throws -> 1011 close frame, socket dropped, process alive.
+  {
+    const { server, port } = await start(new Boom("open"));
+    const c = await handshake(port, "/echo");
+    await c.waitFrames(1);
+    assert.equal(c.frames()[0].op, 8);
+    assert.equal(c.frames()[0].payload.readUInt16BE(0), 1011);
+    await new Promise((r) => c.s.once("close", r));
+    server.close();
+  }
+  // message throws -> 1011, and a fresh connection still round-trips.
+  {
+    const { server, port } = await start(new Boom("message"));
+    const c = await handshake(port, "/echo");
+    await new Promise((r) => setTimeout(r, 20));
+    c.s.write(clientFrame(1, Buffer.from("hit")));
+    await c.waitFrames(1);
+    assert.equal(c.frames()[0].op, 8);
+    assert.equal(c.frames()[0].payload.readUInt16BE(0), 1011);
+    c.s.on("error", () => {});
+    await new Promise((r) => c.s.once("close", r));
+    const c2 = await handshake(port, "/echo");
+    c2.s.write(clientFrame(1, Buffer.from("alive")));
+    await c2.waitFrames(1);
+    assert.equal(c2.frames()[0].payload.toString(), "echo:alive");
+    c2.s.destroy();
+    server.close();
+  }
+  // binary throws -> 1011.
+  {
+    const { server, port } = await start(new Boom("binary"));
+    const c = await handshake(port, "/echo");
+    await new Promise((r) => setTimeout(r, 20));
+    c.s.write(clientFrame(2, Buffer.from([9])));
+    await c.waitFrames(1);
+    assert.equal(c.frames()[0].op, 8);
+    assert.equal(c.frames()[0].payload.readUInt16BE(0), 1011);
+    c.s.on("error", () => {});
+    await new Promise((r) => c.s.once("close", r));
+    server.close();
+  }
+});
+
+test("handler close() throw does not crash the process", async () => {
+  class BoomClose extends Rec {
+    close() {
+      throw new Error("boom close");
+    }
+  }
+  const { server, port } = await start(new BoomClose());
+  const c = await handshake(port, "/echo");
+  c.s.write(clientFrame(8, Buffer.from([0x03, 0xe8])));
+  await new Promise((r) => c.s.once("close", r));
+  await new Promise((r) => setTimeout(r, 30));
+  // The server survived: a follow-up connection completes a full round trip.
+  const c2 = await handshake(port, "/echo");
+  c2.s.write(clientFrame(1, Buffer.from("still up")));
+  await c2.waitFrames(1);
+  assert.equal(c2.frames()[0].payload.toString(), "echo:still up");
+  c2.s.destroy();
+  server.close();
+});
+
+test("many fragments reassemble into one intact message", async () => {
+  const h = new Rec();
+  const { server, port } = await start(h);
+  const c = await handshake(port, "/echo");
+  const n = 300;
+  let expect = "";
+  for (let i = 0; i < n; i++) {
+    const piece = "p" + (i % 10);
+    expect += piece;
+    c.s.write(clientFrame(i === 0 ? 1 : 0, Buffer.from(piece), { fin: i === n - 1 }));
+  }
+  await c.waitFrames(1);
+  assert.equal(c.frames()[0].payload.toString(), "echo:" + expect);
+  assert.deepEqual(h.events.filter((e) => e[0] === "message"), [["message", expect]]);
+  c.s.destroy();
+  server.close();
+});
+
+test("send backlog cap drops a slow consumer with 1008", async () => {
+  class Flood extends Rec {
+    open(c) {
+      super.open(c);
+      c.send("x".repeat(2000));
+    }
+  }
+  const h = new Flood();
+  const ws = new WsRouter().ws("/echo", h).withMaxBacklog(1000);
+  const app = createRouter();
+  app.withUpgrade(ws);
+  const server = app.serve({ port: 0, host: "127.0.0.1" });
+  server.on("upgrade", app.upgradeHandler());
+  await new Promise((r) => server.once("listening", r));
+  const c = await handshake(server.address().port, "/echo");
+  c.s.on("error", () => {});
+  await new Promise((r) => c.s.once("close", r));
+  const close = h.events.find((e) => e[0] === "close");
+  assert.ok(close, "handler close fired");
+  assert.equal(close[1], 1008);
+  server.close();
+});
+
+test("close reason truncation never splits a multibyte char", async () => {
+  // 122 ASCII bytes then a 3 byte char straddling the 123 byte limit.
+  const reason = "a".repeat(122) + "\u20ac";
+  const sent = [];
+  const fake = { write: (b) => sent.push(b), end() {}, destroy() {} };
+  const conn = new WsConn(fake, "/", [], [], new Rec(), 1024, 2048);
+  conn.close(1000, reason);
+  const payload = sent[0].subarray(2);
+  const text = payload.subarray(2).toString("utf8");
+  assert.ok(payload.length - 2 <= 123);
+  assert.ok(!text.includes("\ufffd"));
+  assert.equal(text, "a".repeat(122));
 });

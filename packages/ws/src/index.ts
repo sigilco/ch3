@@ -51,8 +51,15 @@ export class WsConn {
   _creason: string = "";
   // Fragmented message in progress.
   _fop: number = 0;
-  _fbuf: Buffer = Buffer.alloc(0);
+  // Fragments of the open message, joined by one concat at the final frame.
+  _fchunks: Buffer[] = [];
   _fbytes: number = 0;
+  // Cap on outbound bytes per one second window before a slow consumer is
+  // dropped. scriptc 0.3.1 cannot observe backpressure (writableLength, write()
+  // result and "drain" are refused), so this is a stand-in, as in @chttp/stream.
+  _maxBacklog: number = 4194304;
+  _wbytes: number = 0;
+  _wstart: number = 0;
 
   constructor(
     socket: Socket,
@@ -116,6 +123,19 @@ export class WsConn {
     if (this._state !== 0) {
       return;
     }
+    const now = Date.now();
+    if (now - this._wstart >= 1000) {
+      this._wstart = now;
+      this._wbytes = 0;
+    }
+    this._wbytes += data.length;
+    if (this._wbytes > this._maxBacklog) {
+      // Slow consumer: treat a window flood as a backlog that never flushes, drop it (1008).
+      this._state = 1;
+      this.socket.destroy();
+      this._finish(1008, "");
+      return;
+    }
     this.socket.write(encodeFrame(opcode, data));
   }
 
@@ -124,6 +144,10 @@ export class WsConn {
     let n = r.length;
     if (n > 123) {
       n = 123;
+      // Never split a multibyte char: back up over continuation bytes.
+      while (n > 0 && (r[n] & 192) === 128) {
+        n--;
+      }
     }
     const b = Buffer.alloc(2 + n);
     b[0] = Math.floor(code / 256);
@@ -141,7 +165,13 @@ export class WsConn {
     }
     this._done = true;
     this._state = 1;
-    this._h.close(this, code, reason);
+    // User code: a throw must not take the process down. There is no
+    // protocol reply to make here, so just drop the socket.
+    try {
+      this._h.close(this, code, reason);
+    } catch (e) {
+      this.socket.destroy();
+    }
   }
 
   _onSocketClose(): void {
@@ -150,7 +180,14 @@ export class WsConn {
 
   _start(head: Buffer): void {
     const self: WsConn = this;
-    this._h.open(self);
+    // User code: a throw must not take the process down (1011, socket gone).
+    try {
+      this._h.open(self);
+    } catch (e) {
+      this._fail(1011);
+      this.socket.destroy();
+      return;
+    }
     if (head.length > 0) {
       this._onData(head);
     }
@@ -220,12 +257,12 @@ export class WsConn {
       this._fail(1009);
       return;
     }
-    this._fbuf = Buffer.concat([this._fbuf, payload]);
+    this._fchunks.push(payload);
     if (fin) {
       const op = this._fop;
-      const whole = this._fbuf;
+      const whole = Buffer.concat(this._fchunks, this._fbytes);
       this._fop = 0;
-      this._fbuf = Buffer.alloc(0);
+      this._fchunks = [];
       this._fbytes = 0;
       this._deliver(op, whole);
     }
@@ -238,9 +275,29 @@ export class WsConn {
         this._fail(1007);
         return;
       }
-      this._h.message(this, s);
+      this._safeMessage(s);
     } else {
+      this._safeBinary(data);
+    }
+  }
+
+  // User code: a throw must not take the process down (1011, socket gone).
+  _safeMessage(s: string): void {
+    try {
+      this._h.message(this, s);
+    } catch (e) {
+      this._fail(1011);
+      this.socket.destroy();
+    }
+  }
+
+  // User code: a throw must not take the process down (1011, socket gone).
+  _safeBinary(data: Buffer): void {
+    try {
       this._h.binary(this, data);
+    } catch (e) {
+      this._fail(1011);
+      this.socket.destroy();
     }
   }
 
@@ -305,6 +362,8 @@ export class WsRouter extends UpgradeDispatch {
   maxPayload: number = 1048576;
   // Cap on buffered, not yet parsed bytes per connection.
   maxPending: number = 1048576 + 131072;
+  // Cap on unflushed outbound bytes per connection.
+  maxBacklog: number = 4194304;
   _pats: string[] = [];
   _hs: WsHandler[] = [];
 
@@ -317,6 +376,11 @@ export class WsRouter extends UpgradeDispatch {
   withLimits(maxPayload: number, maxPending: number): WsRouter {
     this.maxPayload = maxPayload;
     this.maxPending = maxPending;
+    return this;
+  }
+
+  withMaxBacklog(maxBacklog: number): WsRouter {
+    this.maxBacklog = maxBacklog;
     return this;
   }
 
@@ -378,6 +442,7 @@ export class WsRouter extends UpgradeDispatch {
       this.maxPayload,
       this.maxPending,
     );
+    conn._maxBacklog = this.maxBacklog;
     socket.on("data", function (d: Buffer): void {
       conn._onData(d);
     });

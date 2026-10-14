@@ -232,6 +232,19 @@ importers:
         specifier: 0.3.1
         version: 0.3.1
 
+  examples/ws-echo:
+    dependencies:
+      '@chttp/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@chttp/ws':
+        specifier: workspace:*
+        version: link:../../packages/ws
+    devDependencies:
+      scriptc:
+        specifier: 0.3.1
+        version: 0.3.1
+
   fixtures/vite-app:
     dependencies:
       '@chttp/router':
