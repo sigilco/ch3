@@ -248,6 +248,51 @@ test("headers set before streamSSE are preserved", async () => {
   srv.close();
 });
 
+test("async callback rejection fires onError and destroys the connection", async () => {
+  let seen = null;
+  const { srv, base } = await serve((app) => {
+    app.onError((err) => {
+      seen = err;
+    });
+    return app.get("/e", (c) =>
+      streamSSE(c, async () => {
+        await wait(10);
+        throw new Error("boom-after-flush");
+      }),
+    );
+  });
+  const r = await fetch(base + "/e");
+  assert.equal(r.status, 200); // headers were flushed before the rejection...
+  await r.text().catch(() => undefined); // ...body cut short by the destroy
+  await wait(30);
+  assert.ok(seen instanceof Error, "onError fired despite sent headers");
+  assert.equal(seen.message, "boom-after-flush");
+  srv.close();
+  srv.closeAllConnections();
+});
+
+test("async callback rejection without onError destroys and the server keeps serving", async () => {
+  const { srv, base } = await serve((app) => {
+    app.get("/ok", (c) => c.text("ok"));
+    return app.get("/e", (c) =>
+      streamSSE(c, async () => {
+        await wait(10);
+        throw new Error("unobserved");
+      }),
+    );
+  });
+  const r = await fetch(base + "/e");
+  assert.equal(r.status, 200);
+  await r.text().catch(() => undefined);
+  await wait(30);
+  // No crash, no unhandled rejection: the router answers the next request.
+  const ok = await fetch(base + "/ok").then((x) => x.status).catch(() => 0);
+  assert.equal(ok, 200);
+  srv.close();
+  srv.closeAllConnections();
+});
+
+
 test("exports SSEStream class", () => {
   assert.equal(typeof SSEStream, "function");
 });
