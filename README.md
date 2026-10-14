@@ -179,10 +179,6 @@ app.post("/order", (c) => {
 - [Route contract](docs/route-contract.md): the generated-dispatch seam
 - Full docs site: https://chttpjs.pages.dev/
 
-## 🤖 Agent skills
-
-Two repo-local skills for coding agents: [`.agents/skills/chttp-app-dev/SKILL.md`](.agents/skills/chttp-app-dev/SKILL.md) for authoring subset-compatible chttp apps, and [`.agents/skills/chttp-integration/SKILL.md`](.agents/skills/chttp-integration/SKILL.md) for wiring chttp and the unplugin pipeline into an existing project.
-
 ## ⚙️ Build & test
 
 ```sh
