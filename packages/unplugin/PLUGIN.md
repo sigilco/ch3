@@ -84,15 +84,14 @@ The plugin never silently produces wrong routes: uncertainty means bail, not gue
 
 ## Options
 
-| Option       | Default                             | Purpose                                                                                                          |
-| ------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `include`    | `['**/*.chttp.ts','**/*.chttp.js']` | Globs (relative to root) marking routes modules                                                                  |
-| `root`       | vite `config.root`, else `cwd()`    | Project root scanned at `buildStart`                                                                             |
-| `appExport`  | auto-detect                         | Exported binding carrying the router (`name` or `'default'`)                                                     |
-| `imports`    | `['chttp']`                         | Extra specifiers treated as chttp imports                                                                        |
-| `importFrom` | `'chttp'`                           | Specifier emitted for `import type { App }` in the gen file                                                      |
-| `parser`     | `'classic'`                         | Parser backend: `'classic'` (tsc API) or `'tsgo'` (experimental, see below)                                      |
-| `openapi`    | `false`                             | Emit `.chttp/routes.openapi.ts` (an OpenAPI 3.1 side channel); `true` or `{ path?, title?, version?, imports? }` |
+| Option       | Default                          | Purpose                                                                     |
+| ------------ | -------------------------------- | --------------------------------------------------------------------------- |
+| `include`    | `['**/*.chttp.ts','**/*.chttp.js']`  | Globs (relative to root) marking routes modules                             |
+| `root`       | vite `config.root`, else `cwd()` | Project root scanned at `buildStart`                                        |
+| `appExport`  | auto-detect                      | Exported binding carrying the router (`name` or `'default'`)                |
+| `imports`    | `['chttp']`                        | Extra specifiers treated as chttp imports                                     |
+| `importFrom` | `'chttp'`                          | Specifier emitted for `import type { App }` in the gen file                 |
+| `parser`     | `'classic'`                      | Parser backend: `'classic'` (tsc API) or `'tsgo'` (experimental, see below) |
 
 ## Experimental: `parser: "tsgo"`
 
@@ -140,18 +139,3 @@ cd fixtures/vite-app && npm run build && node dist/main.js 3100
 ```
 
 The fixture covers: a static-route literal send (`/json`), a param route (`/api/deep/:id`), middleware (`/mwd`), a wildcard (`/files/*`), a bailed non-literal registration (`/dyn` via a runtime variable), POST body buffering (`/echo`), and misses falling through to the runtime path.
-
-## OpenAPI side channel (`openapi: true`)
-
-Setting `openapi` makes the plugin emit a second file next to the gen dispatch: `.chttp/routes.openapi.ts`, exporting `openapiDocument` (OpenAPI 3.1) plus a `chttpRouteTable` passthrough (`{ method, path }[]`).
-It is a plain-TS side channel: the router never imports it, it never enters a scriptc build, and routes.gen.ts is byte-identical with the option on or off.
-Pass an object for `path` (default `routes.openapi.ts`), `title` (default: the routes module basename), `version` (default `1.0.0`), or `imports` (extra module specifiers treated as `@chttp/val`; the package name is always recognized).
-
-A route carries a schema when the extractor can PROVE one, in the handler AST: a `v.parse(schema, ...)` or `v.safeParse(schema, ...)` call where both arguments are statically resolvable.
-The target argument must read the request view on the handler's own context parameter: `c.req.body()` (also wrapped as `JSON.parse(c.req.body())`), `c.req.query(...)`/`c.req.queryAll()`, or `c.req.param(...)`, binding to `requestBody`, query parameters, and path parameters respectively.
-The schema argument must be a `val` factory expression the printer can re-emit: literals, `val.<factory>(...)` calls, or a module-level `const` of one, including consts referencing earlier consts (emitted in declaration order, which is a valid dependency order).
-The emitted module re-declares each proven schema and calls `toOpenApiSchema` from the SAME specifier your routes module imported, so schemas evaluate in your own val graph with the val copy that validates requests.
-Consts named `val`, `toOpenApiSchema`, `openapiDocument`, `chttpRouteTable`, or starting `__chttp` collide with emitter-owned names and are refused: those routes document without a schema.
-
-Anything that cannot be proven (a dynamic schema, a foreign import, a target on another variable) means the route documents WITHOUT its schema, plus a build warning.
-Bail, never guess.

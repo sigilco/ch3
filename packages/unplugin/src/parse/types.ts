@@ -68,11 +68,6 @@ export interface PropertyAccessExpression extends Expression {
   expression: Expression;
   name: MemberName;
 }
-// Regex literals (openapi schema-source printing only — extract.ts itself
-// never reads flags; presence is enough there).
-export interface RegularExpressionLiteral extends Expression {
-  text: string;
-}
 
 // Arrow functions and function expressions share the consumed shape.
 export interface ParameterDeclaration extends Node {
@@ -180,7 +175,6 @@ export interface Parser {
   isFunctionExpression(n: Node): n is FunctionLike;
   isBlock(n: Node): n is Block;
   isReturnStatement(n: Node): n is ReturnStatement;
-  isRegularExpressionLiteral(n: Node): n is RegularExpressionLiteral;
 
   isImportDeclaration(n: Node): n is ImportDeclaration;
   isNamedImports(n: Node): n is NamedImports;

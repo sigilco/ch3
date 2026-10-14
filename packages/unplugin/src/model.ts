@@ -47,53 +47,6 @@ export interface ModuleModel {
   routes: RouteSpec[];
   warnings: string[];
   fatal: string; // non-'': module cannot be lowered (emit stub with this reason)
-  // OpenAPI side channel (openapi: true): per-route schema evidence found in
-  // the handler AST, consumed by openapi.ts when emitting routes.openapi.ts.
-  // Always [] when the openapi option is off — detection never runs.
-  openapi: RouteOpenApi[];
-  // Detection warnings surfaced only when openapi emit runs (a route whose
-  // val schema could not be proven is documented without it, warned, never
-  // guessed). Kept separate from `warnings` so route lowering output stays
-  // byte-identical with and without the option.
-  openapiWarnings: string[];
-  // Every module-level const the extractor proved printable, in declaration
-  // order (empty when the openapi option is off). Evidence `deps` name into
-  // this table; the emitter emits only the closure actually referenced.
-  openapiConsts: OpenApiConst[];
-}
-
-// Where a `v.parse(schema, <request view>)` call inside a handler binds.
-// Exactly one of body/query/params per detected call; a route may show more
-// than one.
-export type OpenApiTarget = "body" | "query" | "params";
-
-// A module-level const the extractor proved to be a printable val schema
-// expression. Emitted once per routes.openapi.ts (deduped by usage), in
-// declaration order — which is a valid dependency order, since a same-file
-// const can only reference consts declared before it (TDZ).
-export interface OpenApiConst {
-  name: string; // source-level const name
-  emitted: string; // collision-proof emitted local name (see openapi.ts)
-  src: string; // initializer printed as TS source, emitted verbatim
-  deps: string[]; // source names of consts this initializer references
-}
-
-export interface RouteOpenApi {
-  method: string; // route method, '*' for app.all
-  path: string; // canonical registration pattern e.g. '/user/:id'
-  target: OpenApiTarget;
-  // Specifier the routes module used for '@chttp/val' ('@chttp/val', a
-  // workspace-relative source path, ...). The emitted openapi module imports
-  // toOpenApiSchema through the SAME specifier, so both stay one graph.
-  valSpecifier: string;
-  // Printable TS source text of the schema expression — a re-declaration of
-  // the val factory calls the extractor proved, or null when this entry only
-  // proves the val import (bail evidence, never emitted as a schema).
-  schemaSrc: string | null;
-  // Full dependency closure of schemaSrc over module-level schema consts
-  // (source names). The emitter declares each of these, once, before the
-  // schema that references them; openapiConsts supplies name/src/deps.
-  deps: string[];
 }
 
 export const ROUTE_METHODS: { [k: string]: string } = {

@@ -27,7 +27,6 @@ import type {
   PrefixUnaryExpression,
   PropertyAccessExpression,
   PropertyAssignment,
-  RegularExpressionLiteral,
   ReturnStatement,
   Statement,
   StringLiteral,
@@ -111,9 +110,6 @@ export class ClassicParser implements Parser {
   }
   isReturnStatement(n: Node): n is ReturnStatement {
     return ts.isReturnStatement(n as unknown as ts.Node);
-  }
-  isRegularExpressionLiteral(n: Node): n is RegularExpressionLiteral {
-    return ts.isRegularExpressionLiteral(n as unknown as ts.Node);
   }
 
   isImportDeclaration(n: Node): n is ImportDeclaration {

@@ -53,7 +53,6 @@ import type {
   PrefixUnaryExpression,
   PropertyAccessExpression,
   PropertyAssignment,
-  RegularExpressionLiteral,
   ReturnStatement,
   Statement,
   StringLiteral,
@@ -82,7 +81,6 @@ interface TsgoSyntaxKind {
   FunctionExpression: number;
   Block: number;
   ReturnStatement: number;
-  RegularExpressionLiteral: number;
   ImportDeclaration: number;
   NamedImports: number;
   NamespaceImport: number;
@@ -269,9 +267,6 @@ export class TsgoParser implements Parser {
   }
   isReturnStatement(n: Node): n is ReturnStatement {
     return this.is("ReturnStatement", n);
-  }
-  isRegularExpressionLiteral(n: Node): n is RegularExpressionLiteral {
-    return this.is("RegularExpressionLiteral", n);
   }
 
   isImportDeclaration(n: Node): n is ImportDeclaration {

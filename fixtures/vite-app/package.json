@@ -9,8 +9,7 @@
     "start:runtime": "node src/runtime.ts"
   },
   "dependencies": {
-    "@chttp/router": "workspace:*",
-    "@chttp/val": "workspace:*"
+    "@chttp/router": "workspace:*"
   },
   "devDependencies": {
     "@chttp/unplugin": "workspace:*",

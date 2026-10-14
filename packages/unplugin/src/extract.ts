@@ -10,17 +10,16 @@ import type { AstSource, CallExpression, Expression, Node, Parser } from "./pars
 import { getParser } from "./parse/index.ts";
 import type { ModuleModel, RouteSpec, SegSpec, StaticSend } from "./model.ts";
 import { ROUTE_METHODS } from "./model.ts";
-import { detectOpenApi } from "./openapi.ts";
 
 export interface ExtractOptions {
+  // Exported binding carrying the router instance: a name, or 'default'.
   appExport?: string;
+  // Extra module specifiers to treat as chttp imports (default
+  // ['@chttp/router'] plus '<pkg>/*' subpaths).
   imports?: string[];
+  // Parser backend name; resolved through the registry in ./parse/.
+  // Default 'classic'. 'tsgo' is experimental.
   parser?: string;
-  // OpenAPI side channel: collect val schema evidence per route (emitted
-  // separately by openapi.ts; never touches the gen module). The value is
-  // the list of module specifiers treated as '@chttp/val' (source-path
-  // imports included), empty/undefined = detection off.
-  openapiValSpecifiers?: string[];
 }
 
 interface PendingRoute {
@@ -394,9 +393,6 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
     routes: [],
     warnings: warnings,
     fatal: "",
-    openapi: [],
-    openapiWarnings: [],
-    openapiConsts: [],
   };
   const sf: AstSource = p.parse(fileName, code);
   const line = (n: Node): number => sf.lineOf(n);
@@ -866,11 +862,6 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
       r.emit = false;
       r.bailReason = "registration order is uncertain past this point";
     }
-  }
-
-  // OpenAPI evidence collection (side channel; off unless configured).
-  if (opts?.openapiValSpecifiers !== undefined && opts.openapiValSpecifiers.length > 0) {
-    detectOpenApi(p, model, sf, { valSpecifiers: opts.openapiValSpecifiers });
   }
 
   return model;
