@@ -208,5 +208,5 @@ export function validCloseCode(code: number): boolean {
   if (code >= 1000 && code <= 1003) {
     return true;
   }
-  return code >= 1007 && code <= 1011;
+  return code >= 1007 && code <= 1014;
 }
