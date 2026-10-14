@@ -1,6 +1,6 @@
 # Architecture
 
-chttp is authored inside the **scriptc compilable subset**: the whole package lowers statically into a native ELF via `scriptc build --npm-static @chttp/router` with zero deferred sites (100% static coverage on scriptc 0.3.0).
+chttp is authored inside the **scriptc compilable subset**: the whole package lowers statically into a native ELF via `scriptc build --npm-static @chttp/router` with zero deferred sites (100% static coverage on scriptc 0.3.1).
 
 The full document lives in the repo: [ARCHITECTURE.md](https://github.com/sigilco/chttp/blob/main/ARCHITECTURE.md).
 
