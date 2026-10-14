@@ -5,6 +5,7 @@ packages:
   - examples/ws-echo
   - examples/rate-limit
   - examples/backpressure
+  - examples/integrations/*
   - bench
   - fixtures/*
 allowBuilds:
