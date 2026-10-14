@@ -9,7 +9,7 @@ The package is authored inside the **scriptc compilable subset**
 ([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
 native-ELF compiler): the same source lowers statically into a single
 binary via `scriptc build --npm-static @chttp/router` with zero deferred sites
-(100% static coverage, scriptc 0.3.1).
+(100% static coverage).
 
 ## 🚀 Quick start
 
