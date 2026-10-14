@@ -1,0 +1,56 @@
+{
+  "name": "@chttp/ws",
+  "version": "0.1.0",
+  "description": "Minimal WebSocket router for @chttp/router, authored inside the scriptc compilable subset",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sigilco/chttp.git",
+    "directory": "packages/ws"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "main": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js"
+    },
+    "./src/index.ts": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/frame.test.js test/ws.test.js"
+  },
+  "peerDependencies": {
+    "@chttp/router": "^0.1.0"
+  },
+  "devDependencies": {
+    "@chttp/router": "workspace:^",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "author": "Joaquin Terrasa & contributors",
+  "keywords": [
+    "websocket",
+    "ws",
+    "rfc6455",
+    "router",
+    "scriptc",
+    "native"
+  ],
+  "homepage": "https://github.com/sigilco/chttp/tree/main/packages/ws#readme",
+  "bugs": {
+    "url": "https://github.com/sigilco/chttp/issues"
+  },
+  "sideEffects": false
+}

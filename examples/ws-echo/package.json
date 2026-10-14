@@ -1,0 +1,19 @@
+{
+  "name": "chttp-example-ws-echo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "build": "node scripts/vendor.mjs && scriptc build src/main.ts -o app",
+    "start": "./app",
+    "start:node": "node scripts/vendor.mjs && node --experimental-strip-types src/main.ts"
+  },
+  "dependencies": {
+    "@chttp/router": "0.1.0",
+    "@chttp/ws": "0.1.0"
+  },
+  "devDependencies": {
+    "scriptc": "0.3.1"
+  }
+}

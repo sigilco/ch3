@@ -290,6 +290,18 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  packages/ws:
+    devDependencies:
+      '@chttp/router':
+        specifier: workspace:^
+        version: link:../router
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
 packages:
 
   '@assemblyscript/loader@0.19.23':

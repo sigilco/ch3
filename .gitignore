@@ -13,3 +13,4 @@ examples/*/app
 examples/*/dist/
 examples/*/main.ll
 !examples/env/
+examples/*/.vendor/
