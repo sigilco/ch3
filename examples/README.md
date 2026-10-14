@@ -12,6 +12,7 @@ Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i
 | `ws-echo` | `@chttp/ws` echo and `:param` room, vendored into one source graph for `scriptc build` |
 | `vite-elf` | Vite + `unplugin-scriptc` bundler pipeline |
 | `vite-lowering` | Vite + `@chttp/unplugin` build-time route lowering, JS dist |
+| `elf-roundtrip` | Native ELF server (`scriptc build`) + typed client (`@chttp/unplugin` `client: true`) sharing one routes module |
 | `deploy-docker` | Multi-stage Dockerfile: scriptc build in alpine, `FROM scratch` runtime (~1.2 MB image) |
 
 ```sh

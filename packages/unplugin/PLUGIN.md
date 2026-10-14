@@ -93,6 +93,7 @@ The plugin never silently produces wrong routes: uncertainty means bail, not gue
 | `importFrom` | `'chttp'`                           | Specifier emitted for `import type { App }` in the gen file                                                      |
 | `parser`     | `'classic'`                         | Parser backend: `'classic'` (tsc API) or `'tsgo'` (experimental, see below)                                      |
 | `openapi`    | `false`                             | Emit `.chttp/routes.openapi.ts` (an OpenAPI 3.1 side channel); `true` or `{ path?, title?, version?, imports? }` |
+| `client`     | `false`                             | Emit `.chttp/routes.client.ts` (a typed fetch side channel); `true` or `{ path?, fetch? }`. Forces `openapi` on. |
 
 ## Experimental: `parser: "tsgo"`
 
@@ -155,3 +156,58 @@ Consts named `val`, `toOpenApiSchema`, `openapiDocument`, `chttpRouteTable`, or 
 
 Anything that cannot be proven (a dynamic schema, a foreign import, a target on another variable) means the route documents WITHOUT its schema, plus a build warning.
 Bail, never guess.
+
+## Typed client side channel (`client: true`)
+
+Setting `client` makes the plugin emit a second side-channel module next to the openapi one: `.chttp/routes.client.ts`, exporting `createClient(opts)`.
+Like the openapi module it is plain TS, the router never imports it, and routes.gen.ts is byte-identical with the option on or off.
+`client: true` (or a `ClientOptions` object) forces `openapi` on: the client types off the openapi sibling's `chttpRouteTable`. Setting both flags to explicit off+on surfaces a startup warning and emits nothing for the client.
+
+A `ClientOptions` object accepts `path` (default `routes.client.ts`) and `fetch` (default `globalThis.fetch` at runtime, not at plugin time; the `fetch` value is NOT embedded, the runtime reads `opts.fetch ?? globalThis.fetch`).
+
+Usage:
+
+```ts
+// src/client.ts
+import { createClient } from "./.chttp/routes.client.ts";
+
+export const api = createClient({ baseUrl: "http://localhost:3000" });
+
+const user = await api.get("/user/:id", { params: { id: "42" } });
+//    ^? { id: string }
+
+await api.post("/echo", { body: { hello: "world" } });
+```
+
+The verb methods (`get`, `post`, `put`, `patch`, `delete`, `all`) are keyed by bare path. Each method's call site narrows on the `Path` type union: a typo in the path or an unsupported method is a type error. Path params follow the `:name` shape your route registered; `params` substitutes them and URL-encodes the rest. `query` becomes a query string (every value is encoded). `body` is JSON-serialized; `body: string` sends as text. `headers` are merged with defaults (Content-Type: application/json when `body` is an object). A non-2xx response throws a `ChttpClientError extends Error { status: number, body: unknown }`; on `application/json` the body is parsed once.
+
+### What gets typed, what stays `unknown`
+
+Bail, never guess: a route's response type is only inferred when the extractor can prove it.
+
+Typed response:
+
+- Handler is a single-statement block body matching a literal send chain (`c.json(literal)`, `c.text(literal)`, `c.html(literal)`, `c.status(N).json(literal)`, `c.redirect(literal)`).
+- The literal is a static value the printer can re-emit as a TS type expression (object/array/string/number/boolean literals).
+- The handler does NOT read `c.req.param(...)`, `c.req.body(...)`, `c.req.query(...)`, or `c.req.queryAll(...)`.
+
+Typed `unknown` (still emitted, with a build warning):
+
+- Multi-statement handlers (`v.parse()` then `return c.json()`) where the inner literal is provable but the surrounding control flow is not, so the result type falls back to `unknown`.
+- Any handler that reads `c.req.param/body/query/queryAll`, even if it also returns a literal.
+- Any handler that does not match a literal send chain (e.g. conditional, calls a non-send method).
+
+Excluded entirely (not even `unknown`):
+
+- Routes where the handler index cannot be proven (the openapi table would not be length-stable).
+- `app.all` with a path other than `'*'`; wildcard literals are routed into `AnyRoutes`.
+
+`app.all('*', ...)` is the special case: it becomes a top-level `any(path, opts)` method on the client. Anything else (`app.all('/literal', ...)`) goes through the regular path registration.
+
+A `getAny` / `postAny` / `any` method exists for the wildcard case: `client.any('/healthz')` is the typed call for an `app.all('*', ...)` route.
+
+### Re-exporting `chttpRouteTable`
+
+The client module re-exports `chttpRouteTable` from the openapi sibling, plus a runtime `routes` array holding the same data. Both are length-pinned at build time: the client module's pinned count is exported as `_chttpRouteCount`, and any divergence from the openapi table is a startup error. This guards against drift if someone hand-edits one of the generated files.
+
+The typed client never depends on a runtime library: `ChttpClientError` is declared inline in the generated module, and `fetch` resolution is `globalThis.fetch ?? opts.fetch`. The whole thing is roughly 150-200 lines of plain TS, runs anywhere the openapi module does, and never enters a scriptc build.

@@ -94,3 +94,33 @@ Schemas come from `@chttp/val` and are attached only when the extractor can prov
 The emitted module does not embed JSON. It re-declares each proven schema as TS source and calls `toOpenApiSchema` from the same specifier your routes module used, so schemas evaluate at import time in your own val graph, with the val copy that actually validates requests.
 
 What cannot be proven (a schema built dynamically, a target read off another variable, a foreign import) is never guessed: the route documents without its schema and the build warns. See the "OpenAPI side channel" section of [PLUGIN.md](https://github.com/sigilco/chttp/blob/main/packages/unplugin/PLUGIN.md) for the full detection rules and the `path` / `title` / `version` / `imports` sub-options.
+
+## Typed client side channel
+
+With `client: true` in the plugin options, the plugin writes a third generated file, `.chttp/routes.client.ts`, exporting a `createClient(opts)` factory whose verb methods (`get`, `post`, `put`, `patch`, `delete`, `all`) are typed against the route table. Like the OpenAPI side channel, the router never imports it, it never enters a scriptc build, and `routes.gen.ts` is byte-identical with the option on or off. Default is off. Setting `client: true` forces `openapi` on (the client re-exports the openapi sibling's `chttpRouteTable`).
+
+Pass an object for `path` (default `routes.client.ts`) or `fetch` (the default fetch implementation, default `globalThis.fetch`; the value is never embedded in the gen output, only mirrored in the `createClient` default).
+
+Usage:
+
+```ts
+// src/client.ts
+import { createClient } from "./.chttp/routes.client.ts";
+
+export const api = createClient({ baseUrl: "http://localhost:3000" });
+
+const user = await api.get("/user/:id", { params: { id: "42" } });
+//    ^? { id: string }
+
+await api.post("/echo", { body: { hello: "world" } });
+```
+
+Path params substitute at the `:name` position and the remaining path segments are URL-encoded. `query` becomes a query string. `body` is JSON-serialized when given an object. A non-2xx response throws a `ChttpClientError extends Error { status, body }`; the body is parsed as JSON if the response Content-Type says so. There is no runtime library: `ChttpClientError` is declared inline in the generated module, and `fetch` resolution is `opts.fetch ?? globalThis.fetch`.
+
+Bail, never guess: a route's response type is only inferred when the extractor can prove it. The rules are the same as the openapi table's, plus a "no body/param/query reads" guard:
+
+- Typed response: single-statement literal-send handlers like `(c) => c.json({...})` with no `c.req.param/body/query/queryAll` reads.
+- `unknown` (still emitted, with a build warning): multi-statement handlers, or any handler that reads from the request view, or handlers that do not match a literal send chain.
+- Excluded entirely: routes where the handler index cannot be proven. `app.all('*', ...)` becomes a top-level `any(path, opts)` method on the client.
+
+See the "Typed client side channel" section of [PLUGIN.md](https://github.com/sigilco/chttp/blob/main/packages/unplugin/PLUGIN.md) for the full detection rules and the `path` / `fetch` sub-options.
