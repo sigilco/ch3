@@ -55,6 +55,10 @@
     {
      "title": "Validation",
      "route": "validation"
+    },
+    {
+     "title": "WebSocket",
+     "route": "websocket"
     }
    ]
   }
