@@ -10,8 +10,8 @@
     "start:node": "node scripts/vendor.mjs && node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@chttp/router": "0.1.0",
-    "@chttp/ws": "0.1.0"
+    "@chttp/router": "workspace:*",
+    "@chttp/ws": "workspace:*"
   },
   "devDependencies": {
     "scriptc": "0.3.1"
