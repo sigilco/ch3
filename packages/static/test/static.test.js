@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { createHash, randomBytes } from "node:crypto";
-import { mkdtempSync, mkdirSync, writeFileSync, utimesSync } from "node:fs";
+import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRouter } from "@chttp/router";
@@ -255,3 +255,33 @@ test("isHashedName / mimeFor", () => {
   assert.equal(mimeFor("Makefile"), "application/octet-stream");
   assert.equal(mimeFor("x.constructor"), "application/octet-stream");
 });
+
+// A file strictly outside the root for the symlink containment tests.
+const outside = join(root, "..", "chttp-static-secret-outside.txt");
+writeFileSync(outside, "OUTSIDE-SECRET");
+
+try {
+  symlinkSync(outside, join(root, "escape.txt"));
+  symlinkSync(join(root, "app.js"), join(root, "inner.txt"));
+  ctx.symlinks = true;
+} catch (_e) {
+  // Filesystem refuses symlinks; the containment tests skip below.
+}
+
+test("symlink escaping the webroot is not served (404)", { skip: !ctx.symlinks }, async () => {
+  const r = await req(ctx.main.port, "/escape.txt");
+  assert.equal(r.status, 404);
+  assert.ok(!r.body.toString().includes("OUTSIDE-SECRET"));
+  // And through the source directly, encoded variants included.
+  const d = new DiskAssets(root);
+  assert.equal(d.get("escape.txt"), null);
+  assert.equal(d.get("docs/../escape.txt"), null);
+});
+
+test("symlink staying inside the webroot still serves", { skip: !ctx.symlinks }, async () => {
+  const r = await req(ctx.main.port, "/inner.txt");
+  assert.equal(r.status, 200);
+  // inner.txt links to app.js, so it serves whatever app.js holds now.
+  assert.equal(r.body.toString(), (await req(ctx.main.port, "/app.js")).body.toString());
+});
+

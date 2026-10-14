@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, realpathSync, statSync } from "node:fs";
 import type { Stats } from "node:fs";
 import { AssetSource, isHashedName } from "./asset.ts";
 import type { Asset, AssetVariant } from "./asset.ts";
@@ -16,6 +16,11 @@ function unsafe(path: string): boolean {
     return true;
   }
   if (path.indexOf("\\") !== -1 || path.indexOf("\0") !== -1) {
+    return true;
+  }
+  // Drive-letter and colon-bearing tails ("C:/foo") never name a root-
+  // relative asset on any platform serveStatic documents.
+  if (path.indexOf(":") !== -1) {
     return true;
   }
   const segs = path.split("/");
@@ -35,6 +40,11 @@ function unsafe(path: string): boolean {
 // prototype.
 export class DiskAssets extends AssetSource {
   root: string;
+  // The root as the filesystem really sees it (symlinks resolved), cached
+  // once. Containment compares resolved request paths against this, not
+  // against the configured root: on macOS /tmp is a symlink, so a prefix
+  // check against the configured path would reject everything.
+  rroot: string;
   _idx: { [k: string]: number };
   _assets: Asset[];
   _mtimes: number[];
@@ -46,6 +56,13 @@ export class DiskAssets extends AssetSource {
       root.length > 1 && root.charAt(root.length - 1) === "/"
         ? root.slice(0, root.length - 1)
         : root;
+    this.rroot = "";
+    try {
+      this.rroot = realpathSync(this.root);
+    } catch (_e) {
+      // Root may not exist yet; resolved again on the first request that
+      // finds it.
+    }
     this._idx = {};
     this._assets = [];
     this._mtimes = [];
@@ -56,10 +73,25 @@ export class DiskAssets extends AssetSource {
     if (unsafe(path)) {
       return null;
     }
+    if (this.rroot === "") {
+      try {
+        this.rroot = realpathSync(this.root);
+      } catch (_e) {
+        return null;
+      }
+    }
     const full = this.root + "/" + path;
     let st: Stats;
     try {
-      st = statSync(full);
+      // Resolve first: statSync follows symlinks, so a link to a file
+      // outside the root would otherwise be served. The resolved path must
+      // stay under the resolved root. (The root itself is a directory, so
+      // requiring the "/"-suffixed prefix cannot exclude a real asset.)
+      const real = realpathSync(full);
+      if (!real.startsWith(this.rroot + "/")) {
+        return null;
+      }
+      st = statSync(real);
     } catch (_e) {
       return null;
     }
