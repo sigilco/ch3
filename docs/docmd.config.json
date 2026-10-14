@@ -8,53 +8,24 @@
  },
  "sidebar": [
   {
-   "title": "Quickstart",
+   "title": "Concepts",
    "pages": [
     {
-     "title": "Introduction",
+     "title": "What is chttp",
      "route": "index"
-    },
-    {
-     "title": "Routing",
-     "route": "routing"
-    },
-    {
-     "title": "Middleware",
-     "route": "middleware"
-    },
-    {
-     "title": "Errors",
-     "route": "errors"
-    },
-    {
-     "title": "Static Files",
-     "route": "static"
-    },
-    {
-     "title": "Streaming",
-     "route": "streaming"
     }
    ]
   },
   {
-   "title": "Build-Time",
+   "title": "Getting Started",
    "pages": [
     {
-     "title": "Unplugin",
-     "route": "unplugin"
+     "title": "Quickstart",
+     "route": "quickstart"
     },
     {
-     "title": "Route Contract",
-     "route": "route-contract"
-    }
-   ]
-  },
-  {
-   "title": "Advanced",
-   "pages": [
-    {
-     "title": "Architecture",
-     "route": "architecture"
+     "title": "Run targets",
+     "route": "targets"
     },
     {
      "title": "Deploy",
@@ -63,18 +34,79 @@
     {
      "title": "Benchmarks",
      "route": "benchmarks"
+    }
+   ]
+  },
+  {
+   "title": "API",
+   "pages": [
+    {
+     "title": "Routing",
+     "route": "routing"
     },
     {
-     "title": "Validation",
-     "route": "validation"
+     "title": "Context",
+     "route": "context"
+    },
+    {
+     "title": "Errors",
+     "route": "errors"
+    }
+   ]
+  },
+  {
+   "title": "Guides",
+   "pages": [
+    {
+     "title": "Examples",
+     "route": "examples"
+    }
+   ]
+  },
+  {
+   "title": "Helpers",
+   "pages": [
+    {
+     "title": "Static files",
+     "route": "static"
+    },
+    {
+     "title": "Streaming and SSE",
+     "route": "streaming"
     },
     {
      "title": "WebSocket",
      "route": "websocket"
     },
     {
+     "title": "Validation",
+     "route": "validation"
+    },
+    {
      "title": "HTML rendering",
      "route": "html"
+    },
+    {
+     "title": "Route lowering plugin",
+     "route": "unplugin"
+    }
+   ]
+  },
+  {
+   "title": "Middleware",
+   "pages": [
+    {
+     "title": "Middleware",
+     "route": "middleware"
+    }
+   ]
+  },
+  {
+   "title": "Coding Agents",
+   "pages": [
+    {
+     "title": "Coding agents",
+     "route": "architecture"
     }
    ]
   }

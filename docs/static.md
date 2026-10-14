@@ -58,5 +58,3 @@ Hashed filenames are detected by name: the last `-` or `.` separated token of th
 The package is covered at 100% by `scriptc coverage packages/static/gate.ts`, and `scriptc build` produces a binary that serves images byte for byte (sha256 verified through curl). Two subset notes from authoring it: reading a missing key from a string-keyed record throws in a native binary, so presence is tested with `in` and keys are prefixed to avoid prototype names; and `httpDate()` is hand-rolled from the `getUTC*` getters until `toUTCString` lowers.
 
 Not included: range requests, `If-Modified-Since`, ISR caching.
-
-Next: [Architecture](architecture.md).
