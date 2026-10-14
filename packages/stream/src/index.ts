@@ -6,6 +6,7 @@
 // never answers a 500 for a handler that wrote nothing synchronously, and a
 // promise returned by the callback flows into the router's settleChain.
 import type { ServerResponse } from "node:http";
+import type { Socket } from "node:net";
 import type { Ctx } from "@chttp/router/src/index.ts";
 
 // UTF-8 byte length of s (surrogate pairs count 4, lone surrogates 3).
@@ -141,6 +142,7 @@ export class ChunkStream {
     this._fired = true;
     this.closed = true;
     const fns = this._abortFns;
+    this._abortFns = [];
     for (let i = 0; i < fns.length; i++) {
       fns[i]();
     }
@@ -170,9 +172,11 @@ export class SSEStream extends ChunkStream {
     return this.write(prefixLines(": ", String(text)) + "\n");
   }
 
-  // Asks the client to wait ms before reconnecting.
+  // Asks the client to wait ms before reconnecting. Non-numeric and negative
+  // values clamp to 0 so the field can never carry garbage.
   retry(ms: number): boolean {
-    return this.write("retry: " + String(Math.floor(Number(ms))) + "\n\n");
+    const v = Math.max(0, Math.floor(Number(ms) || 0));
+    return this.write("retry: " + String(v) + "\n\n");
   }
 }
 
@@ -206,12 +210,30 @@ function open(c: Ctx, contentType: string, extra: string): ServerResponse {
 // Starts a text/event-stream response and returns fn(stream). A promise
 // returned by fn is awaited by the router; a sync return leaves the response
 // open until the stream is closed or the client leaves.
-export function streamSSE(c: Ctx, fn: (s: SSEStream) => unknown): unknown {
-  const res = open(c, "text/event-stream; charset=utf-8", "sse");
-  const s = new SSEStream(res);
+// Wires the stream lifecycle to the response. "close" covers the normal end
+// of the connection in both directions; the raw socket's "error" covers an
+// abrupt failure (reset mid-stream) which would otherwise throw as an
+// unhandled EventEmitter error. Both funnel into _onClose, which is
+// idempotent. scriptc 0.3.1 whitelists only "close" and "finish" on
+// ServerResponse itself, so the error listener goes on the socket (same
+// surface packages/ws uses).
+function wire(res: ServerResponse, s: ChunkStream): void {
   res.on("close", () => {
     s._onClose();
   });
+  const sk: Socket | null = res.socket;
+  if (sk !== null) {
+    sk.on("error", function (): void {
+      s._onClose();
+      sk.destroy();
+    });
+  }
+}
+
+export function streamSSE(c: Ctx, fn: (s: SSEStream) => unknown): unknown {
+  const res = open(c, "text/event-stream; charset=utf-8", "sse");
+  const s = new SSEStream(res);
+  wire(res, s);
   return fn(s);
 }
 
@@ -219,8 +241,6 @@ export function streamSSE(c: Ctx, fn: (s: SSEStream) => unknown): unknown {
 export function streamText(c: Ctx, fn: (s: TextStream) => unknown): unknown {
   const res = open(c, "text/plain; charset=utf-8", "text");
   const s = new TextStream(res);
-  res.on("close", () => {
-    s._onClose();
-  });
+  wire(res, s);
   return fn(s);
 }
