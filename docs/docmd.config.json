@@ -75,6 +75,10 @@
     {
      "title": "HTML rendering",
      "route": "html"
+    },
+    {
+     "title": "Roadmap",
+     "route": "roadmap"
     }
    ]
   }
