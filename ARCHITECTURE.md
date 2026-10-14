@@ -91,7 +91,7 @@ chttp's source is written inside the scriptc-compilable subset so `scriptc build
 - No function values inside records: handlers and middleware snapshots live in parallel arrays on the `App` class, and trie nodes store numeric indices. Function-typed record fields degrade instantiation to `unknown` and fence every call site.
 - No recursion for matching: `matchPath` and `mountRoutes` use explicit frame stacks, because recursive calls monomorphize an `unknown` instantiation.
 - `String(x)` / `Number(x)` coercion at function entry for parameters that arrive `unknown`.
-- Bodies are read with `req.on('data' | 'end')` plus string concatenation. `Buffer.concat` is not lowered.
+- Bodies are read with `req.on('data' | 'end')` plus string concatenation. `Buffer.concat(Buffer[])` does lower as of scriptc 0.3.1.
 
 The `GenDispatch` seam (`packages/router/src/gen.ts`) is a base class whose default `dispatch` returns `false`. The unplugin emits a `class CompiledRoutes extends GenDispatch` from the extracted route table and the app registers it with `app.withDispatch(...)`. `_dispatch` offers every request to that module first, so generated code can dispatch literal routes directly (seeding pre-materialized param pairs via `ReqView._seedPm`) and bypass the general trie entirely. The unplugin is delibera...
 
