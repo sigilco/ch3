@@ -1,5 +1,5 @@
-// Unit tests for @ch3/val — runs on the tsc build (node --test).
-// The same src compiles to ELF via scriptc; see bench/apps/ch3-val.ts.
+// Unit tests for @chttp/val — runs on the tsc build (node --test).
+// The same src compiles to ELF via scriptc; see bench/apps/chttp-val.ts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as v from "../dist/esm/index.js";

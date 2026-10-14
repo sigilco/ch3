@@ -1,5 +1,5 @@
 {
-  "name": "ch3-example-vite-elf",
+  "name": "chttp-example-vite-elf",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,11 +8,11 @@
     "start": "./dist/app"
   },
   "dependencies": {
-    "ch3": "0.1.0"
+    "@chttp/router": "0.1.0"
   },
   "devDependencies": {
     "unplugin-scriptc": "0.1.0",
-    "scriptc": "0.3.0",
+    "scriptc": "0.3.1",
     "vite": "^7.0.0"
   }
 }

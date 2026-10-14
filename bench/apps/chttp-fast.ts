@@ -1,4 +1,4 @@
-// ch3 compiled-mode bench app — canonical routes + a hand-written
+// chttp compiled-mode bench app — canonical routes + a hand-written
 // generated dispatch module (what the Vite/unplugin transform will emit,
 // per docs/route-contract.md). The same handler functions back both the
 // registered table and the generated matcher.
@@ -10,7 +10,7 @@ import {
   dec,
   _guard,
   _buffer,
-} from "../../packages/ch3/src/index.ts";
+} from "../../packages/router/src/index.ts";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { MIXED_STATIC, MIXED_PARAM, MIXED_WILD } from "./common.mjs";
 

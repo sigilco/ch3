@@ -1,5 +1,5 @@
 {
-  "name": "ch3-example-hello",
+  "name": "chttp-example-hello",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,9 +9,9 @@
     "start:node": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "ch3": "0.1.0"
+    "@chttp/router": "0.1.0"
   },
   "devDependencies": {
-    "scriptc": "0.3.0"
+    "scriptc": "0.3.1"
   }
 }

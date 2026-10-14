@@ -1,4 +1,4 @@
-// ch3 — minimal HTTP router for node:http, async-first.
+// chttp — minimal HTTP router for node:http, async-first.
 // Authored inside the scriptc compilable subset so `scriptc build` can
 // statically lower the whole package into a native binary:
 //   - handlers may return a Promise; sync handlers keep a zero-tick fast
@@ -380,7 +380,7 @@ function addRoute(nodes: RouteNode[], method: string, path: string, hIdx: number
   const m = String(method);
   const p = String(path);
   if (p === "" || p.charAt(0) !== "/") {
-    throw new Error("ch3: route path must start with /");
+    throw new Error("chttp: route path must start with /");
   }
   const segs = p.split("/");
   let ni = 0;
@@ -390,13 +390,13 @@ function addRoute(nodes: RouteNode[], method: string, path: string, hIdx: number
     if (seg === "*") {
       kind = 2;
       if (i !== segs.length - 1) {
-        throw new Error("ch3: * wildcard must be the last path segment");
+        throw new Error("chttp: * wildcard must be the last path segment");
       }
     } else if (seg.charAt(0) === ":") {
       kind = 1;
       seg = String(seg.slice(1));
       if (seg === "") {
-        throw new Error("ch3: empty :param name in " + p);
+        throw new Error("chttp: empty :param name in " + p);
       }
     }
     let child = -1;
@@ -949,11 +949,11 @@ export class App {
     const stamped = d.ROUTE_CONTRACT_VERSION;
     if (typeof stamped === "number" && stamped !== ROUTE_CONTRACT_VERSION) {
       throw new Error(
-        "ch3: route contract version mismatch — dispatch was generated against contract v" +
+        "chttp: route contract version mismatch — dispatch was generated against contract v" +
           String(stamped) +
           ", runtime implements v" +
           String(ROUTE_CONTRACT_VERSION) +
-          ". Regenerate .ch3/*.gen.ts (upgrade @ch3/unplugin to match ch3) or align ch3.",
+          ". Regenerate .chttp/*.gen.ts (upgrade @chttp/unplugin to match chttp) or align chttp.",
       );
     }
     const g = d;

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Dev/build impact of @ch3/unplugin in a real vite app.
+// Dev/build impact of @chttp/unplugin in a real vite app.
 //
 // Three measurements, each with the plugin ON vs OFF (toggle via
-// CH3_PLUGIN_OFF=1 read by the bench-local vite config wrapper
+// CHTTP_PLUGIN_OFF=1 read by the bench-local vite config wrapper
 // vite.bench.config.ts, which imports the fixture's real config):
 //
 //   (i)   build   — `vite build` wall time (spawn → exit), median of 5.
 //   (ii)  dev     — `vite dev` startup: spawn → first HTTP 200 on /json.
-//   (iii) watch   — dev server up, append a comment to a *.ch3.ts module,
+//   (iii) watch   — dev server up, append a comment to a *.chttp.ts module,
 //                   measure until routes.gen.ts content changes (the plugin
 //                   compares content before writing, so an unchanged emit is
 //                   a no-op — the probe edits a file whose emit DOES change:
@@ -74,27 +74,27 @@ const CORPUS_1000 = join(here, "corpus", "1000");
 
 function setupVariant() {
   // bench-local copy of the fixture with the 1000-module corpus wired in as
-  // src/corpus/*.ch3.ts. The fixture's vite config needs no changes: the
-  // plugin walks the root and picks up every *.ch3.ts under src/.
+  // src/corpus/*.chttp.ts. The fixture's vite config needs no changes: the
+  // plugin walks the root and picks up every *.chttp.ts under src/.
   rmSync(BENCH_FIXTURE, { recursive: true, force: true });
   cpSync(FIXTURE, BENCH_FIXTURE, {
     recursive: true,
-    filter: (src) => !src.includes("node_modules") && !src.includes("/dist") && !src.includes("/.ch3"),
+    filter: (src) => !src.includes("node_modules") && !src.includes("/dist") && !src.includes("/.chttp"),
   });
   mkdirSync(join(BENCH_FIXTURE, "src", "corpus"), { recursive: true });
   cpSync(CORPUS_1000, join(BENCH_FIXTURE, "src", "corpus"), { recursive: true });
-  // src/ch3.ts and the corpus barrel re-export the ch3 source via a relative
+  // src/chttp.ts and the corpus barrel re-export the chttp source via a relative
   // path rooted at the real fixture; rewrite them to the same absolute target
   // from the bench copy's depth.
-  const fixBarrel = join(FIXTURE, "src", "ch3.ts");
-  const barrelTarget = "packages/ch3/src/index.ts";  // import specifiers resolve from dirname(file): src/ch3.ts sits 4 dirs
+  const fixBarrel = join(FIXTURE, "src", "chttp.ts");
+  const barrelTarget = "packages/router/src/index.ts";  // import specifiers resolve from dirname(file): src/chttp.ts sits 4 dirs
   // under the repo here (bench/plugin/vite-app-1000/src), corpus barrel 5.
   writeFileSync(
-    join(BENCH_FIXTURE, "src", "ch3.ts"),
+    join(BENCH_FIXTURE, "src", "chttp.ts"),
     `export * from '../../../../${barrelTarget}'\n`,
   );
   writeFileSync(
-    join(BENCH_FIXTURE, "src", "corpus", "ch3.ts"),
+    join(BENCH_FIXTURE, "src", "corpus", "chttp.ts"),
     `export * from '../../../../../${barrelTarget}'\n`,
   );
   // pnpm's .bin shims bake relative store paths into shell scripts — copying
@@ -119,7 +119,7 @@ async function benchBuild(dir) {
       rmSync(join(dir, "dist"), { recursive: true, force: true });
       const r = await run("pnpm", ["exec", "vite", "build", "--config", "vite.bench.config.ts"], {
         cwd: dir,
-        env: off ? { CH3_PLUGIN_OFF: "1" } : {},
+        env: off ? { CHTTP_PLUGIN_OFF: "1" } : {},
       });
       if (r.code !== 0) throw new Error(`build failed in ${dir} (off=${off}): ${r.out.slice(-800)}`);
       times.push(r.ms);
@@ -141,7 +141,7 @@ function spawnDev(dir, off, port) {
     {
       cwd: dir,
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, ...(off ? { CH3_PLUGIN_OFF: "1" } : {}) },
+      env: { ...process.env, ...(off ? { CHTTP_PLUGIN_OFF: "1" } : {}) },
     },
   );
   let out = "";
@@ -180,8 +180,8 @@ async function benchDevStartup(dir, port) {
 // (iii) watch regen ----------------------------------------------------------
 
 async function benchWatch(dir, port) {
-  const target = join(dir, "src", "routes.ch3.ts");
-  const genFile = join(dir, "src", ".ch3", "routes.gen.ts");
+  const target = join(dir, "src", "routes.chttp.ts");
+  const genFile = join(dir, "src", ".chttp", "routes.gen.ts");
   const original = readFileSync(target, "utf8");
   const res = {};
   for (const off of [false, true]) {
@@ -240,12 +240,12 @@ async function benchWatch(dir, port) {
 
 // The wrapper must live where vite resolves plugins relative to cwd, so write
 // it into both variant dirs. It re-exports the fixture config with the plugin
-// removed when CH3_PLUGIN_OFF=1.
+// removed when CHTTP_PLUGIN_OFF=1.
 const WRAPPER = `import { defineConfig } from 'vite'
 const base = (await import('./vite.config.ts')).default
 export default defineConfig({
   ...base,
-  plugins: process.env.CH3_PLUGIN_OFF === '1' ? [] : base.plugins,
+  plugins: process.env.CHTTP_PLUGIN_OFF === '1' ? [] : base.plugins,
 })
 `;
 

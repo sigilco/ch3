@@ -1,8 +1,8 @@
-// unplugin-ch3 — build-time route lowering for ch3.
+// unplugin-chttp — build-time route lowering for chttp.
 //
-// A routes module (default: any file matching `**\/*.ch3.{ts,js}`) is
+// A routes module (default: any file matching `**\/*.chttp.{ts,js}`) is
 // analyzed at build start; the plugin writes
-// `<dir>/.ch3/<name>.gen.ts` satisfying docs/route-contract.md:
+// `<dir>/.chttp/<name>.gen.ts` satisfying docs/route-contract.md:
 //   - `export class CompiledRoutes extends GenDispatch` — registered
 //     once via `app.withDispatch(new CompiledRoutes(app))` in the
 //     app-owning entry, tried first on every request,
@@ -23,20 +23,20 @@ import { emitGenModule, genFileName } from "./emit.ts";
 import { extractModule } from "./extract.ts";
 import { tsgoAvailable } from "./parse/index.ts";
 
-export interface Ch3PluginOptions {
+export interface ChttpPluginOptions {
   // Globs (relative to root) marking route-registration modules.
-  // Default: ['**\/*.ch3.ts', '**\/*.ch3.js']
+  // Default: ['**\/*.chttp.ts', '**\/*.chttp.js']
   include?: string[];
   // Project root to scan. Default: vite config.root, else process.cwd().
   root?: string;
   // Import specifier emitted in the gen file for `import type { App }`.
-  // Default: 'ch3'
+  // Default: '@chttp/router'
   importFrom?: string;
   // Exported binding carrying the router instance: a name, or 'default'.
   // Default: auto-detect.
   appExport?: string;
-  // Extra module specifiers treated as ch3 imports (in addition to
-  // 'ch3' and 'ch3').
+  // Extra module specifiers treated as chttp imports (in addition to
+  // '@chttp/router').
   imports?: string[];
   // Parser backend: 'classic' (default, the tsc 5.x/6.x API) or 'tsgo'
   // (experimental; requires a typescript 7.x nightly providing the
@@ -45,7 +45,7 @@ export interface Ch3PluginOptions {
   parser?: "classic" | "tsgo";
 }
 
-const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".ch3", ".vite"]);
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".chttp", ".vite"]);
 
 function walk(dir: string, out: string[]): void {
   let ents: fs.Dirent[];
@@ -66,15 +66,15 @@ function walk(dir: string, out: string[]): void {
   }
 }
 
-export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
-  const include = options?.include ?? ["**/*.ch3.ts", "**/*.ch3.js"];
-  const importFrom = options?.importFrom ?? "ch3";
+export const chttpPlugin = createUnplugin((options?: ChttpPluginOptions) => {
+  const include = options?.include ?? ["**/*.chttp.ts", "**/*.chttp.js"];
+  const importFrom = options?.importFrom ?? "@chttp/router";
   let root = options?.root ?? process.cwd();
 
   let parserName = options?.parser ?? "classic";
   if (parserName === "tsgo") {
     console.warn(
-      "[unplugin-ch3] parser 'tsgo' is experimental: it requires a typescript 7.x nightly " +
+      "[unplugin-chttp] parser 'tsgo' is experimental: it requires a typescript 7.x nightly " +
         "(typescript@next) whose sync API breaks between nightlies, so pin the exact version " +
         "you tested. " +
         (tsgoAvailable()
@@ -99,7 +99,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
       parser: parserName,
     });
     const gen = emitGenModule(model, { importFrom: importFrom, modulePath: id });
-    const out = path.join(path.dirname(id), ".ch3", genFileName(id));
+    const out = path.join(path.dirname(id), ".chttp", genFileName(id));
     let prev = "";
     try {
       prev = fs.readFileSync(out, "utf8");
@@ -116,7 +116,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
   };
 
   return {
-    name: "unplugin-ch3",
+    name: "unplugin-chttp",
     enforce: "pre",
     vite: {
       configResolved(config: { root: string }): void {
@@ -130,7 +130,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
       walk(root, files);
       for (const f of files) {
         if (matches(f)) {
-          generate(f, (m) => console.warn("[unplugin-ch3] " + m));
+          generate(f, (m) => console.warn("[unplugin-chttp] " + m));
         }
       }
     },
@@ -141,7 +141,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
         try {
           generate(id, (m) => this.warn(m));
         } catch (e) {
-          this.warn("unplugin-ch3: failed to generate for " + id + ": " + String(e));
+          this.warn("unplugin-chttp: failed to generate for " + id + ": " + String(e));
         }
       }
       return null;
@@ -149,7 +149,7 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
     watchChange(id: string): void {
       if (matches(id)) {
         try {
-          generate(id, (m) => console.warn("[unplugin-ch3] " + m));
+          generate(id, (m) => console.warn("[unplugin-chttp] " + m));
         } catch {
           // leave the previous gen file in place
         }
@@ -158,4 +158,4 @@ export const ch3Plugin = createUnplugin((options?: Ch3PluginOptions) => {
   };
 });
 
-export default ch3Plugin;
+export default chttpPlugin;

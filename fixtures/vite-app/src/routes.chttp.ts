@@ -1,8 +1,8 @@
-// Route-registration module — picked up by unplugin-ch3 via the
-// `*.ch3.ts` filename convention. Every literal registration below is
-// lowered into .ch3/routes.gen.ts; the non-literal one stays on the
+// Route-registration module — picked up by unplugin-chttp via the
+// `*.chttp.ts` filename convention. Every literal registration below is
+// lowered into .chttp/routes.gen.ts; the non-literal one stays on the
 // runtime path and still works through the fallback.
-import { createRouter } from './ch3.ts'
+import { createRouter } from './chttp.ts'
 
 export const app = createRouter()
 

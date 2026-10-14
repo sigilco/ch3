@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ch3 bench suite — DESIGN.md §5.
+# chttp bench suite — DESIGN.md §5.
 #   bash bench/run.sh              # all subjects
 #   bash bench/run.sh raw-node hono-bun ...   # subset
 #
@@ -18,8 +18,8 @@ mkdir -p "$RESULTS" logs
 
 # name | command | cellset (full|ceil) | binary-path (optional)
 SUBJECTS=(
-  "ch3-node|node apps/ch3.ts|full|"
-  "ch3-bun|bun apps/ch3.ts|full|"
+  "chttp-node|node apps/chttp.ts|full|"
+  "chttp-bun|bun apps/chttp.ts|full|"
   "raw-node|node apps/raw.ts|full|"
   "raw-bun|bun apps/raw-bun.ts|full|"
   "raw-scriptc|./bin/raw-scriptc|full|bin/raw-scriptc"

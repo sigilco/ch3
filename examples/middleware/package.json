@@ -1,5 +1,5 @@
 {
-  "name": "ch3-example-middleware",
+  "name": "chttp-example-middleware",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,9 +8,9 @@
     "start": "./app"
   },
   "dependencies": {
-    "ch3": "0.1.0"
+    "@chttp/router": "0.1.0"
   },
   "devDependencies": {
-    "scriptc": "0.3.0"
+    "scriptc": "0.3.1"
   }
 }

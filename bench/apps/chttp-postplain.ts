@@ -1,6 +1,6 @@
-// ch3 POST subject with body buffering but no parse — the floor for the
+// chttp POST subject with body buffering but no parse — the floor for the
 // validation-cost comparison (buffer only, respond 200).
-import { createRouter } from "../../packages/ch3/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 
 const app = createRouter();
 

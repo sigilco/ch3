@@ -4,7 +4,7 @@ import { getParser, tsgoAvailable } from "../src/parse/index.ts";
 import { extractModule } from "../src/extract.ts";
 
 const SRC_BASIC = `
-import { createRouter } from 'ch3'
+import { createRouter } from '@chttp/router'
 export const app = createRouter()
 app.get('/json', (c) => c.json({ hello: 'world' }))
 app.get('/user/:id', (c) => c.json({ id: c.req.param('id') }))
@@ -37,8 +37,8 @@ describe("parser registry", () => {
 
 describe("tsgo integration", { skip: !tsgoAvailable() }, () => {
   it("extracts the same module model as classic", () => {
-    const classic = extractModule("routes.ch3.ts", SRC_BASIC, { parser: "classic" });
-    const tsgo = extractModule("routes.ch3.ts", SRC_BASIC, { parser: "tsgo" });
+    const classic = extractModule("routes.chttp.ts", SRC_BASIC, { parser: "classic" });
+    const tsgo = extractModule("routes.chttp.ts", SRC_BASIC, { parser: "tsgo" });
     assert.equal(tsgo.fatal, "");
     assert.deepEqual(
       tsgo.routes.map((r) => r.method + " " + r.path + " idx=" + r.handlerIdx),
@@ -51,12 +51,12 @@ describe("tsgo integration", { skip: !tsgoAvailable() }, () => {
 
   it("warns with the tsgo-computed line on bailed registrations", () => {
     const warns = extractModule(
-      "routes.ch3.ts",
-      "import { createRouter } from 'ch3'\nexport const app = createRouter()\nconst dyn = '/d'\napp.get(dyn, (c) => c.text('x'))\n",
+      "routes.chttp.ts",
+      "import { createRouter } from '@chttp/router'\nexport const app = createRouter()\nconst dyn = '/d'\napp.get(dyn, (c) => c.text('x'))\n",
       { parser: "tsgo" },
     );
     assert.ok(
-      warns.warnings.some((w) => w.includes("routes.ch3.ts:4 ")),
+      warns.warnings.some((w) => w.includes("routes.chttp.ts:4 ")),
       warns.warnings.join("\n"),
     );
   });

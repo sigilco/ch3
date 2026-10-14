@@ -1,6 +1,8 @@
-# RESULTS plugin: @ch3/unplugin dev/build impact + parser A/B
+# RESULTS plugin: @chttp/unplugin dev/build impact + parser A/B
 
-2026-10-13 · @ch3/unplugin 0.1.0 (commit-range 2305f71..8b9995f) · referenced from
+> 2026-10-14: subjects renamed ch3* → chttp* (brand rename); measurements unchanged.
+
+2026-10-13 · @chttp/unplugin 0.1.0 (commit-range 2305f71..8b9995f) · referenced from
 `docs/unplugin.md`.
 
 **Compare ratios, not absolutes**: wall-clock ms on one laptop, same session,
@@ -37,12 +39,12 @@ Self-contained scripts in `bench/plugin/` (committed):
   `typescript-next` alias; the script re-execs its children with it set).
 - `plugin-impact.mjs`: vite 7 on `fixtures/vite-app` plus a bench-local
   variant with the 1000-module corpus copied under `src/corpus/`. Plugin
-  ON/OFF toggled via `CH3_PLUGIN_OFF=1` read by a bench-local
+  ON/OFF toggled via `CHTTP_PLUGIN_OFF=1` read by a bench-local
   `vite.bench.config.ts` wrapper that re-exports the fixture config.
   (i) `vite build` wall time, (ii) `vite dev` spawn → first HTTP 200 on
   `/src/main.ts` (vite's module URL; the fixture has no browser entry),
-  (iii) watch: dev server up, append a new route to `src/routes.ch3.ts`,
-  poll until `src/.ch3/routes.gen.ts` content changes. Medians of 5,
+  (iii) watch: dev server up, append a new route to `src/routes.chttp.ts`,
+  poll until `src/.chttp/routes.gen.ts` content changes. Medians of 5,
   random ports in 41000-48999, servers killed after each rep.
 
 ## Parser A/B (extractModule over corpus, ms; median of 5)
@@ -150,7 +152,7 @@ ASTs), tsgo stays an experimental option, not a default.
 - Watch-regen median is bimodal (see above); reported as a range, not a
   point.
 - Plugin-off dev startup measures vite without the plugin at all, which also
-  skips the `.ch3/` emit the app's compiled entry imports; dev mode serves
+  skips the `.chttp/` emit the app's compiled entry imports; dev mode serves
   the runtime path either way, so the delta stays an apples-to-apples
   plugin-cost measurement, but the off-cell app is not literally "the same
   app minus dispatch".
