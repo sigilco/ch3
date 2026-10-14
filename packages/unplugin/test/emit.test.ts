@@ -41,7 +41,10 @@ describe("emitGenModule", () => {
       g,
       /\{ method: "POST", path: "\/echo", kind: "static", handlerIdx: 3, needsBody: true \}/,
     );
-    assert.match(g, /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "@chttp\/router"/);
+    assert.match(
+      g,
+      /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "@chttp\/router"/,
+    );
     assert.match(g, /import type \{ App \} from "@chttp\/router"/);
   });
 
