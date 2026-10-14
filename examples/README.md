@@ -8,6 +8,7 @@ Standalone templates for common Hono/H3-style use cases. Each is a normal `npm i
 | `middleware` | `app.use` global and per-route middleware |
 | `json-api` | POST body (`{ body: true }`), `onError`, `notFound` |
 | `router-mount` | `app.route` sub-router mounting |
+| `ws-echo` | `@chttp/ws` echo and `:param` room, vendored into one source graph for `scriptc build` |
 | `vite-elf` | Vite + `unplugin-scriptc` bundler pipeline |
 | `vite-lowering` | Vite + `@chttp/unplugin` build-time route lowering, JS dist |
 

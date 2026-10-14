@@ -11,3 +11,4 @@ examples/*/node_modules/
 examples/*/app
 examples/*/dist/
 examples/*/main.ll
+examples/*/.vendor/
