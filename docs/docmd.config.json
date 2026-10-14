@@ -25,6 +25,10 @@
     {
      "title": "Errors",
      "route": "errors"
+    },
+    {
+     "title": "Static Files",
+     "route": "static"
     }
    ]
   },

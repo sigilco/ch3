@@ -17,7 +17,7 @@ All `packages/*` publish at one shared version via pnpm native versioning (`vers
 
 1. `pnpm change` per logical change, commit the intent file with the change.
 2. At release: `pnpm version -r` (bumps the fixed group, consumes intents, writes CHANGELOGs), commit, tag `v<version>`.
-3. Tag push triggers `.github/workflows/release.yml`: verifies every package.json matches the tag, publishes all three.
+3. Tag push triggers `.github/workflows/release.yml`: verifies every package.json matches the tag, publishes all four.
 
 ## Scriptc subset rules (packages/router/src)
 

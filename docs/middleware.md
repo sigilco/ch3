@@ -17,6 +17,7 @@ One flush rule all recipes rely on: the response helpers (`c.json`, `c.text`, `c
 
 `c.req.body()` is synchronous because dispatch pre-buffers the request body (`data`/`end` concat) for POST/PUT/PATCH/DELETE before invoking the chain — on routes that declared `{ body: true }`. Other methods dispatch immediately.
 
+<<<<<<< HEAD
 ## Recipe cookbook
 
 Every snippet below is written in the scriptc subset (indexed `for` loops, `| null` unions, no shorthand or spread or optional chaining, plain records instead of `Map`) and was verified to build and run as an ELF with `scriptc build` (scriptc 0.3.1, chttp 0.1.0). Node-only recipes are marked.
@@ -158,59 +159,9 @@ Fixed windows burst at the seam (up to 2×LIMIT across a boundary). Sliding wind
 
 ### Serve static
 
-Sync `node:fs` reads under a splat route. `node:fs` lowers under scriptc 0.3.1, so this compiles into the ELF (verified); if you prefer async streaming you are in node territory (`createReadStream` did not lower in this subset version, stick to `readFileSync` for ELF builds).
+Do not hand-roll a static handler: reading files as utf8 corrupts binaries, and the traversal, caching and `index.html` details are easy to get wrong. Use [`@chttp/static`](static.md), which serves bytes through `c.bytes()`, handles ETag/304, HEAD, precompressed siblings and an opt-in SPA fallback, and compiles into the ELF.
 
-The traversal pitfall: `c.req.param("*")` is the *decoded* path tail, so `%2e%2e` arrives as `..` before your code sees it. Guard on the decoded value, and write the response manually: `c.text()` forces its own `content-type`, which would overwrite the one you picked from the extension map.
-
-```ts
-import { readFileSync, statSync } from "node:fs";
-import type { Stats } from "node:fs";
-
-const ROOT: string = "./public";
-
-const TYPES: { [k: string]: string } = {
-  html: "text/html; charset=utf-8",
-  css: "text/css; charset=utf-8",
-  js: "text/javascript; charset=utf-8",
-  json: "application/json; charset=utf-8",
-  txt: "text/plain; charset=utf-8",
-  png: "image/png",
-};
-
-function serveStatic(c: Ctx): unknown {
-  const rel: string = c.req.param("*") === null ? "" : String(c.req.param("*"));
-  // traversal guard: rel is already decoded, so this catches %2e%2e too
-  if (rel.indexOf("..") !== -1 || rel.charAt(0) === "/") {
-    return c.status(403).text("forbidden");
-  }
-  let full: string = ROOT + "/" + rel;
-  try {
-    const st: Stats = statSync(full);
-    if (st.isDirectory()) {
-      full = full + "index.html";
-    }
-  } catch (_e) {
-    // missing or unreadable: the read below answers 404
-  }
-  const dot: number = full.lastIndexOf(".");
-  const ext: string = dot === -1 ? "" : full.slice(dot + 1);
-  const ct: string = TYPES[ext] === undefined ? "application/octet-stream" : TYPES[ext];
-  let body: string | null = null;
-  try {
-    body = readFileSync(full, "utf8");
-  } catch (_e2) {
-    return c.status(404).text("not found");
-  }
-  c.res.setHeader("content-type", ct); // not c.text(): it forces text/plain
-  c.res.end(body);
-  c.sent = true;
-  return;
-}
-
-app.get("/*", (c: Ctx) => serveStatic(c));
-```
-
-Sync reads block the event loop; fine for small assets and ELF one-binary deploys, not for large files under load.
+If you do need a hand-rolled variant (single small asset set, no package), know the traversal pitfall before you start: `c.req.param("*")` is the *decoded* path tail, so `%2e%2e` arrives as `..` before your code sees it — guard on the decoded value, reject any tail containing `..` or a leading `/`, and write the response manually with `c.res.setHeader` + `c.res.end()`, because `c.text()` forces its own `content-type`.
 
 ### Timing header
 
@@ -233,4 +184,11 @@ app.use(async (c: Ctx, next: () => unknown): Promise<void> => {
 
 Clients that understand `x-request-start` (or a tracing proxy reading it) can compute end-to-end duration from the timestamp. If you control the handlers, the alternative is sending the header from the handler itself, where the duration is known before the send.
 
+||||||| 072ef17
+=======
+## Serving static files
+
+Do not hand-roll a static handler: reading files as utf8 corrupts binaries, and the traversal, caching and `index.html` details are easy to get wrong. Use [`@chttp/static`](static.md), which serves bytes through `c.bytes()`, handles ETag/304, HEAD, precompressed siblings and an opt-in SPA fallback, and compiles into the ELF.
+
+>>>>>>> feat/static
 Next: [Errors](errors.md).
