@@ -71,6 +71,10 @@
     {
      "title": "WebSocket",
      "route": "websocket"
+    },
+    {
+     "title": "HTML rendering",
+     "route": "html"
     }
    ]
   }
