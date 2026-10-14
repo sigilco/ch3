@@ -13,6 +13,6 @@ minimumReleaseAgeExclude:
   - unplugin-scriptc
 versioning:
   fixed:
-    - ["@chttp/router", "@chttp/val", "@chttp/unplugin", "@chttp/static", "@chttp/ws"]
+    - ["@chttp/router", "@chttp/val", "@chttp/unplugin", "@chttp/static", "@chttp/ws", "@chttp/stream"]
   changelog:
     storage: repository

@@ -1,0 +1,54 @@
+{
+  "name": "@chttp/stream",
+  "version": "0.1.0",
+  "description": "Server-Sent Events and chunked text streaming for @chttp/router, authored inside the scriptc compilable subset",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sigilco/chttp.git",
+    "directory": "packages/stream"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.json && node --test test/stream.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "@chttp/router": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "author": "Joaquin Terrasa & contributors",
+  "keywords": [
+    "sse",
+    "server-sent-events",
+    "streaming",
+    "http",
+    "scriptc",
+    "native"
+  ],
+  "homepage": "https://github.com/sigilco/chttp/tree/main/packages/stream#readme",
+  "bugs": {
+    "url": "https://github.com/sigilco/chttp/issues"
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "@chttp/router": "^0.1.0"
+  }
+}

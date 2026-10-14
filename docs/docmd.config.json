@@ -29,6 +29,10 @@
     {
      "title": "Static Files",
      "route": "static"
+    },
+    {
+     "title": "Streaming",
+     "route": "streaming"
     }
    ]
   },
