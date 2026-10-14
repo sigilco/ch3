@@ -25,7 +25,9 @@ fi
 
 # the tag may not exist yet (workflow_dispatch dry run): fall back to HEAD
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then REF="$TAG"; else REF=HEAD; fi
-PREV=$(git describe --tags --abbrev=0 "$REF^" 2>/dev/null || true)
+# previous release = the highest v* tag below this one by version order. Not
+# `git describe`: a release tag need not be an ancestor of main.
+PREV=$( (git tag -l 'v*'; echo "$TAG") | sort -uV | grep -B1 -x "$TAG" | grep -vx "$TAG" || true)
 
 printf '%s\n' "$BLOCK"
 if [ -n "$PREV" ]; then

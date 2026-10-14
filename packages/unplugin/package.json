@@ -1,6 +1,6 @@
 {
   "name": "@chttp/unplugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build-time route-lowering bundler plugin for chttp",
   "keywords": [
     "aot",
@@ -48,16 +48,16 @@
     }
   },
   "dependencies": {
-    "unplugin": "^3.4.0",
-    "picomatch": "^4.0.7"
+    "picomatch": "^4.0.7",
+    "unplugin": "^3.4.0"
   },
   "devDependencies": {
+    "@chttp/router": "workspace:^",
+    "@chttp/val": "workspace:^",
     "@types/node": "^24.0.0",
     "@types/picomatch": "^4.0.3",
     "typescript": "^5.9.0",
-    "typescript-next": "npm:typescript@next",
-    "@chttp/router": "workspace:^",
-    "@chttp/val": "workspace:^"
+    "typescript-next": "npm:typescript@next"
   },
   "engines": {
     "node": ">=22"

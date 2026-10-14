@@ -2,7 +2,7 @@
 // Source: routes.chttp.ts
 export const ROUTE_CONTRACT_VERSION = 1;
 // 11 route(s) lowered, 0 left to the runtime path.
-// warning: unplugin-chttp: /Users/josocjoq/Documents/prjcts/_own/ch3/fixtures/vite-app/src/routes.chttp.ts:41 get() with a non-literal path — this route stays runtime-only
+// warning: unplugin-chttp: /Users/josocjoq/.worktrees/chttp-release/fixtures/vite-app/src/routes.chttp.ts:41 get() with a non-literal path — this route stays runtime-only
 
 import type { IncomingMessage, ServerResponse } from "node:http"
 
