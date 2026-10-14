@@ -25,6 +25,10 @@
     {
      "title": "Errors",
      "route": "errors"
+    },
+    {
+     "title": "Streaming",
+     "route": "streaming"
     }
    ]
   },
