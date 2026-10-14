@@ -23,10 +23,13 @@ import * as http from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { GenDispatch, ROUTE_CONTRACT_VERSION } from "./gen.ts";
 import type { DispatchFn } from "./gen.ts";
+import { UpgradeDispatch } from "./upgrade.ts";
+import type { Socket } from "node:net";
 
 export { GenDispatch };
 export type { DispatchFn };
 export { ROUTE_CONTRACT_VERSION };
+export { UpgradeDispatch };
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -857,6 +860,10 @@ export class App {
   // would fence eager program-code instantiation the same way a function
   // inside a record does. Default returns false (never registered).
   _gen: DispatchFn;
+  // Upgrade seam (docs/upgrade-contract.md), same closure-field shape as
+  // _gen. _hasUp gates the "upgrade" listener in serve().
+  _up: (req: IncomingMessage, socket: Socket, head: Buffer) => boolean;
+  _hasUp: boolean;
 
   constructor() {
     this._nodes = [];
@@ -876,6 +883,10 @@ export class App {
     this._gen = function (_r: IncomingMessage, _s: ServerResponse): boolean {
       return false;
     };
+    this._up = function (_r: IncomingMessage, _s: Socket, _h: Buffer): boolean {
+      return false;
+    };
+    this._hasUp = false;
   }
 
   // Verb methods take `path: string` + `Ctx`, not `<P extends string>`:
@@ -975,6 +986,30 @@ export class App {
     return this;
   }
 
+  // Registers an upgrade dispatch (docs/upgrade-contract.md). Last call
+  // wins. The listener is only attached by serve()/upgradeHandler() users
+  // when one is registered, so apps without it keep node's default.
+  withUpgrade(u: UpgradeDispatch): App {
+    const g = u;
+    this._up = function (rq: IncomingMessage, sk: Socket, hd: Buffer): boolean {
+      return g.upgrade(rq, sk, hd);
+    };
+    this._hasUp = true;
+    return this;
+  }
+
+  // Listener for custom servers: server.on("upgrade", app.upgradeHandler()).
+  // An unhandled upgrade (nothing registered, or upgrade() returned false)
+  // destroys the socket, matching node's behaviour without a listener.
+  upgradeHandler(): (req: IncomingMessage, socket: Socket, head: Buffer) => void {
+    const app = this;
+    return function (req: IncomingMessage, socket: Socket, head: Buffer): void {
+      if (!app._up(req, socket, head)) {
+        socket.destroy();
+      }
+    };
+  }
+
   handler(): (req: IncomingMessage, res: ServerResponse) => void {
     const app = this;
     return function (req: IncomingMessage, res: ServerResponse): void {
@@ -986,6 +1021,9 @@ export class App {
   serve(opts: { port: number; host: string }): Server;
   serve(opts: { port: number; host?: string }): Server {
     const s = http.createServer(this.handler());
+    if (this._hasUp) {
+      s.on("upgrade", this.upgradeHandler());
+    }
     if (opts.host === null || opts.host === undefined) {
       s.listen(Number(opts.port));
     } else {
