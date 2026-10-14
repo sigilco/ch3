@@ -213,6 +213,16 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
 
+  examples/backpressure:
+    dependencies:
+      '@chttp/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+    devDependencies:
+      scriptc:
+        specifier: 0.3.1
+        version: 0.3.1
+
   examples/demo:
     dependencies:
       '@chttp/router':

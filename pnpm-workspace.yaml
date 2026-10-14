@@ -4,6 +4,7 @@ packages:
   - examples/sse-clock
   - examples/ws-echo
   - examples/rate-limit
+  - examples/backpressure
   - bench
   - fixtures/*
 allowBuilds:
