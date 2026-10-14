@@ -6,112 +6,119 @@
  "theme": {
   "primary": "#2f6f4f"
  },
- "sidebar": [
+ "plugins": {
+  "ai": false
+ },
+ "navigation": [
   {
    "title": "Concepts",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "What is chttp",
-     "route": "index"
+     "path": "/"
     }
    ]
   },
   {
    "title": "Getting Started",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "Quickstart",
-     "route": "quickstart"
+     "path": "/quickstart"
     },
     {
      "title": "Run targets",
-     "route": "targets"
+     "path": "/targets"
     },
     {
      "title": "Deploy",
-     "route": "deploy"
+     "path": "/deploy"
     },
     {
      "title": "Benchmarks",
-     "route": "benchmarks"
+     "path": "/benchmarks"
     }
    ]
   },
   {
    "title": "API",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "Routing",
-     "route": "routing"
+     "path": "/routing"
     },
     {
      "title": "Context",
-     "route": "context"
+     "path": "/context"
     },
     {
      "title": "Errors",
-     "route": "errors"
+     "path": "/errors"
     }
    ]
   },
   {
    "title": "Guides",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "Examples",
-     "route": "examples"
+     "path": "/examples"
     }
    ]
   },
   {
    "title": "Helpers",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "Static files",
-     "route": "static"
+     "path": "/static"
     },
     {
      "title": "Streaming and SSE",
-     "route": "streaming"
+     "path": "/streaming"
     },
     {
      "title": "WebSocket",
-     "route": "websocket"
+     "path": "/websocket"
     },
     {
      "title": "Validation",
-     "route": "validation"
+     "path": "/validation"
     },
     {
      "title": "HTML rendering",
-     "route": "html"
+     "path": "/html"
     },
     {
      "title": "Route lowering plugin",
-     "route": "unplugin"
+     "path": "/unplugin"
     }
    ]
   },
   {
    "title": "Middleware",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "Middleware",
-     "route": "middleware"
+     "path": "/middleware"
     }
    ]
   },
   {
    "title": "Coding Agents",
-   "pages": [
+   "collapsible": true,
+   "children": [
     {
      "title": "Coding agents",
-     "route": "architecture"
+     "path": "/architecture"
     }
    ]
   }
- ],
- "plugins": {
-  "ai": false
- }
+ ]
 }
