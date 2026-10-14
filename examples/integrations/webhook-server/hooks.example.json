@@ -1,0 +1,10 @@
+[
+  {
+    "id": "deploy",
+    "command": "/bin/sh",
+    "args": ["-c", "echo deploying $HOOK_REF for $HOOK_ID"],
+    "secret": "change-me",
+    "rules": [{ "field": "ref", "equals": "refs/heads/main" }],
+    "env": [{ "field": "ref", "name": "HOOK_REF" }]
+  }
+]

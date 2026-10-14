@@ -1,0 +1,20 @@
+{
+  "name": "chttp-example-webhook-server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "scriptc build src/main.ts -o app",
+    "start": "./app",
+    "test": "node --experimental-strip-types --test test/webhook.test.ts",
+    "start:node": "node --experimental-strip-types src/main.ts"
+  },
+  "dependencies": {
+    "@chttp/router": "workspace:*",
+    "@chttp/val": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "scriptc": "0.3.1"
+  }
+}
