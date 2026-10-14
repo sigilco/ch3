@@ -31,11 +31,11 @@ const ws = new WsRouter().ws("/echo", new Echo()).ws("/room/:name", new Room());
 
 // An annotated literal listener is the form scriptc lowers for "upgrade"
 // (a listener value built elsewhere is rejected), so wire it here instead
-// of through app.withUpgrade()/app.serve().
+// of through app.serve(): attach it here (see docs/websocket.md).
 const server = createServer(app.handler());
 server.on("upgrade", function (req: IncomingMessage, socket: Socket, head: Buffer): void {
   if (!ws.upgrade(req, socket, head)) {
     socket.destroy();
   }
 });
-server.listen(3000);
+server.listen(Number(process.argv[2] || 3000));

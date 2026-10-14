@@ -6,6 +6,8 @@
 
 ```ts
 import { createRouter } from "@chttp/router";
+import type { IncomingMessage } from "node:http";
+import type { Socket } from "node:net";
 import { WsConn, WsHandler, WsRouter } from "@chttp/ws";
 
 class Room extends WsHandler {
@@ -19,7 +21,9 @@ class Room extends WsHandler {
 
 const app = createRouter();
 app.withUpgrade(new WsRouter().ws("/room/:name", new Room()));
-app.serve({ port: 3000 });
+const server = app.serve({ port: 3000 });
+const up: (req: IncomingMessage, socket: Socket, head: Buffer) => void = app.upgradeHandler();
+server.on("upgrade", up);
 ```
 
 Paths match exactly or with `:param` segments. Param values are the raw path segments (not percent decoded) and are read with `c.param(name)`. The query string is ignored for matching.
@@ -69,7 +73,7 @@ Limits default to a 1 MiB `maxPayload` and `maxPayload + 128 KiB` for `maxPendin
 Subclassing a package class (`WsHandler`, `UpgradeDispatch`) from your own program only lowers when the whole graph is program code, the same rule as `GenDispatch` in [unplugin](unplugin). A `node_modules` dist copy fails with "overriding a method with a different signature". Two consequences:
 
 1. Vendor the sources. `examples/ws-echo/scripts/vendor.mjs` copies `@chttp/router` and `@chttp/ws` `src/` into `.vendor/` and points the ws import of `@chttp/router` at the vendored router, so `scriptc build src/main.ts` sees one source graph.
-1. Wire the listener inline. `app.serve()` attaches `app.upgradeHandler()`, a listener value built inside the router, which scriptc rejects for `"upgrade"` when compiled from dist. In a program build create the server yourself and attach an annotated literal listener, as `examples/ws-echo/src/main.ts` does:
+1. Wire the listener inline. `app.serve()` registers no `"upgrade"` listener at all (any attach built inside the package would defer two SC1090 sites under npm-static compilation, for every app importing the router, upgrade or not). Attach an annotated literal listener in your own program, as `examples/ws-echo/src/main.ts` does, or use a typed alias of `app.upgradeHandler()`:
 
 ```ts
 server.on("upgrade", function (req: IncomingMessage, socket: Socket, head: Buffer): void {
