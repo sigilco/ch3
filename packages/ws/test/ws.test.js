@@ -35,7 +35,10 @@ async function start(h, limits) {
   const app = createRouter();
   app.get("/", (c) => c.text("ok"));
   app.withUpgrade(ws);
+  // serve() no longer attaches the upgrade listener (router seam change):
+  // wire it in the test program, the same way apps must.
   const server = app.serve({ port: 0, host: "127.0.0.1" });
+  server.on("upgrade", app.upgradeHandler());
   await new Promise((r) => server.once("listening", r));
   return { server, port: server.address().port };
 }
