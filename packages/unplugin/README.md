@@ -29,14 +29,14 @@ Routes the analyzer cannot prove literal stay on the runtime router with a build
 
 ## Options
 
-| Option | Default | Purpose |
-| --- | --- | --- |
-| `include` | `["**/*.chttp.ts", "**/*.chttp.js"]` | Globs (relative to root) marking route-registration modules |
-| `root` | vite config root, else `process.cwd()` | Project root to scan |
-| `importFrom` | `"chttp"` | Import specifier emitted into the generated file |
-| `appExport` | auto-detect | Exported binding carrying the router instance |
-| `imports` | `["chttp"]` | Extra module specifiers treated as chttp imports |
-| `parser` | `"classic"` | `"tsgo"` routes extraction through the TypeScript 7 native compiler (`typescript/sync` nightly, experimental) |
+| Option       | Default                                | Purpose                                                                                                       |
+| ------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `include`    | `["**/*.chttp.ts", "**/*.chttp.js"]`   | Globs (relative to root) marking route-registration modules                                                   |
+| `root`       | vite config root, else `process.cwd()` | Project root to scan                                                                                          |
+| `importFrom` | `"chttp"`                              | Import specifier emitted into the generated file                                                              |
+| `appExport`  | auto-detect                            | Exported binding carrying the router instance                                                                 |
+| `imports`    | `["chttp"]`                            | Extra module specifiers treated as chttp imports                                                              |
+| `parser`     | `"classic"`                            | `"tsgo"` routes extraction through the TypeScript 7 native compiler (`typescript/sync` nightly, experimental) |
 
 ## Install
 

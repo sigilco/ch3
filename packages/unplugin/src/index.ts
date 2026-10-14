@@ -21,7 +21,20 @@ import picomatch from "picomatch";
 import { createUnplugin } from "unplugin";
 import { emitGenModule, genFileName } from "./emit.ts";
 import { extractModule } from "./extract.ts";
+import { emitOpenApiModule, openApiFileName } from "./openapi.ts";
 import { tsgoAvailable } from "./parse/index.ts";
+
+export interface OpenApiOptions {
+  // Output file name under <routes dir>/.chttp/. Default 'routes.openapi.ts'.
+  path?: string;
+  // OpenAPI info.title. Default: the routes module basename.
+  title?: string;
+  // OpenAPI info.version. Default '1.0.0'.
+  version?: string;
+  // Extra module specifiers treated as '@chttp/val' (source-path imports,
+  // vendored copies). The package name is always recognized.
+  imports?: string[];
+}
 
 export interface ChttpPluginOptions {
   // Globs (relative to root) marking route-registration modules.
@@ -40,9 +53,14 @@ export interface ChttpPluginOptions {
   imports?: string[];
   // Parser backend: 'classic' (default, the tsc 5.x/6.x API) or 'tsgo'
   // (experimental; requires a typescript 7.x nightly providing the
-  // 'typescript/sync' subpath). Selecting 'tsgo' without the nightly
+  // 'typescript/unstable' subpath). Selecting 'tsgo' without the nightly
   // installed warns and falls back to classic.
   parser?: "classic" | "tsgo";
+  // Emit `.chttp/routes.openapi.ts` beside routes.gen.ts: an OpenAPI 3.1
+  // document assembled from the extracted route table plus statically
+  // locatable '@chttp/val' schemas (see PLUGIN.md). Side channel: never
+  // imported by runtime dispatch or scriptc. Default false (opt-in).
+  openapi?: boolean | OpenApiOptions;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".chttp", ".vite"]);
@@ -91,12 +109,18 @@ export const chttpPlugin = createUnplugin((options?: ChttpPluginOptions) => {
     return picomatch.isMatch(rel, include, { dot: true });
   };
 
+  const openapi = options?.openapi === undefined ? false : options.openapi;
+  const openapiOn = openapi !== false;
+  const openapiOpts = openapi === false ? null : openapi === true ? {} : openapi;
+  const openapiValSpecifiers = ["@chttp/val"].concat(openapiOpts?.imports ?? []);
+
   const generate = (id: string, warn: (m: string) => void): void => {
     const code = fs.readFileSync(id, "utf8");
     const model = extractModule(id, code, {
       appExport: options?.appExport,
       imports: options?.imports,
       parser: parserName,
+      openapiValSpecifiers: openapiOn ? openapiValSpecifiers : undefined,
     });
     const gen = emitGenModule(model, { importFrom: importFrom, modulePath: id });
     const out = path.join(path.dirname(id), ".chttp", genFileName(id));
@@ -109,6 +133,35 @@ export const chttpPlugin = createUnplugin((options?: ChttpPluginOptions) => {
     if (prev !== gen) {
       fs.mkdirSync(path.dirname(out), { recursive: true });
       fs.writeFileSync(out, gen);
+    }
+    if (openapiOn) {
+      const stem = path
+        .basename(id)
+        .replace(/\.chttp\.(ts|js|mts|mjs|cts|cjs)$/i, "")
+        .replace(/\.(ts|js|mts|mjs|cts|cjs)$/i, "");
+      const title =
+        openapiOpts !== null && openapiOpts.title !== undefined ? openapiOpts.title : stem;
+      const version =
+        openapiOpts !== null && openapiOpts.version !== undefined ? openapiOpts.version : "1.0.0";
+      const oaName =
+        openapiOpts !== null && openapiOpts.path !== undefined
+          ? openapiOpts.path
+          : openApiFileName();
+      const oa = emitOpenApiModule(model, { title: title, version: version });
+      const oaOut = path.join(path.dirname(id), ".chttp", oaName);
+      let oaPrev = "";
+      try {
+        oaPrev = fs.readFileSync(oaOut, "utf8");
+      } catch {
+        oaPrev = "";
+      }
+      if (oaPrev !== oa) {
+        fs.mkdirSync(path.dirname(oaOut), { recursive: true });
+        fs.writeFileSync(oaOut, oa);
+      }
+      for (const w of model.openapiWarnings) {
+        warn(w);
+      }
     }
     for (const w of model.warnings) {
       warn(w);

@@ -84,3 +84,13 @@ The factory is unplugin-based, so `chttpPlugin.rollup()`, `chttpPlugin.webpack()
 ## Parser option
 
 By default (`parser: "classic"`, the default) extraction parses route modules with the `typescript` package's tsc API. `parser: "tsgo"` switches to the typescript-go native compiler's client API (`typescript/sync`, available on `typescript@next` 7.x nightlies): parsing runs in a spawned native server process and the client decodes the binary AST into classic-shaped node objects. It is experimental: the nightly API breaks between versions, so pin the exact nightly you test. Without a resolvab...
+
+## OpenAPI side channel
+
+With `openapi: true` in the plugin options, the plugin writes a second generated file, `.chttp/routes.openapi.ts`: an OpenAPI 3.1 document (`openapiDocument`) assembled from the extracted route table, plus a `chttpRouteTable` passthrough for typed clients. It is a side channel: the router never imports it and it never enters a scriptc build. Route lowering is untouched; `routes.gen.ts` is byte-identical with the option on or off. Default is off.
+
+Schemas come from `@chttp/val` and are attached only when the extractor can prove one in the handler AST: a `v.parse(schema, ...)` or `v.safeParse(schema, ...)` call where the schema is a val factory expression (or a module-level `const` of one, consts referencing consts included) and the target reads the handler's own context: `c.req.body()` (or `JSON.parse(c.req.body())`) becomes `requestBody`, `c.req.query()`/`c.req.queryAll()` become query parameters, `c.req.param()` fills in path parameter detail.
+
+The emitted module does not embed JSON. It re-declares each proven schema as TS source and calls `toOpenApiSchema` from the same specifier your routes module used, so schemas evaluate at import time in your own val graph, with the val copy that actually validates requests.
+
+What cannot be proven (a schema built dynamically, a target read off another variable, a foreign import) is never guessed: the route documents without its schema and the build warns. See the "OpenAPI side channel" section of [PLUGIN.md](https://github.com/sigilco/chttp/blob/main/packages/unplugin/PLUGIN.md) for the full detection rules and the `path` / `title` / `version` / `imports` sub-options.
