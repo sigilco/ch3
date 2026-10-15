@@ -109,7 +109,7 @@ function emitCtxRunner(name: string, r: RouteSpec): string {
   );
   lines.push("  const rv = new ReqView(req, qs, path)");
   lines.push("  rv._seedPm(pm)");
-  lines.push("  const c = new Ctx(rv, res)");
+  lines.push("  const c = new Ctx(rv, new NodeResponseSink(res))");
   // The closures MUST return the chain result: _guard/_buffer settle it
   // through await when it is not already settled so async handlers get
   // the same semantics as internal dispatch (rejection -> 500, settle
@@ -272,6 +272,7 @@ export function emitGenModule(model: ModuleModel, opts: EmitOptions): string {
   if (needCtx) {
     members.push("ReqView");
     members.push("Ctx");
+    members.push("NodeResponseSink");
     members.push("_guard");
   }
   if (needBuffer) {

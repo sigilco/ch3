@@ -35,6 +35,14 @@ export class ResponseSink {
     return false;
   }
   destroy(): void {}
+  // Underlying ServerResponse when the sink wraps one; null otherwise
+  // (FetchResponseSink). A method rather than a cast so callers can
+  // discriminate sink flavors without `instanceof`/`as` — both are
+  // scriptc fences (instanceof hangs on Node builtins; `as` on a class
+  // is a runtime assertion that throws).
+  nodeRes(): ServerResponse | null {
+    return null;
+  }
 }
 
 // Node: writes through to a real ServerResponse. Field shape mirrors the
@@ -133,6 +141,10 @@ export class NodeResponseSink extends ResponseSink {
     } catch (e) {
       // socket already gone
     }
+  }
+
+  nodeRes(): ServerResponse | null {
+    return this.res;
   }
 }
 

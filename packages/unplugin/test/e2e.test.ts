@@ -108,13 +108,14 @@ interface GenInstance {
 
 interface ChttpApp {
   withDispatch: (d: GenInstance) => ChttpApp;
-  _dispatch: (req: FakeReq, res: FakeRes) => void;
+  _dispatch: (req: FakeReq, sink: unknown) => void;
 }
 
 describe("e2e: generated dispatch executes against the real App", () => {
   let dir = "";
   let gen: GenInstance | null = null;
   let app: ChttpApp | null = null;
+  let NodeResponseSink: new (res: unknown) => unknown;
 
   before(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), "unplugin-chttp-e2e-"));
@@ -142,6 +143,9 @@ describe("e2e: generated dispatch executes against the real App", () => {
     };
     const routesMod = (await import(modPath)) as { app: ChttpApp };
     app = routesMod.app;
+    NodeResponseSink = (
+      (await import(CHTTP_SRC)) as { NodeResponseSink: new (res: unknown) => unknown }
+    ).NodeResponseSink;
     gen = new mod.CompiledRoutes(routesMod.app);
     routesMod.app.withDispatch(gen);
   });
@@ -169,7 +173,7 @@ describe("e2e: generated dispatch executes against the real App", () => {
   const serve = (method: string, url: string, body: string | null = null): FakeRes => {
     const req = fakeReq(method, url, body);
     const res = fakeRes();
-    (app as NonNullable<typeof app>)._dispatch(req, res);
+    (app as NonNullable<typeof app>)._dispatch(req, new NodeResponseSink(res));
     req.fire();
     return res;
   };
@@ -268,7 +272,7 @@ describe("e2e: contract version validation at withDispatch", () => {
     };
     assert.throws(
       () => m.createRouter().withDispatch(mkGen(999)),
-      /contract version mismatch.*v999.*v1/,
+      /contract version mismatch.*v999.*v2/,
     );
   });
 
@@ -276,7 +280,7 @@ describe("e2e: contract version validation at withDispatch", () => {
     const m = (await import(CHTTP_SRC)) as {
       createRouter: () => { withDispatch: (d: unknown) => unknown; get: unknown };
     };
-    m.createRouter().withDispatch(mkGen(1));
+    m.createRouter().withDispatch(mkGen(2));
     m.createRouter().withDispatch({ dispatch: () => false });
   });
 
