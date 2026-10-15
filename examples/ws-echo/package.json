@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
-    "build": "node scripts/vendor.mjs && scriptc build src/main.ts -o app",
+    "build": "node scripts/vendor.mjs && cc -c ffi_native.c -o .vendor/ffi_native.o && scriptc build src/main.ts --ffi .vendor/ffi.json -o app",
     "start": "./app",
     "start:node": "node scripts/vendor.mjs && node --experimental-strip-types src/main.ts"
   },
