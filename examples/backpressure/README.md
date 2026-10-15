@@ -8,4 +8,4 @@ Why shed instead of queue: a queue hides overload until memory or latency explod
 
 The body check reads `Content-Length`. The router buffers `{ body: true }` routes before the chain runs, so also cap body size at your proxy for hard memory protection.
 
-scriptc 0.3.1 cannot observe `write()` results, `drain` or `writableLength`, so per-connection output backpressure is a windowed byte cap, see `@chttp/stream` (`maxPending` per `windowMs`) in `docs/streaming.md`.
+scriptc < 0.3.2 could not observe `write()` results, `drain` or `writableLength`, so per-connection output backpressure is a windowed byte cap, see `@chttp/stream` (`maxPending` per `windowMs`) in `docs/streaming.md`. On 0.3.2+ the window is augmented by a compiled `Writable` wrapper.

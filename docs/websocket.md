@@ -66,7 +66,7 @@ The parser is incremental and non-recursive over `Buffer.concat`. It handles 7, 
 | 1007 | text message that is not valid UTF-8 |
 | 1009 | frame or assembled message above `maxPayload`, or buffered input above `maxPending` |
 
-Limits default to a 1 MiB `maxPayload` and `maxPayload + 128 KiB` for `maxPending` (unparsed bytes held per connection). Change them with `new WsRouter().withLimits(maxPayload, maxPending)`. Frames are rejected from the header alone, before the payload is buffered. There is no permessage-deflate, and `send` does not apply backpressure.
+Limits default to a 1 MiB `maxPayload` and `maxPayload + 128 KiB` for `maxPending` (unparsed bytes held per connection). Change them with `new WsRouter().withLimits(maxPayload, maxPending)`. Frames are rejected from the header alone, before the payload is buffered. There is no permessage-deflate.
 
 ## Compiling to a native binary
 
@@ -89,4 +89,4 @@ server.on("upgrade", function (req: IncomingMessage, socket: Socket, head: Buffe
 
 - TODO: Autobahn testsuite (fuzzingclient, Docker) against the node and native builds. Sections 1 to 7 are the target; permessage-deflate sections (12, 13) are out of scope. Results will go in `bench/RESULTS-ws.md`.
 - TODO: throughput cell against `ws` on node.
-- Not implemented: subprotocol and origin helpers, backpressure aware `send`, idle timeouts.
+- Not implemented: subprotocol and origin helpers, idle timeouts.

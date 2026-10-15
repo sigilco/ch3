@@ -1,0 +1,36 @@
+# scriptc 0.3.2 live probe — WS/stream backpressure surface (2026-10-15)
+# Toolchain: scriptc 0.3.2 (npm @scriptc/cli-linux-x64-gnu), linux-x64.
+# Each file run through `scriptc coverage <file>`; verdicts below.
+
+## src/writable-backpressure.ts (Writable subclass over a net.Socket sink)
+# class W extends Writable: _write() does `this._sink.write(chunk); cb()`
+# synchronously; on("drain") re-issues queued writes; own enqueue() method.
+# NOTE: overriding `push` is refused (SC1090 "the runtime owns the stream
+# surface") — helper named `enqueue` instead.
+  statements analyzed   24
+  compile statically    24  (100%)
+  => Compiled Writable subclass path is fully static on 0.3.2.
+
+## src/socket-drain.ts
+  s.write("x") returns void (cannot observe a boolean); s.on("drain") refused:
+  Argument '"drain"' not assignable to '"close" | "connect" | "end" | "finish"
+  | "readable" | "secureConnect" | "timeout"'.  => BLOCKED (net.Socket surface
+  unchanged in 0.3.2).
+
+## src/socket-write-cb.ts
+  s.write(b, () => {}): SC0001 "Expected 1 arguments, but got 2".  => BLOCKED.
+
+## src/socket-pause.ts
+  s.pause()/s.resume() calls lower; s.on("pause") refused (same overload set).
+  => pause/resume usable, pause events BLOCKED.
+
+## src/server-res-backpressure.ts / src/res-write-drain.ts
+  res.write("x") boolean refused (returns void); res.on("drain") refused —
+  ServerResponse whitelists only '"close" | "finish"'; writableLength absent.
+  => BLOCKED. The @chttp/stream wrapper must therefore subclass Writable and
+  wrap res inside it — res itself still exposes no backpressure surface.
+
+## src/date-toutcstring.ts
+  Date.prototype.toUTCString: SC2020 "no scriptc lowering yet".  => The
+  scriptc>=X marker in packages/static/src/date.ts stays (still refused on
+  0.3.2).

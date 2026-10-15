@@ -1,0 +1,34 @@
+scriptc 0.3.2 — Writable subclass inside a statically compiled npm package
+==========================================================================
+
+Probe (/tmp/sse-probe/use-pkg2.ts, compiled npm package "fakewp" shipping a
+Writable subclass FW with _write forwarding to a sink):
+
+  import { FW } from "fakewp";
+  const w = new FW(res);
+  const ok = w.go("first\n");   // -> write() returned FALSE
+  w.writableLength              // -> 6, and never drains
+  // _write was NEVER invoked; "drain"/"finish" never fire.
+
+Verdict: scriptc 0.3.2 wires a subclassed _write only for classes compiled
+as program code (the app, or sources vendored into it — the
+examples/ws-echo vendor.mjs layout, which works). Inside a statically
+compiled npm package (import "@chttp/stream" -> dist/esm/*.js) the Writable
+pump is dead: write() buffers every chunk, returns false, and nothing is
+forwarded to the sink.
+
+Consequence baked into packages/ws and packages/stream (WsWriter /
+ResWriter): the constructor writes a swallowed probe chunk and checks
+_writes === 0 right after write() returns. A live pump settles _write
+synchronously (verified under Node and in-program scriptc builds), so
+zero means a dead pump and the writer flips to _direct mode — chunks go
+straight to the sink, exactly like the pre-0.3.2 code path, with the
+per-window byte cap as the only slow-consumer policy.
+
+Verified:
+- bench/apps/chttp-stream.ts built to ELF: /clock and /text stream
+  (in-program import => wrapped mode).
+- examples/sse-clock built to ELF (imports @chttp/stream as a package):
+  /clock streams via _direct fallback.
+- examples/ws-echo (vendored source => wrapped mode): handshake, echo,
+  close-frame echo all pass.
