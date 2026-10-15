@@ -71,6 +71,12 @@ export class ReqView<P extends string = string> {
   // class-typed field access for synthesized fakes.
   _headers: Record<string, string>;
   method: string;
+  // Full request URL (path + query, no host). The Node path stores the
+  // raw `req.url` value; the app.fetch path stores the parsed
+  // path+query from the Web Request. Hono middlewares (logger, etc.)
+  // and Web Standards callers read `c.req.url` to recover the request
+  // line without splitting `path` + `_qs` themselves.
+  url: string;
   path: string;
   _qs: string;
   _qp: string[] | null;
@@ -85,7 +91,7 @@ export class ReqView<P extends string = string> {
   _sp: number;
   _body: string;
 
-  constructor(raw: IncomingMessage | NodeReqStub, qs: string, path: string) {
+  constructor(raw: IncomingMessage | NodeReqStub, qs: string, path: string, url?: string) {
     // The cast lives in the constructor body (not the call site) so
     // the scriptc union-to-IncomingMessage narrowing fence (SC2002)
     // fires once per request instead of at every dispatch entry. The
@@ -105,6 +111,13 @@ export class ReqView<P extends string = string> {
     // from a Web Request without an IncomingMessage fake.
     this._headers = copyHeaders(r.headers);
     this._qs = String(qs);
+    // `url` is the full path+query string the caller saw. On the
+    // Node path it equals `req.url` (path+query, no host); on the
+    // app.fetch path it equals the path+query portion of the Web
+    // Request URL. We accept it as an optional 4th arg so the Node
+    // dispatch can default to `raw.url` and the fetch path can
+    // pass the already-parsed value (avoids a second split).
+    this.url = url === undefined ? String((r as { url?: unknown }).url || path) : String(url);
     this._qp = null;
     this._pm = null;
     this._pn = EMPTY_S;
@@ -850,6 +863,44 @@ function copyMw(mw: Middleware[]): Middleware[] {
   return out;
 }
 
+// matchUsePath: true when a request path matches the `app.use(path)`
+// filter. The filter is a literal string — `*` alone matches every
+// path; a trailing `*` means "this prefix and anything under it";
+// anything else is an exact match. Hono's `app.use(path, mw)` has
+// the same semantics, so the integration test wiring is symmetric.
+function matchUsePath(reqPath: string, filter: string): boolean {
+  if (filter === "*") {
+    return true;
+  }
+  if (filter.length > 0 && filter.charAt(filter.length - 1) === "*") {
+    const prefix = filter.slice(0, filter.length - 1);
+    return reqPath.indexOf(prefix) === 0;
+  }
+  return reqPath === filter;
+}
+
+// runPrefixed: drive a left-to-right fold over `rest` (the middlewares
+// passed to `app.use(prefix, ...mws)`). Each step invokes `mws[i]`
+// with a `next` that calls the next step, so the whole prefix group
+// participates in the outer chain as a single middleware entry. The
+// fold is iterative (not recursive) so the scriptc program stays
+// within the no-recursion hot-path rule; depth is bounded by the
+// number of middlewares registered for the same prefix.
+function runPrefixed(
+  mws: Middleware[],
+  i: number,
+  c: Ctx,
+  outerNext: () => unknown,
+): unknown {
+  if (i >= mws.length) {
+    return outerNext();
+  }
+  const mw = mws[i];
+  return mw(c, function (): unknown {
+    return runPrefixed(mws, i + 1, c, outerNext);
+  });
+}
+
 // Middleware flattened per route at registration: mw[..] + handler compose
 // into ONE Handler, so dispatch makes a single call with zero per-request
 // closures (the previous `_chain` cursor allocated one closure per mw per
@@ -1054,8 +1105,34 @@ export class App {
     return this._add(String(method).toUpperCase(), path, h, bodyFlag(opts));
   }
 
-  use(fn: Middleware): App {
-    this._mw.push(fn);
+  // Register a middleware (runs on every request).
+  use(fn: Middleware): App;
+  // Register one or more middlewares scoped to a path prefix. The
+  // path is a literal string (optionally ending in `*` for "anything
+  // under this prefix"); `*` alone matches every path. The match is
+  // `c.req.path.startsWith(prefix)` after stripping a trailing `*`.
+  // This shape mirrors Hono's `app.use(path, ...mws)` so middlewares
+  // like `hono/logger` can be wired in unmodified — the path filter
+  // wraps the middleware in a closure that delegates to `next()`
+  // when the path doesn't match, so it doesn't disturb the chain.
+  use(path: string, ...mws: Middleware[]): App;
+  use(pathOrFn: string | Middleware, ...rest: Middleware[]): App {
+    if (typeof pathOrFn === "string") {
+      const prefix = pathOrFn;
+      const wrapped: Middleware = function (c, next): unknown {
+        if (matchUsePath(c.req.path, prefix)) {
+          // Run the first middleware; it owns the rest of the chain
+          // through its `next` argument. When more than one
+          // middleware is registered for the same prefix, fold them
+          // in left-to-right with the same closure.
+          return runPrefixed(rest, 0, c, next);
+        }
+        return next();
+      };
+      this._mw.push(wrapped);
+      return this;
+    }
+    this._mw.push(pathOrFn);
     return this;
   }
 
@@ -1261,7 +1338,7 @@ export class App {
     // IncomingMessage fake is fine — the real headers are populated
     // upstream of this entry by app.handler).
     const fr = makeNodeReqStub(String(method), webHeaders ?? {});
-    const rv = new ReqView(fr, qs, path);
+    const rv = new ReqView(fr, qs, path, url);
     if (idx >= 0) {
       rv._pn = app._pn[idx];
       rv._pi = app._pi[idx];
@@ -1320,7 +1397,7 @@ export class App {
         return;
       }
     }
-    const rv = new ReqView(req, qs, path);
+    const rv = new ReqView(req, qs, path, url);
     if (idx >= 0) {
       rv._pn = this._pn[idx];
       rv._pi = this._pi[idx];
@@ -1593,7 +1670,7 @@ function allow405Promise(
       qs = String(url.slice(qi + 1));
     }
     const fr = makeNodeReqStub(String(method), {});
-    const rv = new ReqView(fr, qs, path);
+    const rv = new ReqView(fr, qs, path, url);
     const c = new Ctx(rv, sink);
     oef(new MethodNotAllowedError(out.join(",")), c);
     if (sink.isHeadersSent()) {
