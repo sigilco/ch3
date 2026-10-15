@@ -7,6 +7,10 @@
   intents:
     - light-hairs-brush
     - modern-sheep-share
+"@chttp/router@0.2.1":
+  dir: packages/router
+  intents:
+    - add-backpressure
 "@chttp/static@0.2.0":
   dir: packages/static
   intents:
@@ -15,6 +19,10 @@
   dir: packages/stream
   intents:
     - nice-onions-shout
+"@chttp/stream@0.2.1":
+  dir: packages/stream
+  intents:
+    - add-backpressure
 "@chttp/unplugin@0.2.0":
   dir: packages/unplugin
   intents:
@@ -28,3 +36,8 @@
   dir: packages/ws
   intents:
     - fair-jobs-compete
+"@chttp/ws@0.2.1":
+  dir: packages/ws
+  intents:
+    - add-backpressure
+    - add-ffi-docs
