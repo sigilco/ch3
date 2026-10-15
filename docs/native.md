@@ -79,6 +79,28 @@ Format 7 emits `node:ffi` static bindings: the same manifest and `declare functi
 - Build the object/archive for the same target as the scriptc binary. `cc -c` is the portable baseline (`ar rcs` for an archive); `zig cc` works when you need cross-compilation, but adds a toolchain dependency.
 - Compiled ELFs can still reach system libraries via `system_libraries` in the manifest.
 
+## Common Node native modules
+
+The question behind most FFI work: "can my compiled app use what npm packages use?" Sort the ecosystem by where the native code lives:
+
+| Module style | Examples | Compiled ELF? |
+| --- | --- | --- |
+| N-API `.node` addon | `sqlite3`, `better-sqlite3`, `bcrypt`, `sharp`, `argon2` | No — addons depend on Node.js itself. But their C/C++ cores usually can be rebound via `--ffi` with a thin shim. |
+| Node builtin | `node:sqlite`, `node:crypto` | Refused by the compiler unless scriptc ships its own lowering (`node:sqlite` is refused; crypto/fs/http are already lowered). |
+| Pure-JS package | most of npm | Compiles only if the source stays inside the scriptc subset — real packages rarely do. |
+| System C library | `libsqlite3`, `libz`, `libcurl`, OpenSSL | Yes — `libraries`/`system_libraries` link it directly. |
+
+The pattern that works is the one the docs describe for replacing a Node-API addon: keep using the addon's underlying C library, but call it through a fixed-signature shim. Verified with libsqlite3: a 30-line shim (`shim_open`/`shim_exec`/`shim_count`) compiled with `cc -c`, linked via `"libraries": ["./shim.o", "/usr/lib/x86_64-linux-gnu/libsqlite3.a"]` and `"system_libraries": ["pthread", "dl", "m"]`, runs `CREATE TABLE`/`INSERT`/`SELECT count(*)` from a compiled ELF — `i64` results arrive as `bigint` (format 7).
+
+What this means per package:
+
+- **sqlite3 / better-sqlite3** — drop the addon, bind `libsqlite3` through a shim exposing the few calls you need (open/exec/prepare/step). The async and prepared-statement ergonomics live in the shim, not in scriptc.
+- **bcrypt / argon2** — same shape: the C core (`crypt_blowfish`, libargon2) links fine; write `hash(password, salt)` / `verify` entry points in the shim.
+- **sharp / canvas** — libvips/cairo are linkable C libraries, but expect a real port: these APIs are wide, and the shim becomes a project of its own.
+- **Anything pure-JS with native fallback** — try the JS path first; fall back to `--ffi` only where the subset refuses.
+
+Keep the shim minimal and stateless where you can: every fixed signature you add is one manifest entry and one `declare function`.
+
 ## Example
 
 `examples/ws-echo` computes FNV-1a in C: `GET /ffi/{text}` passes each byte to native code through a call-scoped `next()` callback (`ffi.json`, `ffi_native.c`), and the build compiles the object before `scriptc build --ffi`. `tests/ws-echo-ffi-smoke/run.sh` builds the ELF and asserts the route end to end.
