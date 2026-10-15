@@ -1,0 +1,16 @@
+{
+  "name": "chttp-example-hono-middleware",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/logger.test.ts"
+  },
+  "dependencies": {
+    "@chttp/router": "workspace:*",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}
