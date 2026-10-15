@@ -1,4 +1,5 @@
 import type { App, Ctx } from "@chttp/router";
+import type { ServerResponse } from "node:http";
 import { extOf } from "./mime.ts";
 import { httpDate } from "./date.ts";
 import type { Asset, AssetSource, AssetVariant } from "./asset.ts";
@@ -175,7 +176,11 @@ export class StaticServer {
     const inm = c.req.header("if-none-match");
     if (inm !== null && etagMatches(inm, tag)) {
       c.status(304);
-      c.res.end();
+      // Static serves only through the Node handler surface (the Fetch
+      // surface returns a Response directly). _nodeRes is the underlying
+      // ServerResponse; using the field avoids the nullable c.res getter.
+      const rs = c._nodeRes as ServerResponse;
+      rs.end();
       c.sent = true;
       return c;
     }

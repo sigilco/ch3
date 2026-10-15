@@ -28,24 +28,68 @@ function mkRes() {
   const res = {
     statusCode: 200,
     headers: {},
-    body: "",
+    bodyTxt: "",
     ended: false,
     headersSent: false,
     destroyed: false,
     setHeader(k, v) {
       this.headers[k.toLowerCase()] = v;
     },
+    getHeader(k) {
+      const v = this.headers[String(k).toLowerCase()];
+      return v === undefined ? undefined : v;
+    },
+    setStatus(n) {
+      this.statusCode = Number(n);
+    },
+    appendHeader() {},
+    _setBody(s) {
+      this.bodyTxt = s;
+      this.ended = true;
+      this.headersSent = true;
+    },
+    writeBody(s) {
+      this.bodyTxt = s;
+      this.ended = true;
+      this.headersSent = true;
+    },
+    bodyBytes(b) {
+      this.bodyTxt = String(b);
+      this.ended = true;
+      this.headersSent = true;
+    },
+    redirect() {
+      this.ended = true;
+      this.headersSent = true;
+    },
+    write() {},
+    isSent() {
+      return this.ended;
+    },
+    isHeadersSent() {
+      return this.headersSent;
+    },
     end(b) {
       this.ended = true;
       this.headersSent = true;
       if (typeof b === "string") {
-        this.body = b;
+        if (this.bodyTxt === "") {
+          this.bodyTxt = b;
+        } else {
+          this.bodyTxt = this.bodyTxt + b;
+        }
       }
     },
     destroy() {
       this.destroyed = true;
     },
   };
+  // Expose `body` as a getter returning bodyTxt, for tests that read res.body
+  Object.defineProperty(res, "body", {
+    get() {
+      return this.bodyTxt;
+    },
+  });
   return res;
 }
 

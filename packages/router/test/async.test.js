@@ -6,22 +6,56 @@ import assert from "node:assert/strict";
 import { createRouter, _guard, _buffer, Ctx, ReqView } from "../dist/esm/index.js";
 
 function fakeRes() {
-  return {
+  const res = {
     statusCode: 200,
     headersSent: false,
     headers: {},
-    body: "",
+    bodyTxt: "",
     ended: false,
     setHeader(k, v) {
       this.headers[k] = v;
     },
-    end(s) {
+    getHeader(k) {
+      const v = this.headers[String(k).toLowerCase()];
+      return v === undefined ? undefined : v;
+    },
+    setStatus(n) {
+      this.statusCode = Number(n);
+    },
+    appendHeader() {},
+    writeBody(s) {
+      this.bodyTxt = this.bodyTxt + String(s);
       this.headersSent = true;
-      if (s !== undefined) this.body = this.body + s;
       this.ended = true;
     },
+    bodyBytes() {
+      this.headersSent = true;
+      this.ended = true;
+    },
+    redirect() {
+      this.headersSent = true;
+      this.ended = true;
+    },
+    write() {},
+    isSent() {
+      return this.headersSent;
+    },
+    isHeadersSent() {
+      return this.headersSent;
+    },
     destroy() {},
+    end(s) {
+      this.headersSent = true;
+      if (s !== undefined && typeof s === "string") this.bodyTxt = this.bodyTxt + s;
+      this.ended = true;
+    },
   };
+  Object.defineProperty(res, "body", {
+    get() {
+      return this.bodyTxt;
+    },
+  });
+  return res;
 }
 
 function fakeReq(method, url) {
