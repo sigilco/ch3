@@ -9,8 +9,8 @@ These docs are published for agents too: [llms.txt](https://chttpjs.pages.dev/ll
 ## Subset rules for `packages/router/src`
 
 - `| null` unions only. Never `undefined`.
-- No `Map`, `Set`, `Object.create(null)`, `Object.freeze`. Plain `({})` records only.
-- Classes only for `Context`, `ChttpRequest`, `HttpError`.
+- No `Object.create(null)`, `Object.freeze`. Plain `({})` records only.
+- Classes only for the router's entity types (`CtxCore`/`Ctx`, `ReqViewCore`/`ReqView`, the response sinks, `HttpError`).
 - Indexed `for` loops or `for...of` over arrays. Never `for...in`.
 - No `new Function`, `eval`, non-program `instanceof`, object or method shorthand.
 - Concrete types on route and middleware tables. No `any[]` or `unknown[]`.
@@ -23,7 +23,7 @@ const rec: { [k: string]: string } = {};
 
 // banned
 for (const k in rec) {}
-const m = new Map();
+const fns = { run: function (): void {} };
 ```
 
 ## Shape of the code

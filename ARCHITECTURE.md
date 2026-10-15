@@ -100,7 +100,7 @@ chttp's source is written inside the scriptc-compilable subset so `scriptc build
 
 - The only async function in the package is `settleChain`, the fire-and-forget settler called when a chain result is not already settled. Promises cannot be detected directly in the subset: reading `.then` as a value refuses (SC1090; in expression position it silently lowers to `undefined`), `instanceof Promise` is refused, and a union mixing `Promise` and non-Promise arms refuses (SC2009). `await` is the one narrowing left: it passthroughs non-thenables and joins real promises, so the disc...
 - `| null` unions only, never `| undefined`.
-- No `Map`, `Set`, `Object.create(null)`, or `Object.freeze`; plain record literals with full shapes.
+- No `Object.create(null)` or `Object.freeze`; plain record literals with full shapes.
 - Indexed `for` loops only; `.pop()` as a statement, never an expression.
 - No `?.` / `??`, no object or method shorthand in literals, no spread, no `eval` / `new Function`.
 - No function values inside records: handlers and middleware snapshots live in parallel arrays on the `App` class, and trie nodes store numeric indices. Function-typed record fields degrade instantiation to `unknown` and fence every call site.
