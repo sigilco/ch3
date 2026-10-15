@@ -176,8 +176,8 @@ importers:
         specifier: ^1.87.0
         version: 1.87.0
       scriptc:
-        specifier: 0.3.x
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -220,8 +220,8 @@ importers:
         version: link:../../packages/router
     devDependencies:
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/demo:
     dependencies:
@@ -245,8 +245,8 @@ importers:
         specifier: ^24.0.0
         version: 24.19.2
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/integrations/otlp-traces:
     dependencies:
@@ -258,8 +258,8 @@ importers:
         specifier: ^24.0.0
         version: 24.19.2
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/integrations/prometheus-metrics:
     dependencies:
@@ -274,8 +274,8 @@ importers:
         specifier: ^24.0.0
         version: 24.19.2
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/integrations/webhook-server:
     dependencies:
@@ -290,8 +290,8 @@ importers:
         specifier: ^24.0.0
         version: 24.19.2
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/rate-limit:
     dependencies:
@@ -300,8 +300,8 @@ importers:
         version: link:../../packages/router
     devDependencies:
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/sse-clock:
     dependencies:
@@ -313,8 +313,8 @@ importers:
         version: link:../../packages/stream
     devDependencies:
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   examples/ws-echo:
     dependencies:
@@ -326,8 +326,8 @@ importers:
         version: link:../../packages/ws
     devDependencies:
       scriptc:
-        specifier: 0.3.1
-        version: 0.3.1
+        specifier: '>=0.3.2'
+        version: 0.3.2
 
   fixtures/vite-app:
     dependencies:
@@ -413,7 +413,7 @@ importers:
         version: 5.9.3
       typescript-next:
         specifier: npm:typescript@next
-        version: typescript@7.1.0-dev.20261013.1
+        version: typescript@7.1.0-dev.20261014.1
 
   packages/val:
     devDependencies:
@@ -1084,42 +1084,42 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@scriptc/cli-darwin-arm64@0.3.1':
-    resolution: {integrity: sha512-bi227Vhx5nxXqpsW9QnmchUpbusissbgsnFjbdjIoajun0C+qnnEGO27jW14ReBI/wRFOutgmz6GxB8DmB2tFw==}
+  '@scriptc/cli-darwin-arm64@0.3.2':
+    resolution: {integrity: sha512-1BSiyzasLRXtV+LK5LnTTcxUtfvVfaH3/7z/fwD0w16+2fNOsUjEH4cCgQ/G14gfmkxn+2hVSIPuzn/TWdL7AA==}
     cpu: [arm64]
     os: [darwin]
 
-  '@scriptc/cli-darwin-x64@0.3.1':
-    resolution: {integrity: sha512-x34HLGJD5aZwrVmSXxIzS0SgGHWnHKv+VigG1a2YDv1q5MgT1T+E5ruHsewCp9hkpWOAylo0OzPc27dAnKXEyw==}
+  '@scriptc/cli-darwin-x64@0.3.2':
+    resolution: {integrity: sha512-WdG5c+78kMrNSyk2vJwaM+EiTbO2tfd1KBXqCwu/Xawoi2kTMzK5XrAVq8p5mfvkD4YPIcgYl1cGv7RJ9hbzqA==}
     cpu: [x64]
     os: [darwin]
 
-  '@scriptc/cli-linux-arm64-gnu@0.3.1':
-    resolution: {integrity: sha512-hxtg0fAzUBh6dfkTB0zLpL6/nYfkZOAIG7vvefcwh2eP2v5WelExD8hjT2TxAzFyxsiAw5xXhE/Tj1v2xUrJUA==}
+  '@scriptc/cli-linux-arm64-gnu@0.3.2':
+    resolution: {integrity: sha512-RSP/JLTWH18MIBhqv4uLEx7f3Y+iXsb9miRaelxubFQB78uMqCJVjzpdEChX87E4GSU6EQDDp8BHxyDbMLUAmQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@scriptc/cli-linux-arm64-musl@0.3.1':
-    resolution: {integrity: sha512-Mz1v9HjSVAcF0FrTUjFStqo2m4Ccep9BRiXvd/FgAfxtU9xBvyqxn52LBaoj6k0DoTelwEP0qCpYE7UaGNBfcQ==}
+  '@scriptc/cli-linux-arm64-musl@0.3.2':
+    resolution: {integrity: sha512-Y6QWY2W4bbUA7X3GoMLXgEZVJc1PYMNtk8gSUEWYSsBP7x0qISCNtHbFUNBP8gRznPtpN75nWA0YhlYbhfzDFA==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@scriptc/cli-linux-x64-gnu@0.3.1':
-    resolution: {integrity: sha512-Q9NTbqygfAVR4co1r5qjeBaBmM9S1OvlrmgLfeENdEeubl+kZWBe6z9nGzT0sqWTg9+u9DVyVX3s1L3Jd7bNcw==}
+  '@scriptc/cli-linux-x64-gnu@0.3.2':
+    resolution: {integrity: sha512-XCWZHSxIVi1XfG6+b7sXy1TI9hV9bkyHg9D59muffRA9GvfxFQxiLqV6O/+gRnu3J8eTPXLeRcq18uj5vkzCBQ==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@scriptc/cli-linux-x64-musl@0.3.1':
-    resolution: {integrity: sha512-a52g+AOVaJt59ECPyfHRHnWP583RSTqIv8aqL/IIBR5GdALOOIKWfFMHhdDjQnu2uMQiwI/ADam5Th3szUy8FA==}
+  '@scriptc/cli-linux-x64-musl@0.3.2':
+    resolution: {integrity: sha512-+wnAR2ap5K5lAJHX2TtM5xFfs/ip6RC/KN/FVsP6QN6gd5xl2p0jPv7foUVOM4X2zIvG4UAX6FcNJue1A+gdOA==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@scriptc/cli-win32-x64-msvc@0.3.1':
-    resolution: {integrity: sha512-f7iu7fg0Vxfn1QyE2mgU66qLAxbvx2YDm2jDzHBl1Pk2e7y2cX5k915NmpYPe2mLjeQMBipQYp8GgNP6ZOZrrA==}
+  '@scriptc/cli-win32-x64-msvc@0.3.2':
+    resolution: {integrity: sha512-JeNd/IJ0dqlzwiJ/4XW88ae8rWUAN+YbxNbZjE1RsE/ymzLzP35rQEUYwPOCE1cmYQcljFKqHdTWIcrYWT0S5A==}
     cpu: [x64]
     os: [win32]
 
@@ -1132,44 +1132,44 @@ packages:
   '@types/picomatch@4.0.3':
     resolution: {integrity: sha512-iG0T6+nYJ9FAPmx9SsUlnwcq1ZVRuCXcVEvWnntoPlrOpwtSTKNDC9uVAxTsC3PUvJ+99n4RpAcNgBbHX3JSnQ==}
 
-  '@typescript/typescript-darwin-arm64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-V22DvbTQjg6kMEqU5hhZmxhZqTNdbwNz3YB1CULEtxH7gxMxPvFpMM5rbJQgZlhabo0DxvsFfTdUNjOTr4IPIQ==}
+  '@typescript/typescript-darwin-arm64@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-2hc4jcq+1fXRm7Ne1ezO6y6bHHVszIvxVEi9VVcDoz/B1bgzfKpjFVbTfDXKIxd9ALw3e/Xp4i0VKX9V7ShPrg==}
     engines: {node: '>=16.20.0'}
     cpu: [arm64]
     os: [darwin]
 
-  '@typescript/typescript-darwin-x64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-v10+lJ+NedjOIxTapLg6EQEeWkVdi48f3xVSR9b7e6QXoXCHBpsh/kWXV9TsV5ktK6dVupejI37NhYshHhL30g==}
+  '@typescript/typescript-darwin-x64@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-aChXseEW+9ZwP1HZIa8KGDEUsGzDroOyqIt9B+1JiimRgZBrgokRJXE8bqzoh5jPOAq+0uM0S6nnMExFK1SVHQ==}
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [darwin]
 
-  '@typescript/typescript-linux-arm64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-Yfc3YMuraVGekDFh3UNBnuOyXQV76kTqEGN/eYgyarHNy6T8GlhZeF27Q8MTi7UUwf5/gYb4bkXaN1QHazUIIw==}
+  '@typescript/typescript-linux-arm64@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-1PDRjhB8wT8tOUmTdRjjyFqNYm2rnpzLw4y+t86nSMTZ/F3GPZElmuVl2zj2bLCVPvlfGmKohAU3I7p+go7ksQ==}
     engines: {node: '>=16.20.0'}
     cpu: [arm64]
     os: [linux]
 
-  '@typescript/typescript-linux-arm@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-AoETMKNMW3fSoBShrmReiWcMShNLUzxlOyOEcmvWhJJYMMi0Tn6D3djoeuyojtCgUGwcygGaV5F893axTzDZ3w==}
+  '@typescript/typescript-linux-arm@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-rXPD79Av4XVc2iFxxCQTC13mHL+6kyfSKVtBE965DMjtysig+3f61wRGkeZGrv0rjcdmJq2nVNq5b2CuJ1EFDQ==}
     engines: {node: '>=16.20.0'}
     cpu: [arm]
     os: [linux]
 
-  '@typescript/typescript-linux-x64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-3A4+Mc0oaeylfTNhOqWO16Rjsus1rbUePzO8syfp3hjd2KMm97KlQjZoWQdTx4HMN+kNO0gkBeK6EPmExcfaug==}
+  '@typescript/typescript-linux-x64@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-kvoVo+r6dKfqxNt/ygx+jupAkFd4N+UghrYa/hp/86AjEUbBtbIqvOlFEYdbDFtut7VmOx1+32bhr3cBj1t6YA==}
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [linux]
 
-  '@typescript/typescript-win32-arm64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-lm1K1ltNO88ynBQiQlJJLncUPvDeimW4R50T+Adp8jsLDgbVObuBPXvaiQnpV922JeMWSnOgIH7KeRvxD3W/EQ==}
+  '@typescript/typescript-win32-arm64@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-ZYUvNVOQELG95UVwolFJyu3qrzq0xycwFUkqc0fU77QBglwkNzS6sTKli+d/HZ2PrBOK7+vnIiNdZ5dlIOd3WQ==}
     engines: {node: '>=16.20.0'}
     cpu: [arm64]
     os: [win32]
 
-  '@typescript/typescript-win32-x64@7.1.0-dev.20261013.1':
-    resolution: {integrity: sha512-+K0COtvzbCVuQFVQ25pEXlGOfOqES53+y2XNeZUSfJONLOOmfSc5sniVyTSjjrzMstg8zK9W20nJGKs1eY9BkQ==}
+  '@typescript/typescript-win32-x64@7.1.0-dev.20261014.1':
+    resolution: {integrity: sha512-wSzm2/xIkLG8ni1KoWFvKyx16iA6RdKf5qfFR/vVNS9J4QXoKDRPpl/nDNw0iI/+MaxiXFsVjOr/Hyolx7p0tQ==}
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [win32]
@@ -1799,8 +1799,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  scriptc@0.3.1:
-    resolution: {integrity: sha512-5iROCIAsGUU8TRb9XunxcydOJehl6GNaZAlVvN+nlG2tKVPHCMUNDWTLNTPgvltTkEH/iKRfZlvMB5IBjG2hKQ==}
+  scriptc@0.3.2:
+    resolution: {integrity: sha512-tE80SxNqgI1KTq/P5R8Hko3UP+FG5xrHCx57QNEGUXTD6Lu9INAtRh7xEnr7D5fERJCAMBqy1UqRTeCWRbtm/w==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -1906,8 +1906,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  typescript@7.1.0-dev.20261013.1:
-    resolution: {integrity: sha512-wEt6fQCqhZ3hrbIUaO2LS7d94FSzH+xGP+/KJCxFNFHQiG/W2L0rJ/1B7lAQv6VKntlmjWuzYQ8LABuLZ3W/sg==}
+  typescript@7.1.0-dev.20261014.1:
+    resolution: {integrity: sha512-OpS5kNEaP+xcklCDeVESU6Z+o7tfV8kiJwy29dMt43i2e6b7IkJ7fD3r8aagdLhTfpyycH1YTtv0CFmBJpMzWg==}
     engines: {node: '>=16.20.0'}
     hasBin: true
 
@@ -2487,25 +2487,25 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.64.5':
     optional: true
 
-  '@scriptc/cli-darwin-arm64@0.3.1':
+  '@scriptc/cli-darwin-arm64@0.3.2':
     optional: true
 
-  '@scriptc/cli-darwin-x64@0.3.1':
+  '@scriptc/cli-darwin-x64@0.3.2':
     optional: true
 
-  '@scriptc/cli-linux-arm64-gnu@0.3.1':
+  '@scriptc/cli-linux-arm64-gnu@0.3.2':
     optional: true
 
-  '@scriptc/cli-linux-arm64-musl@0.3.1':
+  '@scriptc/cli-linux-arm64-musl@0.3.2':
     optional: true
 
-  '@scriptc/cli-linux-x64-gnu@0.3.1':
+  '@scriptc/cli-linux-x64-gnu@0.3.2':
     optional: true
 
-  '@scriptc/cli-linux-x64-musl@0.3.1':
+  '@scriptc/cli-linux-x64-musl@0.3.2':
     optional: true
 
-  '@scriptc/cli-win32-x64-msvc@0.3.1':
+  '@scriptc/cli-win32-x64-msvc@0.3.2':
     optional: true
 
   '@types/estree@1.0.9': {}
@@ -2516,25 +2516,25 @@ snapshots:
 
   '@types/picomatch@4.0.3': {}
 
-  '@typescript/typescript-darwin-arm64@7.1.0-dev.20261013.1':
+  '@typescript/typescript-darwin-arm64@7.1.0-dev.20261014.1':
     optional: true
 
-  '@typescript/typescript-darwin-x64@7.1.0-dev.20261013.1':
+  '@typescript/typescript-darwin-x64@7.1.0-dev.20261014.1':
     optional: true
 
-  '@typescript/typescript-linux-arm64@7.1.0-dev.20261013.1':
+  '@typescript/typescript-linux-arm64@7.1.0-dev.20261014.1':
     optional: true
 
-  '@typescript/typescript-linux-arm@7.1.0-dev.20261013.1':
+  '@typescript/typescript-linux-arm@7.1.0-dev.20261014.1':
     optional: true
 
-  '@typescript/typescript-linux-x64@7.1.0-dev.20261013.1':
+  '@typescript/typescript-linux-x64@7.1.0-dev.20261014.1':
     optional: true
 
-  '@typescript/typescript-win32-arm64@7.1.0-dev.20261013.1':
+  '@typescript/typescript-win32-arm64@7.1.0-dev.20261014.1':
     optional: true
 
-  '@typescript/typescript-win32-x64@7.1.0-dev.20261013.1':
+  '@typescript/typescript-win32-x64@7.1.0-dev.20261014.1':
     optional: true
 
   abstract-logging@2.0.1: {}
@@ -3235,15 +3235,15 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  scriptc@0.3.1:
+  scriptc@0.3.2:
     optionalDependencies:
-      '@scriptc/cli-darwin-arm64': 0.3.1
-      '@scriptc/cli-darwin-x64': 0.3.1
-      '@scriptc/cli-linux-arm64-gnu': 0.3.1
-      '@scriptc/cli-linux-arm64-musl': 0.3.1
-      '@scriptc/cli-linux-x64-gnu': 0.3.1
-      '@scriptc/cli-linux-x64-musl': 0.3.1
-      '@scriptc/cli-win32-x64-msvc': 0.3.1
+      '@scriptc/cli-darwin-arm64': 0.3.2
+      '@scriptc/cli-darwin-x64': 0.3.2
+      '@scriptc/cli-linux-arm64-gnu': 0.3.2
+      '@scriptc/cli-linux-arm64-musl': 0.3.2
+      '@scriptc/cli-linux-x64-gnu': 0.3.2
+      '@scriptc/cli-linux-x64-musl': 0.3.2
+      '@scriptc/cli-win32-x64-msvc': 0.3.2
 
   secure-json-parse@4.1.1: {}
 
@@ -3359,15 +3359,15 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  typescript@7.1.0-dev.20261013.1:
+  typescript@7.1.0-dev.20261014.1:
     optionalDependencies:
-      '@typescript/typescript-darwin-arm64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-darwin-x64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-linux-arm': 7.1.0-dev.20261013.1
-      '@typescript/typescript-linux-arm64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-linux-x64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-win32-arm64': 7.1.0-dev.20261013.1
-      '@typescript/typescript-win32-x64': 7.1.0-dev.20261013.1
+      '@typescript/typescript-darwin-arm64': 7.1.0-dev.20261014.1
+      '@typescript/typescript-darwin-x64': 7.1.0-dev.20261014.1
+      '@typescript/typescript-linux-arm': 7.1.0-dev.20261014.1
+      '@typescript/typescript-linux-arm64': 7.1.0-dev.20261014.1
+      '@typescript/typescript-linux-x64': 7.1.0-dev.20261014.1
+      '@typescript/typescript-win32-arm64': 7.1.0-dev.20261014.1
+      '@typescript/typescript-win32-x64': 7.1.0-dev.20261014.1
 
   uc.micro@2.1.0: {}
 
