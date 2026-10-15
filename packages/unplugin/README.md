@@ -20,7 +20,7 @@ app.withDispatch(new CompiledRoutes(app));
 app.serve({ port: 3000 });
 ```
 
-chttp itself is authored in the [scriptc](https://github.com/sigilco/scriptc) compilable subset and lowers to a native ELF on its own. This plugin is an elective optimization on top: it recovers the declarative route table from imperative `app.get()` / `app.use()` / `app.mount()` registrations, which a general compiler cannot see. Two output modes:
+chttp itself is authored in the [scriptc](https://github.com/vercel-labs/scriptc) compilable subset and lowers to a native ELF on its own. This plugin is an elective optimization on top: it recovers the declarative route table from imperative `app.get()` / `app.use()` / `app.mount()` registrations, which a general compiler cannot see. Two output modes:
 
 - Plain vite/rollup: the generated dispatch bundles into your JS dist.
 - With [unplugin-scriptc](https://github.com/sigilco/unplugin-scriptc): the dispatch compiles to native code inside the ELF.
