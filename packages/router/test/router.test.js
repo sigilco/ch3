@@ -331,6 +331,90 @@ test("route() inherits middleware from both sides", () => {
   assert.deepEqual(hits, ["parent", "sub"]);
 });
 
+test("c.req.url returns the full path+query on the Node path", () => {
+  const app = createRouter();
+  let seen = "";
+  app.get("/q", (c) => {
+    seen = c.req.url;
+    c.text("ok");
+  });
+  call(app, { url: "/q?x=1&y=two" });
+  assert.equal(seen, "/q?x=1&y=two");
+});
+
+test("c.req.url is path-only when no query is present", () => {
+  const app = createRouter();
+  let seen = "";
+  app.get("/p", (c) => {
+    seen = c.req.url;
+    c.text("ok");
+  });
+  call(app, { url: "/p" });
+  assert.equal(seen, "/p");
+});
+
+test("app.use('*', mw) runs on every request", () => {
+  const hits = [];
+  const app = createRouter();
+  app.use("*", (c, next) => {
+    hits.push(c.req.path);
+    next();
+  });
+  app.get("/a", (c) => c.text("a"));
+  app.get("/b/c", (c) => c.text("b"));
+  call(app, { url: "/a" });
+  call(app, { url: "/b/c" });
+  assert.deepEqual(hits, ["/a", "/b/c"]);
+});
+
+test("app.use('/api/*', mw) only runs for matching paths", () => {
+  const hits = [];
+  const app = createRouter();
+  app.use("/api/*", (c, next) => {
+    hits.push(c.req.path);
+    next();
+  });
+  app.get("/api/users", (c) => c.text("u"));
+  app.get("/api/v2/items", (c) => c.text("v2"));
+  app.get("/other", (c) => c.text("o"));
+  call(app, { url: "/api/users" });
+  call(app, { url: "/api/v2/items" });
+  call(app, { url: "/other" });
+  assert.deepEqual(hits, ["/api/users", "/api/v2/items"]);
+});
+
+test("app.use(path, mw1, mw2) runs both in order when path matches", () => {
+  const order = [];
+  const app = createRouter();
+  app.use("/x/*", (c, next) => {
+    order.push("a");
+    next();
+  }, (c, next) => {
+    order.push("b");
+    next();
+  });
+  app.get("/x/y", (c) => {
+    order.push("h");
+    c.text("ok");
+  });
+  call(app, { url: "/x/y" });
+  assert.deepEqual(order, ["a", "b", "h"]);
+});
+
+test("app.use with exact path (no wildcard) only matches that path", () => {
+  const hits = [];
+  const app = createRouter();
+  app.use("/exact", (c, next) => {
+    hits.push("x");
+    next();
+  });
+  app.get("/exact", (c) => c.text("e"));
+  app.get("/exactly", (c) => c.text("ey"));
+  call(app, { url: "/exact" });
+  call(app, { url: "/exactly" });
+  assert.deepEqual(hits, ["x"]);
+});
+
 test("redirect sets status + location", () => {
   const app = createRouter();
   app.get("/r", (c) => c.redirect("/to"));
