@@ -270,6 +270,24 @@ export class FetchResponseSink extends ResponseSink {
     // Web fetch surface: no socket to destroy. Caller aborts the Request
     // signal upstream if they need to.
   }
+
+  // Build a Response from the captured state. Called by app.fetch after
+  // the chain settles. Headers come from hdrList (the append-only tail)
+  // so multi-value Set-Cookie / Link survive the round-trip; hdrKeys /
+  // hdrVals are the deduped last-wins map used by c.header() lookups.
+  toResponse(): Response {
+    const init: { status: number; headers: [string, string][] } = {
+      status: this.status,
+      headers: [],
+    };
+    for (let i = 0; i + 1 < this.hdrList.length; i += 2) {
+      init.headers.push([String(this.hdrList[i]), String(this.hdrList[i + 1])]);
+    }
+    // Join captured chunks. A future streaming adapter (follow-up) will
+    // return a ReadableStream Response instead of concatenating here.
+    const body = this.chunks.join("");
+    return new Response(body, init);
+  }
 }
 
 function utf8len(s: string): number {

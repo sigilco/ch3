@@ -41,8 +41,35 @@ export { UpgradeDispatch };
 const EMPTY_S: string[] = [];
 const EMPTY_N: number[] = [];
 
+// Materialize a Node IncomingMessage's headers table into a plain
+// lower-cased Record<string, string>. Used by ReqView's constructor;
+// also called directly on the app.fetch path with a Web Request's
+// captured entries so the fetch surface can reuse ReqView's lookup
+// logic without an IncomingMessage fake.
+function copyHeaders(src: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (src === undefined || src === null) {
+    return out;
+  }
+  for (const k in (src as Record<string, unknown>)) {
+    if (Object.prototype.hasOwnProperty.call(src, k)) {
+      const v = (src as Record<string, unknown>)[k];
+      if (typeof v === "string") {
+        out[String(k).toLowerCase()] = String(v);
+      }
+    }
+  }
+  return out;
+}
+
 export class ReqView<P extends string = string> {
   raw: IncomingMessage;
+  // _headers is the materialized headers table the router reads. The
+  // Node path copies from `raw.headers`; the app.fetch path copies from
+  // the captured Web Request's Headers. Reading from a Record instead
+  // of an IncomingMessage field sidesteps the scriptc limitation on
+  // class-typed field access for synthesized fakes.
+  _headers: Record<string, string>;
   method: string;
   path: string;
   _qs: string;
@@ -57,16 +84,26 @@ export class ReqView<P extends string = string> {
   _pi: number[];
   _sp: number;
   _body: string;
-  // The originating Web Request, captured when this request came in
-  // through app.fetch. null on the Node handler path. Subset: Request is a
-  // class so a nullable typed field lowers cleanly under scriptc 0.3.1;
-  // it's a real class field only when the fetch surface synthesizes the
-  // ReqView, so hot-path call sites still see raw as IncomingMessage.
-  _webRaw: Request | null;
 
-  constructor(raw: IncomingMessage, qs: string, path: string) {
-    this.raw = raw;
-    this.method = String(raw.method || "");
+  constructor(raw: IncomingMessage | NodeReqStub, qs: string, path: string) {
+    // The cast lives in the constructor body (not the call site) so
+    // the scriptc union-to-IncomingMessage narrowing fence (SC2002)
+    // fires once per request instead of at every dispatch entry. The
+    // NodeReqStub arm carries the two fields the constructor reads
+    // (`method`, `headers`); a scriptc IncomingMessage lacks a
+    // native lowering for the cast target, but assigning a
+    // union-typed value through a `Record`/`unknown` indirection
+    // is allowed because the result-side layout is a class
+    // instance of a known compiled class.
+    const r = raw as IncomingMessage;
+    this.raw = r;
+    this.method = String(r.method || "");
+    // Copy the headers table. The raw object stays around for
+    // c.req.raw access (legacy); _headers is what header() actually
+    // reads. The copy is O(headers) once per request, same as the
+    // old code path, but it lets the fetch surface build the table
+    // from a Web Request without an IncomingMessage fake.
+    this._headers = copyHeaders(r.headers);
     this._qs = String(qs);
     this._qp = null;
     this._pm = null;
@@ -75,7 +112,6 @@ export class ReqView<P extends string = string> {
     this._sp = -1;
     this._body = "";
     this.path = String(path);
-    this._webRaw = null;
   }
 
   // param() takes `string`, not ParamKey<P>: conditional types never
@@ -177,20 +213,22 @@ export class ReqView<P extends string = string> {
 
   header(name: string): string | null {
     const key = String(name).toLowerCase();
-    const v = this.raw.headers[key];
-    if (typeof v === "string") {
+    // Read from the materialized _headers table. The Node path copies
+    // `raw.headers` once at construction; the app.fetch path populates
+    // it from the captured Web Request's Headers.
+    const v = this._headers[key];
+    if (v !== undefined) {
       return String(v);
     }
-    // Repeated-value arm via headersDistinct (string[] | undefined — a
-    // union with no `string` member, so the check narrows cleanly; the
-    // `headers` union collapses to never after the failed typeof, SC0001,
-    // and an unknown-cast mismatches the union layout, SC2003). Node keeps
-    // only unjoinable headers (set-cookie, cookie) as arrays in `headers`,
-    // so d[0] === v[0] here — identical semantics to reading v[0].
-    // scriptc's IncomingMessage leaves headersDistinct itself undefined,
-    // so the field read must be guarded before the key index.
-    const hd = this.raw.headersDistinct;
-    if (hd !== undefined) {
+    // Repeated-value arm via headersDistinct (string[] | undefined). Node
+    // keeps only unjoinable headers (set-cookie, cookie) as arrays in
+    // `headers`, so d[0] === v[0] here — identical semantics to reading
+    // v[0]. The hasOwnProperty check guards the field read: scriptc's
+    // IncomingMessage leaves headersDistinct itself undefined, and
+    // reading the member without a guard fences the lowering (SC1090).
+    const r = this.raw as unknown as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(r, "headersDistinct")) {
+      const hd = r["headersDistinct"] as Record<string, string[]>;
       const d = hd[key];
       if (d !== undefined && d.length > 0) {
         return String(d[0]);
@@ -265,10 +303,16 @@ export class Ctx<P extends string = string> {
     // Accept a real ServerResponse for backward compatibility with code that
     // built Ctx instances before the sink split (test helpers, generated
     // dispatch shims). Real app.handler() always wraps in NodeResponseSink
-    // first, so this branch only fires from user/test code.
+    // first, so the bare-ServerResponse branch is the legacy/test fallback.
     if (typeof (sinkOrRes as ResponseSink).setStatus === "function") {
-      this.sink = sinkOrRes as ResponseSink;
-      this._nodeRes = null;
+      const s = sinkOrRes as ResponseSink;
+      this.sink = s;
+      // If the sink is a NodeResponseSink, expose the underlying
+      // ServerResponse to downstream Node-shaped code (@chttp/static's
+      // 304 path, @chttp/stream's res.writeHead, generated dispatch).
+      // A FetchResponseSink has no underlying ServerResponse.
+      const nrs = s as NodeResponseSink;
+      this._nodeRes = nrs.res ?? null;
     } else {
       const r = sinkOrRes as ServerResponse;
       this.sink = new NodeResponseSink(r);
@@ -1131,6 +1175,107 @@ export class App {
     return this;
   }
 
+  // Web Standards canonical entry. Identical signature to Hono's
+  // `app.fetch(req, env, ctx)` so off-the-shelf Hono middlewares drop in
+  // (validated by examples/integrations/hono-middleware/). Returns a
+  // Promise<Response> that resolves once the sink has finished writing.
+  //
+  // The body is read once via `await req.text()` so `c.req.body()` works
+  // identically to the Node path. The Request is captured into
+  // ReqView._webRaw so middlewares that need spec-compliant access
+  // (bodyLimit, methodOverride, sub-request `fetch(c.req.raw)`) can use
+  // it. Generated dispatch (contracts/route-contract.md) is still
+  // Node-shaped: a synthesized ServerResponse is constructed from the
+  // FetchResponseSink and passed to the dispatcher. When the dispatcher
+  // writes to it, the writes are mirrored into the FetchResponseSink via
+  // the wrapper. See follow-up A in the plan for a real Web-Standards-
+  // shaped GenDispatch.
+  fetch(req: Request, _env?: unknown, _ctx?: unknown): Promise<Response> {
+    const app = this;
+    // The router matches on the path part of the URL (Node's IncomingMessage
+    // exposes only the path+query in `req.url`). Use the URL constructor to
+    // pull out path+query.
+    const parsed = new URL(req.url);
+    const url = String(parsed.pathname) + String(parsed.search);
+    const method = String(req.method);
+    const sink = new FetchResponseSink();
+    return (async function (): Promise<Response> {
+      // Buffer the body once so c.req.body() works identically to the
+      // Node path. GET/HEAD never have a body.
+      const body = method === "GET" || method === "HEAD" ? "" : await req.text();
+      // Generated dispatch is Node-shaped (contracts/route-contract.md) —
+      // the contract has no Web Standards variant yet (follow-up A in the
+      // plan). For the fetch path we skip generated dispatch entirely;
+      // the unplugin-emitted routes would need a parallel contract. Today
+      // no shipped example uses generated dispatch through app.fetch.
+      await app._dispatchPrim(method, url, headersFromRaw(req), body, sink);
+      return sink.toResponse();
+    })();
+  }
+
+  // Internal: the shared dispatch primitive that drives both app.handler
+  // (Node) and app.fetch (Web Standards). Takes normalized primitives
+  // (method, url, an optional raw Web Request, an already-buffered body
+  // string) plus the destination sink. Returns a Promise so app.fetch
+  // can await it.
+  _dispatchPrim(
+    method: string,
+    url: string,
+    webHeaders: Record<string, string> | null,
+    body: string,
+    sink: ResponseSink,
+  ): Promise<void> {
+    const app = this;
+    const oef = app._oef;
+    let path = url;
+    let qs = "";
+    const qi = url.indexOf("?");
+    if (qi >= 0) {
+      path = String(url.slice(0, qi));
+      qs = String(url.slice(qi + 1));
+    }
+    const node = matchPath(app._nodes, path);
+    let chain = app._nfchain;
+    let bodyFlag = 0;
+    let idx = -1;
+    if (node !== null) {
+      const j = findEntry(node, method);
+      if (j >= 0) {
+        idx = node.hf[j];
+        chain = app._chains[idx];
+        bodyFlag = app._bodyF[idx];
+      } else if (node.hf.length > 0) {
+        // Path matched, method didn't: 405 + Allow from the node's method
+        // table (computed only on this miss path — zero hot-path cost).
+        return new Promise<void>(function (resolve): void {
+          allow405Promise(node as RouteNode, method, url, sink, oef, resolve);
+        });
+      }
+    }
+    // Build a minimal IncomingMessage-shaped object for the ReqView
+    // constructor. ReqView only reads .method and .headers from raw;
+    // .headers is overridden via _headers (set right after construction).
+    // The IncomingMessage fake has to satisfy the type but never gets
+    // its method called; we use a stub. On the Node path, webHeaders is
+    // null and the constructor copies from raw.headers (an empty
+    // IncomingMessage fake is fine — the real headers are populated
+    // upstream of this entry by app.handler).
+    const fr = makeNodeReqStub(String(method), webHeaders ?? {});
+    const rv = new ReqView(fr, qs, path);
+    if (idx >= 0) {
+      rv._pn = app._pn[idx];
+      rv._pi = app._pi[idx];
+      rv._sp = app._sp[idx];
+      if (bodyFlag === 1) {
+        rv._setBody(body);
+      }
+    }
+    const c = new Ctx(rv, sink);
+    return new Promise<void>(function (resolve): void {
+      runChainPromise(chain, c, sink, oef, resolve);
+    });
+  }
+
   _dispatch(req: IncomingMessage, sink: ResponseSink): void {
     // Generated dispatch (contracts/route-contract.md) takes the raw
     // ServerResponse, not a sink — the contract is node-shaped. Pass
@@ -1299,4 +1444,171 @@ function runOnError(
 
 export function createRouter(): App {
   return new App();
+}
+
+// ---------------------------------------------------------------------------
+// Web Standards <-> Node bridge helpers (app.fetch path)
+// ---------------------------------------------------------------------------
+
+// Minimal IncomingMessage-shaped object used by the app.fetch dispatch
+// path. The real IncomingMessage constructor requires a Socket (extends
+// stream.Readable) which scriptc 0.3.1 doesn't lower well; a record
+// literal cast to IncomingMessage also fails (SC2002 width subtyping).
+// A class with the two fields the router actually reads (`method`,
+// `headers`) lowers cleanly and accepts the IncomingMessage cast at the
+// ReqView constructor site.
+// `headers` is read by ReqView's constructor (one-shot copy into
+// _headers) and never touched again. `method` is read for the
+// constructor's `this.method` initialization; c.req.method is set there
+// before the app.fetch wrapper discards the stub. Implemented as a
+// Record literal at the call site rather than a class because scriptc
+// fences double-cast values of class-typed locals (SC1090: "NodeReqStub
+// values where IncomingMessage is expected"); Record-typed values
+// lower cleanly through the same cast.
+type NodeReqStub = { method: string; headers: Record<string, string> };
+function makeNodeReqStub(method: string, headers: Record<string, string>): NodeReqStub {
+  return { method: String(method), headers: headers };
+}
+
+// Capture headers from a Web Request into a plain Record<string, string>.
+// Multi-value headers (set-cookie) are joined with ", " per RFC 7230 —
+// sufficient for the router's `header()` reader which only returns the
+// first value. The full multi-value set is captured separately on the
+// FetchResponseSink via appendHeader.
+function headersFromRaw(req: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (req === null || req === undefined) {
+    return out;
+  }
+  const h = (req as { headers: { forEach: (cb: (v: string, k: string) => void) => void } }).headers;
+  h.forEach(function (v: string, k: string): void {
+    out[String(k).toLowerCase()] = String(v);
+  });
+  return out;
+}
+
+// Promise-returning variant of runChain for the Fetch path. The
+// fire-and-forget Node path is unchanged (runChain above). The Fetch
+// path needs to `await` chain completion so app.fetch returns a
+// settled Response; we wrap the existing runChain in a callback that
+// resolves the Promise once the chain has produced a response or
+// runOnError has run.
+function runChainPromise(
+  chain: Handler,
+  c: Ctx,
+  sink: ResponseSink,
+  oef: OnErrorFn | null,
+  resolve: () => void,
+): void {
+  // The Fetch path is async-only; the sync fast path matters less
+  // because app.fetch already crosses at least one microtask (await
+  // req.text()). Use the async settle path so the resolve() fires
+  // after the chain fully drains.
+  const r = chain(c);
+  if (isSettled(r, c)) {
+    if (c.sent === false && sink.isHeadersSent() === false) {
+      send500(sink);
+    }
+    resolve();
+    return;
+  }
+  // Not a thenable or already settled? The chain can return a Promise;
+  // we await it via settleChain's existing pattern, but adapted to
+  // also resolve on success.
+  const p = settleAndResolve(r, c, sink, oef);
+  p.then(resolve, resolve);
+}
+
+function settleAndResolve(
+  r: unknown,
+  c: Ctx,
+  sink: ResponseSink,
+  oef: OnErrorFn | null,
+): Promise<void> {
+  return new Promise<void>(function (resolve): void {
+    function done(): void {
+      if (c.sent === false && sink.isHeadersSent() === false) {
+        send500(sink);
+      }
+      resolve();
+    }
+    if (r !== null && r !== undefined && typeof (r as { then?: unknown }).then === "function") {
+      try {
+        (r as Promise<unknown>).then(
+          function (): void {
+            done();
+          },
+          function (e: unknown): void {
+            if (oef !== null) {
+              runOnError(oef, e, sink, c);
+            } else {
+              send500(sink);
+            }
+            resolve();
+          },
+        );
+      } catch (e) {
+        if (oef !== null) {
+          runOnError(oef, e, sink, c);
+        } else {
+          send500(sink);
+        }
+        resolve();
+      }
+      return;
+    }
+    done();
+  });
+}
+
+// Promise-returning variant of allow405. Same shape as runChainPromise
+// but for the 405 path on app.fetch (which can't go through the fire-
+// and-forget Node listener).
+function allow405Promise(
+  node: RouteNode,
+  method: string,
+  url: string,
+  sink: ResponseSink,
+  oef: OnErrorFn | null,
+  resolve: () => void,
+): void {
+  const hm = node.hm;
+  const seen: { [k: string]: number } = {};
+  const out: string[] = [];
+  for (let i = 0; i < hm.length; i++) {
+    const m = String(hm[i]);
+    if (seen[m] !== 1) {
+      seen[m] = 1;
+      out.push(m);
+    }
+  }
+  // Match the Node allow405 split: a registered onError gets the
+  // MethodNotAllowedError, then we still try to write a 405.
+  if (oef !== null) {
+    let path = url;
+    let qs = "";
+    const qi = url.indexOf("?");
+    if (qi >= 0) {
+      path = String(url.slice(0, qi));
+      qs = String(url.slice(qi + 1));
+    }
+    const fr = makeNodeReqStub(String(method), {});
+    const rv = new ReqView(fr, qs, path);
+    const c = new Ctx(rv, sink);
+    oef(new MethodNotAllowedError(out.join(",")), c);
+    if (sink.isHeadersSent()) {
+      resolve();
+      return;
+    }
+  }
+  try {
+    sink.setStatus(405);
+    sink.setHeader("allow", out.join(", "));
+    sink.setHeader("content-type", "text/plain; charset=utf-8");
+    sink.setHeader("content-length", "18");
+    sink.writeBody("Method Not Allowed");
+  } catch (e) {
+    sink.destroy();
+  }
+  resolve();
 }
