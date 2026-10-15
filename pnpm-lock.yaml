@@ -229,6 +229,22 @@ importers:
         specifier: workspace:*
         version: link:../../packages/router
 
+  examples/integrations/aws-lambda:
+    dependencies:
+      '@chttp/router':
+        specifier: workspace:*
+        version: link:../../../packages/router
+    devDependencies:
+      '@types/aws-lambda':
+        specifier: ^8.10.0
+        version: 8.10.164
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.2
+      scriptc:
+        specifier: 0.3.1
+        version: 0.3.1
+
   examples/integrations/cloudflare-workers:
     dependencies:
       '@chttp/router':
@@ -1385,6 +1401,9 @@ packages:
 
   '@speed-highlight/core@1.2.24':
     resolution: {integrity: sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw==}
+
+  '@types/aws-lambda@8.10.164':
+    resolution: {integrity: sha512-XOnrazWcOd6yWPnR7DxqCBPPYciDjHq+NN8LPwwqBCJNXLyPJgKo47fZpJ113+oyAn9Zti0Cf6H4k6yPcE3WFg==}
 
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
@@ -3015,6 +3034,8 @@ snapshots:
   '@sindresorhus/is@7.2.0': {}
 
   '@speed-highlight/core@1.2.24': {}
+
+  '@types/aws-lambda@8.10.164': {}
 
   '@types/estree@1.0.9': {}
 

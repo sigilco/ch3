@@ -20,6 +20,7 @@ versioning:
   ignore:
     - chttp-demo
     - chttp-example-backpressure
+    - chttp-example-aws-lambda
     - chttp-example-cloudflare-workers
     - chttp-example-hono-middleware
     - chttp-example-logging-file-audit

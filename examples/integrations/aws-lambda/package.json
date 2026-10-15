@@ -1,0 +1,19 @@
+{
+  "name": "chttp-example-aws-lambda",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:elf": "scriptc build src/handler.ts --npm-static @chttp/router -o bootstrap",
+    "start:node": "node --experimental-strip-types src/handler.ts",
+    "test": "node --experimental-strip-types --test test/smoke.test.ts"
+  },
+  "dependencies": {
+    "@chttp/router": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
+    "@types/node": "^24.0.0",
+    "scriptc": "0.3.1"
+  }
+}
