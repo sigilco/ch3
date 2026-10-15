@@ -79,6 +79,21 @@ On an error, `runOnError` applies this order:
 
 A path match whose method misses goes through `allow405` instead: a 405 with an `Allow` header built from the node's registered methods (`*` expands to every standard verb, GET implies HEAD). If an `onError` is registered it first gets a synthetic `Ctx` wrapping the real request so it can answer custom 405s.
 
+## Response sink and the two surfaces
+
+`Ctx` writes through a `ResponseSink` rather than directly to a `ServerResponse`. The sink has two concrete subclasses:
+
+- `NodeResponseSink` (`packages/router/src/sink.ts`) wraps a real `node:http` `ServerResponse`. `setStatus`, `setHeader`, `appendHeader`, `body` map one-to-one to the underlying socket. This is the path the `app.handler()` adapter uses.
+- `FetchResponseSink` captures into a `{status, headers: Headers, chunks: Uint8Array[]}` record. `app.fetch()` finalizes the sink by constructing a `new Response(stream, init)` from the captured chunks, so the same chain code produces a spec-compliant Web `Response` that the Workerd / Deno Deploy / Bun / Vercel Edge / Service Worker / Lambda @edge runtime can serialize and ship.
+
+The two sinks share a `ResponseSink` base class with `setStatus`, `setHeader`, `appendHeader`, `body`, `redirect`, `isSent`, and `finalize`. `Ctx` holds the sink; `c.text`, `c.json`, `c.html`, `c.bytes`, `c.header`, `c.redirect`, `c.status` all dispatch through it. Handlers and middleware never see `ServerResponse` or `Response` directly except via `c.req.raw` (the inbound `Request`) and the optional `c.res` getter (the outbound platform object: `ServerResponse` on the Node path, a `Response`-shaped view on the fetch path).
+
+`app.handler()` is a ~60 LOC Node adapter that synthesizes a `Request` from the inbound `IncomingMessage` (path, method, query, headers, buffered body) and a `NodeResponseSink` over the `ServerResponse`, then awaits `app._runSink(req, sink)`. `app.fetch(req, env?, ctx?)` is the canonical entry — the same `createRouter()` symbol works on Node, every Workers / Edge runtime, and as a Service Worker.
+
+`@chttp/stream` writes through the same sink. On the Node path chunks flush straight to the socket; on the fetch path they collect into a `ReadableStream` that the runtime pulls lazily. Streaming parity is covered by the standard `pnpm test` suite plus the `chttp-fetch` scriptc gate (`bench/apps/chttp-fetch.ts`, 100% static coverage).
+
+Generated dispatch (`@chttp/unplugin`) still emits a `NodeResponseSink`-shaped class — the build-time seam is Node-shaped and unchanged. The fetch path synthesizes a `Request` plus a `NodeResponseSink` and intercepts `finalize()` to produce the `Response`. A follow-up issue proposes a parallel Web-Standards-shaped emitter (`GenFetch`); it's not required for the surface contract.
+
 ## scriptc compilation
 
 chttp's source is written inside the scriptc-compilable subset so `scriptc build` lowers it to a native binary. The constraints that force the code into its current shape:

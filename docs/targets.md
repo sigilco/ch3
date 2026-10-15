@@ -1,6 +1,14 @@
 # Run targets
 
-The same source runs on node or compiles to a native ELF. Pick per deployment.
+The same source runs on three targets. Pick per deployment.
+
+| Target | Entry | When |
+| --- | --- | --- |
+| Node | `app.serve({port})` or `app.handler()` | npm packages, fastest iteration, dev workflow |
+| Web Standards | `app.fetch(req, env, ctx)` | Cloudflare Workers, Deno Deploy, Bun, Vercel Edge, Netlify Edge, Lambda, Service Worker, anywhere with a `Request` |
+| Native ELF | `scriptc build` → static binary | Containers, scratch images, ~3 ms cold start, no runtime needed |
+
+The Web Standards surface is canonical. `app.handler()` is a 50-80 LOC Node adapter around `app.fetch`; the same `createRouter()` symbol works in every environment.
 
 ## Node
 
@@ -10,6 +18,25 @@ node app.js
 
 Any npm package works. `app.serve()` wraps `http.createServer`; use `app.handler()` to mount into your own server.
 
+## Web Standards
+
+```ts
+// Anywhere with a `Request` in scope
+const res = await app.fetch(new Request("http://localhost/user/42"));
+
+// Cloudflare Workers / Deno Deploy / Bun / Vercel Edge / Service Worker
+export default { async fetch(req, env, ctx) { return app.fetch(req, env, ctx); } };
+```
+
+The Ctx surface is Web-Standards-shaped: `c.req.{url,method,path,header,query,param,body,raw}`,
+`c.set`/`c.get` for request-scoped vars, `c.header(name, value, {append: true})` for
+multi-value headers. Off-the-shelf Hono middlewares wire in via the
+[`hono-middleware`](../examples/integrations/hono-middleware/) template.
+
+Recipes:
+- [`examples/integrations/cloudflare-workers/`](../examples/integrations/cloudflare-workers/) — CF Workers via `app.fetch`
+- [`examples/integrations/aws-lambda/`](../examples/integrations/aws-lambda/) — API Gateway v2 / Lambda URL bridge (Node or `provided.al2023` ELF)
+
 ## Native ELF
 
 ```sh
@@ -18,6 +45,10 @@ scriptc build app.js --npm-static @chttp/router --optimization=speed -o app-bin
 ```
 
 Everything the app imports must stay inside the scriptc subset, so npm packages outside it do not compile. Check with `scriptc coverage`. Rules for authors: [Coding agents](architecture.md).
+
+The `app.fetch` surface compiles to ELF too — the gate
+[`bench/apps/chttp-fetch.ts`](../bench/apps/chttp-fetch.ts) stays at 100% static
+coverage as part of the standard gate suite.
 
 ## Bundler pipeline
 
