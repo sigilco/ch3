@@ -9,6 +9,7 @@
 - Pass `this` through a `const self: WsConn = this` local when handing it to a user subclass method.
 - Use `s.charAt(i)` not `s[i]`; guard `T | undefined` explicitly; named imports only; `Socket` (not `Duplex`) for the upgrade socket.
 - Subclassing a package class from a user program only lowers when the whole graph is program code (see `docs/websocket.md`, "Compiling to a native binary"). `examples/ws-echo/scripts/vendor.mjs` is the supported layout.
+- The same boundary bites `WsWriter` itself: a subclassed `_write` does not pump when the class ships inside a statically compiled npm package (`write()` buffers forever). The writer probes the pump at construction and falls back to direct sink writes (`_direct`), leaving the per-window byte cap as the only slow-consumer policy there; see `bench/scriptc-evidence/ws-backpressure-package-mode-2026-10-15.txt`.
 - No permessage-deflate. UTF-8 validity is checked by a decode/encode round trip. Autobahn conformance is not run yet (TODO in `docs/websocket.md`).
 
 ## Gates
