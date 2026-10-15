@@ -40,6 +40,11 @@ app.all('/any', (c) => c.text('any:' + c.req.method))
 const dyn = '/dyn'
 app.get(dyn, (c) => c.text('dynamic'))
 
+// declared multipart — runtime owns the stream; the plugin must decline it
+app.post('/upload', (c) => c.json({ t: c.req.field('title') }), {
+  multipart: { maxFileBytes: 1024 },
+})
+
 app.notFound((c) => {
   c.status(404)
   c.text('not found')

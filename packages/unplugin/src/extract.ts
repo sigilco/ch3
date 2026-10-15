@@ -620,6 +620,13 @@ export function extractModule(fileName: string, code: string, opts?: ExtractOpti
       return { ok: false, body: false };
     }
     const o = v.v as { [k: string]: unknown };
+    if (o.multipart !== undefined) {
+      // Declared-multipart rule (contracts/route-contract.md): the runtime
+      // owns the stream for these routes — generated dispatch must decline
+      // them rather than serve them unbuffered/unparsed.
+      warn(node, "multipart route — stays runtime-only (internal dispatch parses)");
+      return { ok: false, body: false };
+    }
     return { ok: true, body: o.body === true };
   };
 

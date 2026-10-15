@@ -269,18 +269,20 @@ describe("e2e: contract version validation at withDispatch", () => {
   it("throws naming both versions on mismatch", async () => {
     const m = (await import(CHTTP_SRC)) as {
       createRouter: () => { withDispatch: (d: unknown) => unknown };
+      ROUTE_CONTRACT_VERSION: number;
     };
     assert.throws(
       () => m.createRouter().withDispatch(mkGen(999)),
-      /contract version mismatch.*v999.*v2/,
+      new RegExp("contract version mismatch.*v999.*v" + String(m.ROUTE_CONTRACT_VERSION)),
     );
   });
 
   it("accepts a matching stamp and a missing stamp", async () => {
     const m = (await import(CHTTP_SRC)) as {
       createRouter: () => { withDispatch: (d: unknown) => unknown; get: unknown };
+      ROUTE_CONTRACT_VERSION: number;
     };
-    m.createRouter().withDispatch(mkGen(2));
+    m.createRouter().withDispatch(mkGen(m.ROUTE_CONTRACT_VERSION));
     m.createRouter().withDispatch({ dispatch: () => false });
   });
 
