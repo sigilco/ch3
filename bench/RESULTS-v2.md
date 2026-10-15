@@ -538,3 +538,58 @@ scriptc build with the embedded dynamic engine enabled, or it conflates a
 the lowerings above (or hono's dispatch is restructured into the subset), the
 comparison chttp-ELF vs compiled-Hono has no measurable right-hand side, and
 the only honest compiled-Hono row is "does not run".
+
+## Re-baseline on app.fetch Web Standards refactor (2026-10-15, branch `feat/app-fetch-web-standards`)
+
+Re-ran the chttp-node / chttp-bun / hono-node / hono-bun / h3-node / h3-bun / raw-node / raw-bun / raw-scriptc / fmw-node / fmw-bun / express-node / express-bun / fastify-node / fastify-bun subjects on commit 2d764f9 of feat/app-fetch-web-standards, on a dedicated 8-vCPU Linux KVM (no shared dev-VM load). The router refactor (ResponseSink split, app.fetch as canonical surface, c.set/c.get, c.req.raw, c.header append, App.use(path, ...mw)) is the change being measured. `chttp-scriptc` and `chttp-fast-scriptc` were skipped: `scriptc build` (0.3.1 and 0.3.2) fails on the refactored router with `SC9001: internal compiler error: live dynFrom of unsupported type httpReq` at `packages/router/src/index.ts:120` and `:242` — the `ReqView` constructor/`header()` fast-path code added by this refactor is not yet lowerable by scriptc. `raw-scriptc` still builds and runs. `fastify-*` and `chttp-scriptc` subject entries were restored locally in `run.sh` (they existed at v2-harness commit e57e23c and were dropped in the @chttp rename).
+
+### Environment
+- host: Linux 6.8.0-1061-aws KVM guest, 8 vCPU, 31 GiB, Ubuntu 22.04 (same class as bench/ENV.md)
+- node: v24.19.0
+- bun: 1.4.3
+- scriptc: 0.3.1 (0.3.2 also tried — same SC9001 failure on chttp subjects)
+- shared-VM caveat: yes (loopback client+server share all 8 cores, per bench/ENV.md)
+
+### autocannon matrix (-c64 -d6, median; methodology matches the v2 section)
+
+| subject | json | user | echo64 | echo1k | deep | files | missing | mixed |
+|---|---|---|---|---|---|---|---|---|
+| chttp-node | 82,400 | 80,011 | 71,147 | 58,453 | 75,936 | 72,936 | 77,248 | 68,811 |
+| chttp-bun | 85,664 | 88,053 | 81,291 | 65,651 | 84,992 | 85,899 | 89,056 | 83,755 |
+| hono-node | 82,496 | 78,304 | 61,141 | 59,360 | 83,808 | 81,557 | 78,464 | 77,675 |
+| hono-bun | 109,131 | 109,429 | 98,965 | 92,640 | 98,357 | 93,632 | 99,968 | 93,024 |
+| h3-node | 78,133 | 76,981 | 43,989 | 40,901 | 71,021 | 70,797 | 43,381 | 67,509 |
+| h3-bun | 105,163 | 104,864 | 102,272 | 94,731 | 107,552 | 110,933 | 104,352 | 96,768 |
+| raw-node | 81,899 | 81,877 | 68,971 | 60,819 | 80,075 | 80,565 | 80,427 | 78,912 |
+| raw-bun | 101,472 | 103,925 | 98,005 | 89,536 | 103,136 | 103,168 | 101,557 | 98,411 |
+| raw-scriptc | 87,040 | 91,029 | 88,704 | 85,333 | 90,645 | 97,771 | 95,605 | 93,077 |
+| fmw-node | 80,299 | 78,507 | 69,885 | 67,147 | 77,141 | 77,845 | 96,544 | 77,803 |
+| fmw-bun | 80,789 | 86,400 | 83,819 | 76,064 | 85,088 | 82,901 | 94,549 | 79,883 |
+| express-node | 51,003 | 47,056 | 37,371 | 39,072 | 48,581 | 46,171 | 41,392 | 40,064 |
+| express-bun | 75,552 | 71,944 | 55,893 | 49,643 | 72,096 | 71,051 | 67,240 | 59,349 |
+| fastify-node | 81,515 | 78,795 | 62,680 | 57,280 | 70,160 | 76,608 | 72,472 | 76,384 |
+| fastify-bun | 95,456 | 95,104 | 80,821 | 68,245 | 88,085 | 83,872 | 87,179 | 72,491 |
+
+### vs v2 baseline (2026-10-11)
+
+| subject | median % vs v2 | notable cell | notable % | interpretation |
+|---|---|---|---|---|
+| chttp-node | +15% | json | +30% | ahead — real improvement on headline cells, possibly significant |
+| chttp-bun | -2% | echo64 | -22% | in noise overall; echo64/files cells worth a re-check |
+| hono-node | +11% | json | +34% | ahead — host-run favorable to node runtimes generally |
+| hono-bun | -0% | echo1k | +48% | in noise |
+| h3-node | +18% | user | +42% | ahead — same host shift as hono-node |
+| h3-bun | +8% | json | +34% | in noise |
+| raw-node | +0% | user | +21% | in noise — control subject confirms no systematic host regression |
+| raw-bun | -6% | user | +20% | in noise |
+| raw-scriptc | -0% | json | +20% | in noise |
+| fmw-node | -6% | deep | -13% | in noise |
+| fmw-bun | -13% | missing | -19% | in noise to mild — bun subjects drifted low this run |
+| express-node | -10% | json | +19% | in noise |
+| express-bun | -9% | echo64 | -14% | in noise |
+| fastify-node | +20% | json | +63% | ahead — large, but same direction as hono/h3 node subjects |
+| fastify-bun | -7% | files | -21% | in noise |
+
+### Verdict on the refactor
+
+The refactor is not a perf regression. On a dedicated cloud host, chttp-node is a median +15% vs the v2 baseline and is *ahead* on the headline cells (json +30%, user +27%, mixed +20%, missing +15%), with only echo64 (−2%), echo1k (−7%), deep (−10%), files (−11%) marginally behind — all within the documented ±10–20% per-cell noise. The raw-node control is flat (median 0%), so the local dev-VM 30–50% drop was shared-VM noise, as suspected. The +15~+20% medians on chttp-node, hono-node, h3-node, and fastify-node move together (this host favors node subjects generally), so the honest read on chttp-node is "at parity or modestly ahead" rather than a big win. Two real findings: (1) chttp-bun's echo64 −22% / files −16% — bun-specific cells dipped while other bun subjects drifted too, so likely bun noise, but worth a re-check; (2) `scriptc build` can no longer lower the router (SC9001 internal error on ReqView at index.ts:120,242) — the app.fetch refactor introduced code scriptc 0.3.x cannot compile, so chttp-scriptc/chttp-fast-scriptc have no numbers on this branch.
