@@ -672,3 +672,58 @@ test("c.bytes is HEAD-safe over real http", async () => {
   assert.equal((await h.arrayBuffer()).byteLength, 0);
   srv.close();
 });
+
+test("fetchShim drives the fetch dispatch path with primitives", async () => {
+  const app = createRouter();
+  app.use("*", (c, next) => {
+    c.header("x-shim", "1");
+    next();
+  });
+  app.get("/json", (c) => c.json({ hello: "world" }));
+  app.get("/u/:id", (c) => c.text("id=" + c.req.param("id")));
+  app.get("/cookies", (c) => {
+    c.header("set-cookie", "a=1", { append: true });
+    c.header("set-cookie", "b=2", { append: true });
+    return c.text("ok");
+  });
+  app.post("/echo", (c) => c.text("body=" + c.req.body()));
+
+  const call = (method, url, body = "") =>
+    new Promise((resolve) => {
+      app.fetchShim(method, url, null, body, (status, hdrList, out) =>
+        resolve({ status, hdrList, out }),
+      );
+    });
+
+  const j = await call("GET", "/json");
+  assert.equal(j.status, 200);
+  assert.equal(j.out, '{"hello":"world"}');
+  assert.ok(j.hdrList.includes("x-shim"));
+
+  const u = await call("GET", "/u/42?q=1");
+  assert.equal(u.status, 200);
+  assert.equal(u.out, "id=42");
+
+  const ck = await call("GET", "/cookies");
+  assert.equal(ck.status, 200);
+  const setCookies = [];
+  for (let i = 0; i + 1 < ck.hdrList.length; i += 2) {
+    if (ck.hdrList[i] === "set-cookie") setCookies.push(ck.hdrList[i + 1]);
+  }
+  assert.deepEqual(setCookies, ["a=1", "b=2"]);
+
+  const e = await call("POST", "/echo", "hello");
+  assert.equal(e.status, 200);
+  assert.equal(e.out, "body=hello");
+
+  const m = await call("GET", "/missing");
+  assert.equal(m.status, 404);
+
+  const nf = await call("GET", "/echo");
+  assert.equal(nf.status, 405);
+  const allow = [];
+  for (let i = 0; i + 1 < nf.hdrList.length; i += 2) {
+    if (nf.hdrList[i] === "allow") allow.push(nf.hdrList[i + 1]);
+  }
+  assert.ok(allow.length > 0);
+});

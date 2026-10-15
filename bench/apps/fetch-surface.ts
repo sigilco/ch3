@@ -1,14 +1,14 @@
-// Spike: app.fetch-shaped dispatch in a scriptc ELF without WHATWG
-// Request construction. `new Request` is unconstructable under scriptc
-// ("expected object at $, got Request"), so this app exercises the
-// fetch dispatch path a host shim would use: Node server in,
-// _dispatchPrim + FetchResponseSink + toResponse() out.
+// Fetch-surface scriptc gate: exercises the app.fetch dispatch path
+// in an ELF via app.fetchShim (`new Request` is unconstructable under
+// scriptc, so the WHATWG entry cannot boot here). Node server in,
+// fetchShim (method/url/headers/body primitives) out.
 //
-// Throwaway spike — signal over polish. No autocannon, no bench cells.
+// Covered by scripts/scriptc-gate.sh; serves 200s under scriptc 0.3.3
+// including c.set/c.get, append headers and middleware.
 
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createRouter, FetchResponseSink } from "../../packages/router/src/index.ts";
+import { createRouter } from "../../packages/router/src/index.ts";
 
 const app = createRouter();
 
@@ -32,22 +32,20 @@ app.get("/cookies", (c) => {
 app.post("/echo", (c) => c.text(c.req.body()));
 
 const srv = createServer(function (req: IncomingMessage, res: ServerResponse): void {
-  const method = String(req.method || "GET");
-  const url = String(req.url || "/");
   const body = "";
-  const sink = new FetchResponseSink();
-  const p = app._dispatchPrim(method, url, null, body, sink);
-  p.then(function (): void {
-    const out = sink.toResponse();
-    res.statusCode = out.status;
-    const hs = sink.hdrList;
-    for (let i = 0; i + 1 < hs.length; i += 2) {
-      res.setHeader(String(hs[i]), String(hs[i + 1]));
-    }
-    out.text().then(function (t: string): void {
-      res.end(t);
-    });
-  });
+  app.fetchShim(
+    String(req.method || "GET"),
+    String(req.url || "/"),
+    null,
+    body,
+    function (status: number, hdrList: string[], out: string): void {
+      res.statusCode = status;
+      for (let i = 0; i + 1 < hdrList.length; i += 2) {
+        res.setHeader(String(hdrList[i]), String(hdrList[i + 1]));
+      }
+      res.end(out);
+    },
+  );
 });
 
 srv.listen(3000, function (): void {

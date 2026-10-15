@@ -1342,6 +1342,44 @@ export class App {
     })();
   }
 
+  // Host-shim entry for compiled (ELF) programs. `new Request` is
+  // unconstructable under scriptc (upstream fence, tracked with
+  // vercel-labs/scriptc#963 follow-ups), so an ELF host cannot call
+  // app.fetch(req). This variant takes plain primitives and reports the
+  // response back through a callback — no WHATWG types on either side:
+  //
+  //   app.fetchShim(method, url, headers, body, function (status, hdrList, out) {
+  //     res.statusCode = status;
+  //     for (let i = 0; i + 1 < hdrList.length; i += 2) {
+  //       res.setHeader(hdrList[i], hdrList[i + 1]);
+  //     }
+  //     res.end(out);
+  //   });
+  //
+  // hdrList is a flat [k1, v1, k2, v2, ...] array in finalization order —
+  // appendHeader keys appear once per appended value, matching HTTP wire
+  // semantics. `respond` may fire synchronously for 404/405 fast paths;
+  // hosts must treat it as fire-and-forget (same contract as handler()).
+  // JS runtimes should keep using app.fetch — this entry exists so the
+  // same route table is exercisable in a native ELF (bench/apps/
+  // fetch-surface.ts is the working example).
+  fetchShim(
+    method: string,
+    url: string,
+    headers: Record<string, string> | null,
+    body: string,
+    respond: (status: number, hdrList: string[], body: string) => void,
+  ): void {
+    const app = this;
+    const sink = new FetchResponseSink();
+    const m = String(method).toUpperCase();
+    const seeded = m === "GET" || m === "HEAD" ? "" : String(body);
+    const p = app._dispatchPrim(String(method), String(url), headers, seeded, sink);
+    p.then(function (): void {
+      respond(sink.status, sink.hdrList, sink.chunks.join(""));
+    });
+  }
+
   // Internal: the shared dispatch primitive that drives both app.handler
   // (Node) and app.fetch (Web Standards). Takes normalized primitives
   // (method, url, an optional raw Web Request, an already-buffered body
@@ -1365,14 +1403,12 @@ export class App {
     }
     const node = matchPath(app._nodes, path);
     let chain = app._nfchain;
-    let bodyFlag = 0;
     let idx = -1;
     if (node !== null) {
       const j = findEntry(node, method);
       if (j >= 0) {
         idx = node.hf[j];
         chain = app._chains[idx];
-        bodyFlag = app._bodyF[idx];
       } else if (node.hf.length > 0) {
         // Path matched, method didn't: 405 + Allow from the node's method
         // table (computed only on this miss path — zero hot-path cost).
@@ -1401,10 +1437,12 @@ export class App {
       rv._pn = app._pn[idx];
       rv._pi = app._pi[idx];
       rv._sp = app._sp[idx];
-      if (bodyFlag === 1) {
-        rv._setBody(body);
-      }
     }
+    // Both fetch-path callers hand over an already-buffered body, so seed
+    // it unconditionally: c.req.body() works without { body: true } (Hono
+    // parity — the host already paid for the read). The bodyFlag gate only
+    // controls buffering cost on the streaming Node path in _dispatch.
+    rv._setBody(body);
     const c = new CtxCore(rv, sink);
     return new Promise<void>(function (resolve): void {
       runChainPromise(chain, c, sink, oef, resolve);
