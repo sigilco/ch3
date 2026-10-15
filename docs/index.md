@@ -1,6 +1,6 @@
 # What is chttp
 
-chttp is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset so the same source also compiles to a single native ELF.
+chttp is a minimal async-first HTTP router for `node:http`, authored inside the [scriptc](https://github.com/vercel-labs/scriptc) compilable subset so the same source also compiles to a single native ELF.
 
 ```ts
 import { createRouter } from "@chttp/router";
