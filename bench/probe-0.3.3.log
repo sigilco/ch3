@@ -1,0 +1,46 @@
+scriptc 0.3.3 probe — bench/scriptc-0.3.3-ctx-probe off f0156bb (feat/app-fetch-web-standards)
+Host: 8 vCPU KVM guest, Ubuntu 22.04, node v24.19.0, scriptc 0.3.3 (npm -g)
+Date: 2026-10-15
+
+== Static coverage gates (bash scripts/scriptc-gate.sh) ==
+ok   bench/apps/chttp-fetch.ts  compile statically 972 (100%)
+ok   bench/apps/chttp-html.ts   compile statically 1053 (100%)
+ok   bench/apps/chttp-stream.ts compile statically 1082 (100%)
+ok   bench/apps/chttp-val.ts    compile statically 1635 (100%)
+ok   packages/static/gate.ts    compile statically 1330 (100%)
+
+== Build: scriptc build bench/apps/chttp.ts -o /tmp/chttp-033 --optimization=speed ==
+Build SUCCEEDED on 0.3.3 — no SC9001 anywhere, including the previously-failing
+site at packages/router/src/index.ts:157 (`String((r as { url?: unknown }).url || path)`).
+Binary: /tmp/chttp-033, 2,335,424 bytes (2.2 MB).
+
+== Runtime probe of /tmp/chttp-033 (listens on :3000) ==
+$ curl -i http://127.0.0.1:3000/json
+HTTP/1.1 500 Internal Server Error
+content-type: text/plain; charset=utf-8
+(body: "Internal Server Error")
+
+GET /user/42 -> 500 (same; process dies after first request)
+GET /echo    -> 405 allow: POST   (routing works; only dispatch breaks)
+POST /echo   -> 000 (process already dead)
+GET /missing -> 000 (process already dead)
+
+Server log verbatim:
+  Uncaught TypeError: rv._setBody is not a function
+
+Notes:
+- The 0.3.1/0.3.2 error was `c.json is not a function` / `c.text is not a
+  function` on the Ctx instance. Under 0.3.3 the first failure is now on
+  the ReqView instance (`rv._setBody`), then the process exits — same
+  methodless-instance lowering bug family, earlier failure site.
+- Routing/method-allowance still works (405 allow: POST on GET /echo), i.e.
+  the router tables lower fine; the ReqView/Ctx instance method tables do not.
+
+== Build: scriptc build bench/apps/chttp-fetch.ts -o /tmp/chttp-fetch-033 ==
+Build SUCCEEDED. Binary: /tmp/chttp-fetch-033, 2,312,104 bytes.
+Runtime: process exits at startup:
+  Unhandled promise rejection: TypeError: expected object at $, got Request
+The app file synthesizes `new Request("http://localhost/echo")` at module
+load to exercise app.fetch; WHATWG Request is not constructable under
+scriptc, so the fetch-surface ELF cannot boot as written. The Ctx/ReqView
+bug is additionally still present in this binary (same App class).
