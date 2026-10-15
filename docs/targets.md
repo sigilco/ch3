@@ -17,7 +17,7 @@ scriptc build app.js --npm-static @chttp/router --optimization=speed -o app-bin
 ./app-bin 3000
 ```
 
-Everything the app imports must stay inside the scriptc subset, so npm packages outside it do not compile. Check with `scriptc coverage`. Rules for authors: [Coding agents](architecture.md).
+Everything the app imports must stay inside the scriptc subset, so npm packages outside it do not compile. Check with `scriptc coverage`. Rules for authors: [Coding agents](architecture.md). To call C libraries from the ELF, see [Native FFI](native.md).
 
 ## Bundler pipeline
 
