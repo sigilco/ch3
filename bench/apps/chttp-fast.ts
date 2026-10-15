@@ -7,6 +7,7 @@ import {
   GenDispatch,
   ReqView,
   Ctx,
+  NodeResponseSink,
   dec,
   _guard,
   _buffer,
@@ -30,7 +31,7 @@ class CompiledRoutes extends GenDispatch {
     }
     const method: string = String(req.method || "");
     const rv = new ReqView(req, qs, path);
-    const c = new Ctx(rv, res);
+    const c = new Ctx(rv, new NodeResponseSink(res));
     if (method === "GET" || method === "HEAD") {
       if (path === "/") {
         _guard(res, c, function (): unknown {

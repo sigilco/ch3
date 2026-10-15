@@ -321,7 +321,11 @@ export class TextStream extends ChunkStream {
 }
 
 function open(c: Ctx, contentType: string, extra: string): ServerResponse {
-  const res = c.res;
+  // Stream only runs through the Node handler surface (the Fetch surface
+  // produces a ReadableStream Response, which is a separate adapter).
+  // Direct field access avoids the nullable c.res getter — c._nodeRes is
+  // null only on the Fetch path, where streamSSE/streamText are not used.
+  const res = c._nodeRes as ServerResponse;
   if (extra === "sse") {
     res.writeHead(res.statusCode, {
       "content-type": contentType,

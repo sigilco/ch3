@@ -91,7 +91,8 @@ app.use((c, next) => {
   next();
 });
 
-app.use(async (c, next) => {
+// path-scoped: `*` matches every path, `/api/*` is a prefix
+app.use("/api/*", async (c, next) => {
   await auth(c.req);
   await next();
 });
@@ -99,6 +100,35 @@ app.use(async (c, next) => {
 
 Mount sub-routers with `app.route(prefix, subApp)`; parent and sub
 middleware merge.
+
+## ✔️ Web Standards surface
+
+`app.fetch(req, env, ctx)` is the canonical entry — the same shape
+Cloudflare Workers, Deno Deploy, Bun, Vercel Edge, and Lambda expect.
+The existing `app.handler()` is a thin Node adapter around it. Both
+compile to a native ELF via `scriptc build` (gate
+`bench/apps/chttp-fetch.ts` stays at 100% static).
+
+```ts
+const app = createRouter();
+app.get("/user/:id", (c) => c.json({ id: c.req.param("id") }));
+
+// Cloudflare Workers / Deno Deploy / Bun / Service Worker
+export default { async fetch(req, env, ctx) { return app.fetch(req, env, ctx); } };
+
+// Anywhere with a `Request` in scope
+const res = await app.fetch(new Request("http://localhost/user/42"));
+```
+
+Deployment recipes: [`examples/integrations/cloudflare-workers/`](examples/integrations/cloudflare-workers/),
+[`examples/integrations/aws-lambda/`](examples/integrations/aws-lambda/).
+Off-the-shelf middleware (Hono, etc.) wires in via the
+[`hono-middleware`](examples/integrations/hono-middleware/) template.
+
+The `Ctx` surface is Web-Standards-shaped: `c.req.{url,method,path,header,query,param,body,raw}`,
+`c.set`/`c.get` for request-scoped vars, `c.header(name, value, {append: true})` for
+multi-value headers. See [Context](#-context) above and
+[architecture.md](docs/architecture.md#response-sink) for the sink split.
 
 ## ✔️ Error handling
 

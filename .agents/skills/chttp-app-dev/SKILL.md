@@ -23,7 +23,7 @@ is exempt.
 | --- | --- | --- |
 | Nullability | `string \| null` | `undefined` (SC3004) |
 | Loops | indexed `for`, `for...of` over arrays | `for...in` |
-| Collections | plain `({})` records | `Map`, `Set`, `Object.create(null)`, `Object.freeze` |
+| Collections | plain `({})` records | `Object.create(null)`, `Object.freeze` |
 | Syntax | explicit keys, `&&`/`=== null` | shorthand props/methods, spread, `?.`, default params |
 | Records | data only; classes for behavior | function values inside records (SC1090 poisoning) |
 | Promises | `await`-join settle pattern only | `.then` read as value, `instanceof Promise` (SC1090), Promise/non-Promise union arms (SC2009) |

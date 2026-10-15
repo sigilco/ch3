@@ -1,0 +1,15 @@
+name = "chttp-cloudflare-workers"
+main = "src/main.ts"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The chttp router relies on node:http types in the Router. The
+# `nodejs_compat` flag (compat date 2025-09-01+) provides them on
+# Workerd. Without it, the IncomingMessage-shaped type imports in
+# @chttp/router compile against the bundled ambient types and
+# the surface slips.
+#
+# `app.fetch` (Web Standards) is the entry point. Workerd calls
+# the default export's `fetch(req, env, ctx)` handler; chttp's
+# signature matches Hono's, so any Hono→chttp migration drops
+# in by changing the import.

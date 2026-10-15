@@ -28,24 +28,68 @@ function mkRes() {
   const res = {
     statusCode: 200,
     headers: {},
-    body: "",
+    bodyTxt: "",
     ended: false,
     headersSent: false,
     destroyed: false,
     setHeader(k, v) {
       this.headers[k.toLowerCase()] = v;
     },
+    getHeader(k) {
+      const v = this.headers[String(k).toLowerCase()];
+      return v === undefined ? undefined : v;
+    },
+    setStatus(n) {
+      this.statusCode = Number(n);
+    },
+    appendHeader() {},
+    _setBody(s) {
+      this.bodyTxt = s;
+      this.ended = true;
+      this.headersSent = true;
+    },
+    writeBody(s) {
+      this.bodyTxt = s;
+      this.ended = true;
+      this.headersSent = true;
+    },
+    bodyBytes(b) {
+      this.bodyTxt = String(b);
+      this.ended = true;
+      this.headersSent = true;
+    },
+    redirect() {
+      this.ended = true;
+      this.headersSent = true;
+    },
+    write() {},
+    isSent() {
+      return this.ended;
+    },
+    isHeadersSent() {
+      return this.headersSent;
+    },
     end(b) {
       this.ended = true;
       this.headersSent = true;
       if (typeof b === "string") {
-        this.body = b;
+        if (this.bodyTxt === "") {
+          this.bodyTxt = b;
+        } else {
+          this.bodyTxt = this.bodyTxt + b;
+        }
       }
     },
     destroy() {
       this.destroyed = true;
     },
   };
+  // Expose `body` as a getter returning bodyTxt, for tests that read res.body
+  Object.defineProperty(res, "body", {
+    get() {
+      return this.bodyTxt;
+    },
+  });
   return res;
 }
 
@@ -287,6 +331,94 @@ test("route() inherits middleware from both sides", () => {
   assert.deepEqual(hits, ["parent", "sub"]);
 });
 
+test("c.req.url returns the full path+query on the Node path", () => {
+  const app = createRouter();
+  let seen = "";
+  app.get("/q", (c) => {
+    seen = c.req.url;
+    c.text("ok");
+  });
+  call(app, { url: "/q?x=1&y=two" });
+  assert.equal(seen, "/q?x=1&y=two");
+});
+
+test("c.req.url is path-only when no query is present", () => {
+  const app = createRouter();
+  let seen = "";
+  app.get("/p", (c) => {
+    seen = c.req.url;
+    c.text("ok");
+  });
+  call(app, { url: "/p" });
+  assert.equal(seen, "/p");
+});
+
+test("app.use('*', mw) runs on every request", () => {
+  const hits = [];
+  const app = createRouter();
+  app.use("*", (c, next) => {
+    hits.push(c.req.path);
+    next();
+  });
+  app.get("/a", (c) => c.text("a"));
+  app.get("/b/c", (c) => c.text("b"));
+  call(app, { url: "/a" });
+  call(app, { url: "/b/c" });
+  assert.deepEqual(hits, ["/a", "/b/c"]);
+});
+
+test("app.use('/api/*', mw) only runs for matching paths", () => {
+  const hits = [];
+  const app = createRouter();
+  app.use("/api/*", (c, next) => {
+    hits.push(c.req.path);
+    next();
+  });
+  app.get("/api/users", (c) => c.text("u"));
+  app.get("/api/v2/items", (c) => c.text("v2"));
+  app.get("/other", (c) => c.text("o"));
+  call(app, { url: "/api/users" });
+  call(app, { url: "/api/v2/items" });
+  call(app, { url: "/other" });
+  assert.deepEqual(hits, ["/api/users", "/api/v2/items"]);
+});
+
+test("app.use(path, mw1, mw2) runs both in order when path matches", () => {
+  const order = [];
+  const app = createRouter();
+  app.use(
+    "/x/*",
+    (c, next) => {
+      order.push("a");
+      next();
+    },
+    (c, next) => {
+      order.push("b");
+      next();
+    },
+  );
+  app.get("/x/y", (c) => {
+    order.push("h");
+    c.text("ok");
+  });
+  call(app, { url: "/x/y" });
+  assert.deepEqual(order, ["a", "b", "h"]);
+});
+
+test("app.use with exact path (no wildcard) only matches that path", () => {
+  const hits = [];
+  const app = createRouter();
+  app.use("/exact", (c, next) => {
+    hits.push("x");
+    next();
+  });
+  app.get("/exact", (c) => c.text("e"));
+  app.get("/exactly", (c) => c.text("ey"));
+  call(app, { url: "/exact" });
+  call(app, { url: "/exactly" });
+  assert.deepEqual(hits, ["x"]);
+});
+
 test("redirect sets status + location", () => {
   const app = createRouter();
   app.get("/r", (c) => c.redirect("/to"));
@@ -339,13 +471,13 @@ test("withDispatch validates the route contract version stamp", () => {
     }
     assert.throws(
       () => createRouter().withDispatch(new Bad()),
-      /contract version mismatch.*v999.*v1/,
+      /contract version mismatch.*v999.*v2/,
     );
     // matching stamp → accepted
     class Ok extends GenDispatch {
       constructor() {
         super();
-        this.ROUTE_CONTRACT_VERSION = 1;
+        this.ROUTE_CONTRACT_VERSION = 2;
       }
     }
     app.withDispatch(new Ok());
@@ -393,7 +525,7 @@ test("generated dispatch can spawn ctx + seed params + buffer via helpers", () =
         const url = String(req.url || "/");
         if (url.indexOf("/u/") === 0) {
           const rv = new m.ReqView(req, "", url);
-          const c = new m.Ctx(rv, res);
+          const c = new m.Ctx(rv, new m.NodeResponseSink(res));
           rv._seedPm(["id", m.dec(url.slice(3))]);
           m._guard(res, c, function () {
             return c.json({ id: c.req.param("id") });
@@ -402,7 +534,7 @@ test("generated dispatch can spawn ctx + seed params + buffer via helpers", () =
         }
         if (url === "/b") {
           const rv = new m.ReqView(req, "", url);
-          const c = new m.Ctx(rv, res);
+          const c = new m.Ctx(rv, new m.NodeResponseSink(res));
           m._buffer(req, res, c, function () {
             c.text("b:" + c.req.body());
           });
@@ -539,4 +671,59 @@ test("c.bytes is HEAD-safe over real http", async () => {
   assert.equal(h.headers.get("content-length"), "5");
   assert.equal((await h.arrayBuffer()).byteLength, 0);
   srv.close();
+});
+
+test("fetchShim drives the fetch dispatch path with primitives", async () => {
+  const app = createRouter();
+  app.use("*", (c, next) => {
+    c.header("x-shim", "1");
+    next();
+  });
+  app.get("/json", (c) => c.json({ hello: "world" }));
+  app.get("/u/:id", (c) => c.text("id=" + c.req.param("id")));
+  app.get("/cookies", (c) => {
+    c.header("set-cookie", "a=1", { append: true });
+    c.header("set-cookie", "b=2", { append: true });
+    return c.text("ok");
+  });
+  app.post("/echo", (c) => c.text("body=" + c.req.body()));
+
+  const call = (method, url, body = "") =>
+    new Promise((resolve) => {
+      app.fetchShim(method, url, null, body, (status, hdrList, out) =>
+        resolve({ status, hdrList, out }),
+      );
+    });
+
+  const j = await call("GET", "/json");
+  assert.equal(j.status, 200);
+  assert.equal(j.out, '{"hello":"world"}');
+  assert.ok(j.hdrList.includes("x-shim"));
+
+  const u = await call("GET", "/u/42?q=1");
+  assert.equal(u.status, 200);
+  assert.equal(u.out, "id=42");
+
+  const ck = await call("GET", "/cookies");
+  assert.equal(ck.status, 200);
+  const setCookies = [];
+  for (let i = 0; i + 1 < ck.hdrList.length; i += 2) {
+    if (ck.hdrList[i] === "set-cookie") setCookies.push(ck.hdrList[i + 1]);
+  }
+  assert.deepEqual(setCookies, ["a=1", "b=2"]);
+
+  const e = await call("POST", "/echo", "hello");
+  assert.equal(e.status, 200);
+  assert.equal(e.out, "body=hello");
+
+  const m = await call("GET", "/missing");
+  assert.equal(m.status, 404);
+
+  const nf = await call("GET", "/echo");
+  assert.equal(nf.status, 405);
+  const allow = [];
+  for (let i = 0; i + 1 < nf.hdrList.length; i += 2) {
+    if (nf.hdrList[i] === "allow") allow.push(nf.hdrList[i + 1]);
+  }
+  assert.ok(allow.length > 0);
 });

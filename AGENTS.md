@@ -11,6 +11,7 @@ chttp is a minimal HTTP router for `node:http`, async-first, zero dependencies, 
 - `pnpm fmt` - oxfmt
 - `pnpm --filter @chttp/unplugin test` - plugin tests
 - `pnpm docs:build` - build docs site
+- `bash scripts/scriptc-gate.sh` - 100% static coverage on all five scriptc gates (chttp-html, chttp-stream, chttp-val, static/gate, chttp-fetch). Every API change in `packages/router` is gated on this staying at 100%.
 
 ## Releases
 
@@ -30,7 +31,7 @@ These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
 
 - Handlers/middleware may return a Promise; dispatch settles a non-settled chain result by `await`ing it inside `settleChain` (the package's only async function; fire-and-forget). Sync-complete results — `undefined`, `null`, or the `c` object — keep a zero-microtask path via `isSettled`. NEVER detect promises by reading `.then` as a value (`typeof r.then` silently lowers to `undefined`), `instanceof Promise` (SC1090), or a union mixing Promise/non-Promise arms (SC2009).
 - `| null` unions only. Never `undefined` (SC3004).
-- No `Map`/`Set`/`Object.create(null)`/`Object.freeze`. Plain `({})` records only. Classes only for `Context`, `ChttpRequest`, `HttpError`.
+- No `Object.create(null)`/`Object.freeze`. Plain `({})` records only. Classes only for the router's entity types (`Ctx`, `ReqView`, sinks, `HttpError`).
 - Indexed `for` loops (and `for...of` over arrays). Never `for...in`.
 - No `new Function`/`eval`, no non-program `instanceof`, no object/method-shorthand.
 - Concrete types on all route/middleware tables; no `any[]`/`unknown[]` (SC1090).
@@ -43,3 +44,11 @@ These are hard bans. The full rationale lives in `ARCHITECTURE.md` section 0.
 - Any handler or dispatch change ships with tests.
 - Any performance claim requires re-running the relevant bench cell first. `bench/RESULTS-v2.md` is the baseline.
 - Plugin work is fixture-first: `fixtures/vite-app` must build before an emit change lands. See `packages/unplugin/AGENTS.md`.
+
+## Web Standards compat
+
+`app.fetch(req: Request) → Promise<Response>` is the canonical entry. `app.handler()` is a thin Node adapter around it. Both compile to a native ELF — the `bench/apps/chttp-fetch.ts` gate must stay at 100% static coverage.
+
+**No-bluff rule.** Any sentence in user-facing docs (README, `docs/`, comments, or release notes) claiming chttp is "Web Standards compatible", "drops into the Hono ecosystem", or "runs on Cloudflare Workers" must be backed by a passing test. The gate for the Hono claim specifically is `examples/integrations/hono-middleware/test/logger.test.ts` — it imports `logger` from `hono/logger` unmodified, fires a real `Request` through `app.fetch`, and asserts the inbound log line. If that test is removed or skipped without a replacement, the matching sentence in the README must be removed in the same PR. PR review enforces this; no exceptions.
+
+The full surface is documented in `ARCHITECTURE.md` under "Response sink and the two surfaces". The new `ResponseSink` class (`packages/router/src/sink.ts`) is the single seam that lets the same `Ctx` produce either a `ServerResponse` write or a Web `Response` finalization. Both subclasses stay inside the scriptc subset.

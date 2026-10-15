@@ -9,8 +9,8 @@ These docs are published for agents too: [llms.txt](https://chttpjs.pages.dev/ll
 ## Subset rules for `packages/router/src`
 
 - `| null` unions only. Never `undefined`.
-- No `Map`, `Set`, `Object.create(null)`, `Object.freeze`. Plain `({})` records only.
-- Classes only for `Context`, `ChttpRequest`, `HttpError`.
+- No `Object.create(null)`, `Object.freeze`. Plain `({})` records only.
+- Classes only for the router's entity types (`CtxCore`/`Ctx`, `ReqViewCore`/`ReqView`, the response sinks, `HttpError`).
 - Indexed `for` loops or `for...of` over arrays. Never `for...in`.
 - No `new Function`, `eval`, non-program `instanceof`, object or method shorthand.
 - Concrete types on route and middleware tables. No `any[]` or `unknown[]`.
@@ -23,15 +23,16 @@ const rec: { [k: string]: string } = {};
 
 // banned
 for (const k in rec) {}
-const m = new Map();
+const fns = { run: function (): void {} };
 ```
 
 ## Shape of the code
 
-- One core file, `packages/router/src/index.ts`: router, context, node adapter.
+- One core file, `packages/router/src/index.ts`: router, context, dispatch, the Node-shaped `app.handler()` adapter, and the Web Standards-shaped `app.fetch()`.
+- A second core file, `packages/router/src/sink.ts`: the `ResponseSink` abstraction plus `NodeResponseSink` (writes to `ServerResponse`) and `FetchResponseSink` (captures into a Web `Response`). `Ctx` holds a `ResponseSink`; both surfaces route through the same chain.
 - Route data is plain records. Handlers live in `App._fns`, nodes carry indices.
 - Matching uses an explicit frame stack, no recursion.
-- Response helpers call `res.end()` at statement level.
+- Response helpers call the sink at statement level. `app.fetch()` finalizes the sink to a `Response` in the chained promise; `app.handler()` finalizes by writing to `res.end()`.
 
 ## Where to read more
 
