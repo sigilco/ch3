@@ -35,4 +35,6 @@ app.serve({ port: 3000 });
 
 Pick node for the ecosystem, native for small images and fast starts. Numbers and method: [Benchmarks](benchmarks.md).
 
+Utility packages for chttp apps — including when compiled to a native ELF — live in [sigilco/cutils](https://github.com/sigilco/cutils): `@cutils/sqlite` (embedded SQLite over a C FFI shim), `@chttp/cache` (LRU/TTL in-memory cache) and `@chttp/mcp` (JSON-RPC 2.0 MCP server).
+
 Next: [Quickstart](quickstart.md).

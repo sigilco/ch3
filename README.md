@@ -213,6 +213,10 @@ app.post("/order", (c) => {
 - [Route contract](contracts/route-contract.md): the generated-dispatch seam (internal)
 - Full docs site: https://chttpjs.pages.dev/
 
+## 🧩 Ecosystem
+
+- [sigilco/cutils](https://github.com/sigilco/cutils): utility packages that work with chttp and the scriptc subset — `@cutils/sqlite` (embedded SQLite via a C FFI shim), `@chttp/cache` (LRU/TTL in-memory cache) and `@chttp/mcp` (JSON-RPC 2.0 MCP server)
+
 ## 🤖 Agent skills
 
 Two repo-local skills for coding agents: [`.agents/skills/chttp-app-dev/SKILL.md`](.agents/skills/chttp-app-dev/SKILL.md) for authoring subset-compatible chttp apps, and [`.agents/skills/chttp-integration/SKILL.md`](.agents/skills/chttp-integration/SKILL.md) for wiring chttp and the unplugin pipeline into an existing project.
