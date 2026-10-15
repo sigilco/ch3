@@ -71,11 +71,12 @@ function prefixLines(prefix: string, s: string): string {
 
 // Base writer: tracks closed state, abort callbacks and the pending-bytes cap.
 //
-// scriptc 0.3.1 cannot observe backpressure (write() result, "drain" and
-// writableLength are all refused), so the cap is a stand-in: a stream that
-// writes more than maxPending bytes inside one windowMs window is treated as
-// a slow consumer and closed.
-// scriptc>=X: replace the window with the write() result / drain events.
+// scriptc < 0.3.2 could not observe backpressure (write() result, "drain"
+// and writableLength were all refused), so the cap was a stand-in. On
+// scriptc>=0.3.2 a compiled Writable wrapper around res observes the real
+// queue via write(): boolean and "drain"; the cap stays as a secondary
+// fail-safe: a stream that writes more than maxPending bytes inside one
+// windowMs window is still treated as a slow consumer and closed.
 export class ChunkStream {
   res: ServerResponse;
   closed: boolean;

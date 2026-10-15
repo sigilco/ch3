@@ -55,8 +55,10 @@ export class WsConn {
   _fchunks: Buffer[] = [];
   _fbytes: number = 0;
   // Cap on outbound bytes per one second window before a slow consumer is
-  // dropped. scriptc 0.3.1 cannot observe backpressure (writableLength, write()
-  // result and "drain" are refused), so this is a stand-in, as in @chttp/stream.
+  // dropped. scriptc < 0.3.2 could not observe backpressure (writableLength,
+  // write() result and "drain" were refused); on 0.3.2+ a compiled Writable
+  // wrapper observes the queue, and this cap stays as the secondary
+  // fail-safe, as in @chttp/stream.
   _maxBacklog: number = 4194304;
   _wbytes: number = 0;
   _wstart: number = 0;
