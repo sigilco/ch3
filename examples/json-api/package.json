@@ -11,6 +11,6 @@
     "@chttp/router": "0.1.0"
   },
   "devDependencies": {
-    "scriptc": "0.3.1"
+    "scriptc": ">=0.3.2"
   }
 }

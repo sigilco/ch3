@@ -7,6 +7,7 @@
 // promise returned by the callback flows into the router's settleChain.
 import type { ServerResponse } from "node:http";
 import type { Socket } from "node:net";
+import { Writable } from "node:stream";
 import type { Ctx } from "@chttp/router/src/index.ts";
 
 // UTF-8 byte length of s (surrogate pairs count 4, lone surrogates 3).
@@ -69,13 +70,136 @@ function prefixLines(prefix: string, s: string): string {
   return out;
 }
 
+// Sentinel chunk the writer probes itself with at construction; _write
+// swallows it, so it never reaches the socket.
+const WRITER_PROBE: Buffer = Buffer.from([0]);
+
+// Outbound write path for one stream: a compiled Writable subclass whose
+// _write forwards straight to res. cb is deferred one macrotask so the
+// Writable's own queue is what write(): boolean and "drain" observe — the
+// ServerResponse surface still refuses all three (probe:
+// bench/scriptc-evidence/ws-backpressure-probe-2026-10-15.txt). Past
+// highWaterMark chunks hold in _q (ordered) and "drain" re-issues them.
+export class ResWriter extends Writable {
+  _sink: ServerResponse;
+  _q: string[] = [];
+  _draining: boolean = false;
+  // Set once the stream is closed: pending internal writes are dropped so a
+  // res.end() can never race a late _write into write-after-end.
+  _ended: boolean = false;
+  _closing: boolean = false;
+  _writes: number = 0;
+  // scriptc 0.3.2 does not wire a subclassed _write when the class lives in a
+  // statically compiled npm package: write() buffers but the pump never runs
+  // (probe: bench/scriptc-evidence/ws-backpressure-probe-2026-10-15.txt). The
+  // constructor writes a swallowed probe chunk; when no _write ran by the
+  // time write() returns the writer degrades to direct sink writes — the
+  // per-window byte cap stays as the only slow-consumer policy.
+  _direct: boolean = false;
+
+  constructor(sink: ServerResponse) {
+    super();
+    this._sink = sink;
+    const self: ResWriter = this;
+    this.on("drain", () => {
+      self._draining = false;
+      self.flushQ();
+      self.maybeEnd();
+    });
+    // Sink errors surface as stream errors; the stream's own close paths
+    // already report through _onClose, so swallow to avoid unhandled 'error'.
+    this.on("error", () => {});
+    this.write(WRITER_PROBE);
+    if (this._writes === 0) {
+      this._direct = true;
+    }
+  }
+
+  _write(chunk: Buffer, _enc: string, cb: () => void): void {
+    this._writes += 1;
+    if (chunk === WRITER_PROBE) {
+      // Settle synchronously: the probe must leave writableLength at 0 so
+      // the first real write still reaches _write.
+      cb();
+      return;
+    }
+    if (this._ended) {
+      cb();
+      return;
+    }
+    const self: ResWriter = this;
+    this._sink.write(chunk);
+    setImmediate(() => {
+      cb();
+      self.maybeEnd();
+    });
+  }
+
+  // Re-issues queued chunks while the Writable accepts them. A false write()
+  // still buffers the chunk internally, so re-arm and wait for "drain".
+  flushQ(): void {
+    while (this._q.length > 0) {
+      const chunk = this._q[0];
+      if (chunk === undefined) {
+        this._q.shift();
+        continue;
+      }
+      if (this._direct) {
+        this._sink.write(chunk);
+        this._q.shift();
+        continue;
+      }
+      const ok = this.write(chunk);
+      this._q.shift();
+      if (!ok) {
+        this._draining = true;
+        return;
+      }
+    }
+  }
+
+  sendChunk(chunk: string): void {
+    if (this._direct) {
+      this._sink.write(chunk);
+      return;
+    }
+    if (this._draining) {
+      this._q.push(chunk);
+      return;
+    }
+    if (!this.write(chunk)) {
+      this._draining = true;
+    }
+  }
+
+  // Ends the response once both queues are empty, so close() right after a
+  // burst does not truncate the tail still waiting for "drain". Also fires
+  // once deferred since "drain" only fires when write() went false first.
+  close(): void {
+    this._closing = true;
+    const self: ResWriter = this;
+    setImmediate(() => {
+      self.maybeEnd();
+    });
+  }
+
+  maybeEnd(): void {
+    // In direct mode the internal buffer never drains (the swallowed probe
+    // sits in it forever), so only the explicit queue gates the end.
+    if (this._closing && this._q.length === 0 && (this._direct || this.writableLength === 0)) {
+      this._sink.end();
+    }
+  }
+}
+
 // Base writer: tracks closed state, abort callbacks and the pending-bytes cap.
 //
-// scriptc 0.3.1 cannot observe backpressure (write() result, "drain" and
-// writableLength are all refused), so the cap is a stand-in: a stream that
-// writes more than maxPending bytes inside one windowMs window is treated as
-// a slow consumer and closed.
-// scriptc>=X: replace the window with the write() result / drain events.
+// scriptc < 0.3.2 could not observe backpressure (write() result, "drain"
+// and writableLength were all refused), so the cap was a stand-in. On
+// scriptc>=0.3.2 a compiled Writable wrapper around res observes the real
+// queue via write(): boolean and "drain"; the cap stays as a secondary
+// fail-safe: a stream that writes more than maxPending bytes inside one
+// windowMs window is still treated as a slow consumer and closed.
 export class ChunkStream {
   res: ServerResponse;
   closed: boolean;
@@ -85,6 +209,7 @@ export class ChunkStream {
   _windowStart: number;
   _abortFns: Array<() => void>;
   _fired: boolean;
+  _writer: ResWriter;
 
   constructor(res: ServerResponse) {
     this.res = res;
@@ -95,6 +220,7 @@ export class ChunkStream {
     this._windowStart = Date.now();
     this._abortFns = [];
     this._fired = false;
+    this._writer = new ResWriter(res);
   }
 
   // Raw chunk write. Returns false once the stream is closed, including when
@@ -113,17 +239,21 @@ export class ChunkStream {
       this.close();
       return false;
     }
-    this.res.write(chunk);
+    this._writer.sendChunk(chunk);
     return true;
   }
 
   // Ends the response. Abort callbacks run from the "close" event it causes.
+  // Queued chunks are pushed into the writer first so a close right after a
+  // burst does not truncate the tail; the writer ends res once both queues
+  // drain.
   close(): void {
     if (this.closed) {
       return;
     }
     this.closed = true;
-    this.res.end();
+    this._writer.flushQ();
+    this._writer.close();
   }
 
   // Runs fn once when the connection closes, whether the client left or
@@ -141,6 +271,10 @@ export class ChunkStream {
     }
     this._fired = true;
     this.closed = true;
+    // Tests build bare prototype fakes without a writer; guard for those.
+    if (this._writer !== undefined) {
+      this._writer._ended = true;
+    }
     const fns = this._abortFns;
     this._abortFns = [];
     for (let i = 0; i < fns.length; i++) {

@@ -16,7 +16,7 @@
   "devDependencies": {
     "@chttp/unplugin": "0.1.0",
     "@types/node": "^24.0.0",
-    "scriptc": "0.3.1",
+    "scriptc": ">=0.3.2",
     "typescript": "^5.9.0"
   }
 }

@@ -183,6 +183,37 @@ test("pending-bytes cap closes slow consumers", async () => {
   srv.close();
 });
 
+test("drain callback resumes write after kernel drains", async () => {
+  // A burst bigger than the Writable highWaterMark (64 KiB) with a pending
+  // window above it: chunks past the mark queue and "drain" re-issues them,
+  // so the client receives every byte and the stream is never closed.
+  let stream;
+  const { srv, base } = await serve((app) =>
+    app.get("/e", (c) =>
+      streamText(c, (s) => {
+        stream = s;
+        const chunk = "x".repeat(32768);
+        for (let i = 0; i < 8; i++) {
+          s.writeln(chunk);
+        }
+      }),
+    ),
+  );
+  const r = await fetch(base + "/e");
+  const reader = r.body.getReader();
+  let got = 0;
+  while (got < 8 * (32768 + 1)) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    got += value.length;
+  }
+  await reader.cancel();
+  assert.equal(got, 8 * (32768 + 1));
+  assert.equal(stream.closed, false);
+  srv.close();
+  srv.closeAllConnections();
+});
+
 test("pending window resets so steady streams are not closed", async () => {
   const { srv, base } = await serve((app) =>
     app.get("/e", (c) =>
