@@ -6,6 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 GATES=(
+  bench/apps/chttp-fetch.ts
   bench/apps/chttp-html.ts
   bench/apps/chttp-stream.ts
   bench/apps/chttp-val.ts
