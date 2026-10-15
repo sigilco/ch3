@@ -538,3 +538,168 @@ scriptc build with the embedded dynamic engine enabled, or it conflates a
 the lowerings above (or hono's dispatch is restructured into the subset), the
 comparison chttp-ELF vs compiled-Hono has no measurable right-hand side, and
 the only honest compiled-Hono row is "does not run".
+
+## Re-baseline on SC9001 fix (2026-10-15, branch `feat/app-fetch-web-standards` after the SC9001 fix in commit 0305d62)
+
+Same host as the previous section (8 vCPU KVM guest, Ubuntu 22.04, node v24.19.0, bun 1.4.3, scriptc 0.3.1/0.3.2).
+
+**SC9001 status:** partially fixed. OLD head `2d764f9` reproduced SC9001 verbatim (`SC9001 internal error: live dynFrom of unsupported type httpReq` at `packages/router/src/index.ts:120` and `:242`). NEW head `b972fad` fixes those two sites but still fails `scriptc build` with one remaining SC9001 at `index.ts:157` (`String((r as { url?: unknown }).url || path)` in `reqView`/`ChttpRequest`). Probe patch `url === undefined ? String(r.url || path) : String(url)` compiles clean on 0.3.2 — but the resulting ELF still fails at runtime (see below).
+
+**scriptc gates:** `bash scripts/scriptc-gate.sh` — all 5 gates 100% on `b972fad`.
+
+**Bench:** full interpreted matrix ran; `chttp-scriptc` and `chttp-fast-scriptc` SKIPPED (remaining SC9001 → no binary). `go-chi`, `rust-axum`, `c-mongoose` SKIPPED (ceilings binaries not built on this host). `raw-scriptc` ran.
+
+**vs the fd66de7 re-baseline below (same host):** chttp-node +0.3%, chttp-bun +1.3%, raw-node +2.7%, raw-scriptc +3.3%, hono-node -2.9%, fmw-node +11.9%, fastify-node -20.3% — all inside this host's noise band; parity with v2 holds for the interpreted path.
+
+**Runtime flag (blocks ELF cells):** even with the `index.ts:157` probe fix applied, a compiled `chttp-scriptc` ELF serves 500s — `c.json is not a function` / `c.text is not a function`. Instrumented: `new Ctx(rv, sink)` inside `_dispatch` produces an object whose fields read fine (`sent`, `_status`) but every method is absent. `NodeResponseSink` (non-generic) methods work in the same build, and a standalone generic-class probe compiles/works — so the breakage is specific to `Ctx` lowering in this refactor (introduced between `d68c57d` (works, serves 200) and `b9b9422`/`0305d62`). The emitted `.ll` shows two `Ctx` types (`%m3.Ctx` and `%m3.Ctx%0` specialization); the instance's method table does not resolve `Ctx` methods.
+
+## autocannon matrix (-c64 -d6, median; json x5, others x3; json-p10 = fastify-parity -c100 -p10 -d10 x3)
+
+| subject | cell | rps | vs raw-node | p50 | p97.5 | p99 | max | MB/s | err/t/o | non2xx |
+|---------|------|-----|-------------|-----|-------|-----|-----|------|---------|--------|
+| chttp-bun | json | 100,245 | 1.41x | 0.00 | 1.0 | 2.0 | 22 | 17.9 | 0/0 | 0 |
+| chttp-bun | user | 99,392 | 1.27x | 0.00 | 1.0 | 2.0 | 27 | 17.2 | 0/0 | 0 |
+| chttp-bun | echo64 | 74,795 | 1.34x | 0.00 | 3.0 | 3.0 | 20 | 16.3 | 0/0 | 0 |
+| chttp-bun | echo1k | 62,877 | 1.04x | 0.00 | 2.0 | 3.0 | 60 | 71.4 | 0/0 | 0 |
+| chttp-bun | deep | 97,835 | 1.12x | 0.00 | 1.0 | 2.0 | 20 | 16.9 | 0/0 | 0 |
+| chttp-bun | files | 90,880 | 1.02x | 0.00 | 2.0 | 3.0 | 26 | 14.9 | 0/0 | 0 |
+| chttp-bun | missing | 81,933 | 0.92x | 0.00 | 2.0 | 3.0 | 22 | 14.0 | 0/0 | 1469261 |
+| chttp-bun | mixed | 79,437 | 0.92x | 0.00 | 2.0 | 4.0 | 440 | 13.7 | 0/0 | 0 |
+| chttp-node | json | 77,835 | 1.09x | 0.00 | 1.0 | 2.0 | 23 | 13.9 | 0/0 | 0 |
+| chttp-node | user | 75,776 | 0.97x | 0.00 | 1.0 | 2.0 | 23 | 13.1 | 0/0 | 0 |
+| chttp-node | echo64 | 65,725 | 1.17x | 0.00 | 1.0 | 3.0 | 24 | 14.3 | 0/0 | 0 |
+| chttp-node | echo1k | 55,888 | 0.92x | 1.00 | 2.0 | 3.0 | 21 | 63.4 | 0/0 | 0 |
+| chttp-node | deep | 79,659 | 0.92x | 0.00 | 1.0 | 2.0 | 19 | 13.8 | 0/0 | 0 |
+| chttp-node | files | 73,525 | 0.82x | 0.00 | 2.0 | 3.0 | 26 | 12.1 | 0/0 | 0 |
+| chttp-node | missing | 80,128 | 0.90x | 0.00 | 1.0 | 2.0 | 19 | 13.7 | 0/0 | 1443589 |
+| chttp-node | mixed | 73,344 | 0.84x | 0.00 | 1.0 | 2.0 | 234 | 12.7 | 0/0 | 0 |
+| express-bun | json | 51,392 | 0.72x | 0.00 | 4.0 | 5.0 | 25 | 11.2 | 0/0 | 0 |
+| express-bun | user | 54,533 | 0.70x | 0.00 | 4.0 | 5.0 | 25 | 11.5 | 0/0 | 0 |
+| express-bun | echo64 | 44,875 | 0.80x | 0.00 | 4.0 | 6.0 | 25 | 11.6 | 0/0 | 0 |
+| express-bun | echo1k | 38,905 | 0.64x | 1.00 | 5.0 | 7.0 | 25 | 45.7 | 0/0 | 0 |
+| express-bun | deep | 61,920 | 0.71x | 0.00 | 4.0 | 4.0 | 26 | 13.1 | 0/0 | 0 |
+| express-bun | files | 72,285 | 0.81x | 0.00 | 2.0 | 3.0 | 26 | 14.7 | 0/0 | 0 |
+| express-bun | missing | 68,243 | 0.76x | 0.00 | 2.0 | 3.0 | 20 | 25.7 | 0/0 | 1223012 |
+| express-bun | mixed | 58,992 | 0.68x | 0.00 | 4.0 | 4.0 | 210 | 12.5 | 0/0 | 0 |
+| express-node | json | 41,296 | 0.58x | 1.00 | 4.0 | 6.0 | 24 | 9.0 | 0/0 | 0 |
+| express-node | user | 35,960 | 0.46x | 1.00 | 5.0 | 7.0 | 31 | 7.6 | 0/0 | 0 |
+| express-node | echo64 | 33,557 | 0.60x | 1.00 | 5.0 | 7.0 | 24 | 8.6 | 0/0 | 0 |
+| express-node | echo1k | 30,345 | 0.50x | 1.00 | 6.0 | 7.0 | 32 | 35.7 | 0/0 | 0 |
+| express-node | deep | 39,568 | 0.45x | 1.00 | 5.0 | 7.0 | 30 | 8.4 | 0/0 | 0 |
+| express-node | files | 38,464 | 0.43x | 1.00 | 5.0 | 7.0 | 35 | 7.8 | 0/0 | 0 |
+| express-node | missing | 33,016 | 0.37x | 1.00 | 6.0 | 7.0 | 32 | 12.4 | 0/0 | 624499 |
+| express-node | mixed | 34,203 | 0.39x | 1.00 | 6.0 | 7.0 | 219 | 7.2 | 0/0 | 0 |
+| fastify-bun | json | 70,307 | 0.99x | 0.00 | 3.0 | 4.0 | 38 | 12.6 | 0/0 | 0 |
+| fastify-bun | user | 72,565 | 0.93x | 0.00 | 3.0 | 4.0 | 22 | 12.6 | 0/0 | 0 |
+| fastify-bun | echo64 | 54,843 | 0.98x | 0.00 | 4.0 | 5.0 | 31 | 11.2 | 0/0 | 0 |
+| fastify-bun | echo1k | 54,005 | 0.89x | 0.00 | 4.0 | 5.0 | 22 | 60.6 | 0/0 | 0 |
+| fastify-bun | deep | 80,629 | 0.93x | 0.00 | 3.0 | 4.0 | 26 | 14.0 | 0/0 | 0 |
+| fastify-bun | files | 69,747 | 0.78x | 0.00 | 4.0 | 4.0 | 21 | 10.5 | 0/0 | 0 |
+| fastify-bun | missing | 74,624 | 0.84x | 0.00 | 3.0 | 4.0 | 22 | 18.3 | 0/0 | 1365638 |
+| fastify-bun | mixed | 63,627 | 0.73x | 0.00 | 4.0 | 5.0 | 433 | 11.0 | 0/0 | 0 |
+| fastify-node | json | 80,829 | 1.13x | 0.00 | 2.0 | 3.0 | 21 | 14.5 | 0/0 | 0 |
+| fastify-node | user | 81,643 | 1.05x | 0.00 | 1.0 | 3.0 | 21 | 14.2 | 0/0 | 0 |
+| fastify-node | echo64 | 52,053 | 0.93x | 0.00 | 4.0 | 5.0 | 34 | 10.6 | 0/0 | 0 |
+| fastify-node | echo1k | 45,248 | 0.75x | 0.00 | 4.0 | 5.0 | 26 | 50.7 | 0/0 | 0 |
+| fastify-node | deep | 57,344 | 0.66x | 0.00 | 4.0 | 4.0 | 21 | 10.0 | 0/0 | 0 |
+| fastify-node | files | 71,227 | 0.80x | 0.00 | 3.0 | 4.0 | 19 | 10.7 | 0/0 | 0 |
+| fastify-node | missing | 61,293 | 0.69x | 0.00 | 4.0 | 4.0 | 22 | 15.0 | 0/0 | 1109938 |
+| fastify-node | mixed | 56,181 | 0.65x | 0.00 | 4.0 | 5.0 | 223 | 9.8 | 0/0 | 0 |
+| fmw-bun | json | 94,091 | 1.32x | 0.00 | 1.0 | 2.0 | 27 | 17.1 | 0/0 | 0 |
+| fmw-bun | user | 96,555 | 1.24x | 0.00 | 1.0 | 2.0 | 20 | 16.9 | 0/0 | 0 |
+| fmw-bun | echo64 | 97,227 | 1.74x | 0.00 | 1.0 | 2.0 | 27 | 21.5 | 0/0 | 0 |
+| fmw-bun | echo1k | 90,293 | 1.49x | 0.00 | 1.0 | 2.0 | 23 | 102.8 | 0/0 | 0 |
+| fmw-bun | deep | 95,776 | 1.10x | 0.00 | 1.0 | 2.0 | 18 | 16.8 | 0/0 | 0 |
+| fmw-bun | files | 96,971 | 1.09x | 0.00 | 1.0 | 2.0 | 21 | 16.3 | 0/0 | 0 |
+| fmw-bun | missing | 111,381 | 1.25x | 0.00 | 1.0 | 2.0 | 20 | 13.7 | 0/0 | 1989112 |
+| fmw-bun | mixed | 91,008 | 1.05x | 0.00 | 1.0 | 3.0 | 262 | 16.0 | 0/0 | 0 |
+| fmw-node | json | 88,565 | 1.24x | 0.00 | 1.0 | 2.0 | 23 | 16.1 | 0/0 | 0 |
+| fmw-node | user | 87,360 | 1.12x | 0.00 | 1.0 | 2.0 | 21 | 15.3 | 0/0 | 0 |
+| fmw-node | echo64 | 76,661 | 1.37x | 0.00 | 1.0 | 2.0 | 21 | 17.0 | 0/0 | 0 |
+| fmw-node | echo1k | 73,280 | 1.21x | 0.00 | 1.0 | 3.0 | 21 | 83.4 | 0/0 | 0 |
+| fmw-node | deep | 86,869 | 1.00x | 0.00 | 1.0 | 2.0 | 21 | 15.2 | 0/0 | 0 |
+| fmw-node | files | 88,757 | 0.99x | 0.00 | 1.0 | 2.0 | 23 | 14.9 | 0/0 | 0 |
+| fmw-node | missing | 100,501 | 1.13x | 0.00 | 1.0 | 2.0 | 24 | 12.4 | 0/0 | 1826012 |
+| fmw-node | mixed | 81,824 | 0.94x | 0.00 | 1.0 | 3.0 | 207 | 14.4 | 0/0 | 0 |
+| h3-bun | json | 107,456 | 1.51x | 0.00 | 1.0 | 2.0 | 23 | 14.2 | 0/0 | 0 |
+| h3-bun | user | 107,936 | 1.38x | 0.00 | 1.0 | 2.0 | 18 | 13.7 | 0/0 | 0 |
+| h3-bun | echo64 | 108,480 | 1.94x | 0.00 | 1.0 | 2.0 | 20 | 17.2 | 0/0 | 0 |
+| h3-bun | echo1k | 101,771 | 1.68x | 0.00 | 1.0 | 2.0 | 21 | 109.5 | 0/0 | 0 |
+| h3-bun | deep | 108,309 | 1.24x | 0.00 | 1.0 | 2.0 | 25 | 13.7 | 0/0 | 0 |
+| h3-bun | files | 108,757 | 1.22x | 0.00 | 1.0 | 2.0 | 28 | 12.9 | 0/0 | 0 |
+| h3-bun | missing | 110,101 | 1.23x | 0.00 | 1.0 | 2.0 | 20 | 23.3 | 0/0 | 1966641 |
+| h3-bun | mixed | 101,472 | 1.17x | 0.00 | 1.0 | 2.0 | 258 | 12.9 | 0/0 | 0 |
+| h3-node | json | 79,733 | 1.12x | 0.00 | 1.0 | 2.0 | 25 | 14.0 | 0/0 | 0 |
+| h3-node | user | 76,981 | 0.99x | 0.00 | 1.0 | 2.0 | 18 | 13.1 | 0/0 | 0 |
+| h3-node | echo64 | 43,739 | 0.78x | 1.00 | 3.0 | 4.0 | 21 | 9.6 | 0/0 | 0 |
+| h3-node | echo1k | 42,037 | 0.69x | 1.00 | 3.0 | 4.0 | 18 | 47.7 | 0/0 | 0 |
+| h3-node | deep | 78,592 | 0.90x | 0.00 | 1.0 | 2.0 | 20 | 13.3 | 0/0 | 0 |
+| h3-node | files | 73,707 | 0.83x | 0.00 | 1.0 | 3.0 | 33 | 11.9 | 0/0 | 0 |
+| h3-node | missing | 45,904 | 0.51x | 1.00 | 2.0 | 3.0 | 22 | 11.4 | 0/0 | 825033 |
+| h3-node | mixed | 73,248 | 0.84x | 0.00 | 1.0 | 3.0 | 215 | 12.4 | 0/0 | 0 |
+| hono-bun | json | 110,261 | 1.55x | 0.00 | 1.0 | 1.0 | 29 | 13.1 | 0/0 | 0 |
+| hono-bun | user | 107,413 | 1.38x | 0.00 | 1.0 | 2.0 | 19 | 12.2 | 0/0 | 0 |
+| hono-bun | echo64 | 107,317 | 1.92x | 0.00 | 1.0 | 2.0 | 20 | 18.4 | 0/0 | 0 |
+| hono-bun | echo1k | 99,733 | 1.65x | 0.00 | 1.0 | 2.0 | 19 | 108.6 | 0/0 | 0 |
+| hono-bun | deep | 109,493 | 1.26x | 0.00 | 1.0 | 1.0 | 18 | 12.4 | 0/0 | 0 |
+| hono-bun | files | 108,213 | 1.21x | 0.00 | 1.0 | 2.0 | 22 | 12.8 | 0/0 | 0 |
+| hono-bun | missing | 106,144 | 1.19x | 0.00 | 1.0 | 2.0 | 56 | 13.9 | 0/0 | 1917206 |
+| hono-bun | mixed | 103,083 | 1.19x | 0.00 | 1.0 | 2.0 | 250 | 11.7 | 0/0 | 0 |
+| hono-node | json | 84,971 | 1.19x | 0.00 | 1.0 | 2.0 | 27 | 13.9 | 0/0 | 0 |
+| hono-node | user | 78,635 | 1.01x | 0.00 | 1.0 | 2.0 | 21 | 12.4 | 0/0 | 0 |
+| hono-node | echo64 | 62,555 | 1.12x | 0.00 | 2.0 | 3.0 | 24 | 13.6 | 0/0 | 0 |
+| hono-node | echo1k | 61,019 | 1.01x | 0.00 | 1.0 | 3.0 | 20 | 69.2 | 0/0 | 0 |
+| hono-node | deep | 84,555 | 0.97x | 0.00 | 1.0 | 2.0 | 20 | 13.4 | 0/0 | 0 |
+| hono-node | files | 81,067 | 0.91x | 0.00 | 1.0 | 2.0 | 25 | 13.3 | 0/0 | 0 |
+| hono-node | missing | 72,085 | 0.81x | 0.00 | 2.0 | 3.0 | 20 | 12.6 | 0/0 | 1320245 |
+| hono-node | mixed | 73,581 | 0.85x | 0.00 | 2.0 | 4.0 | 222 | 11.6 | 0/0 | 0 |
+| raw-bun | json | 103,925 | 1.46x | 0.00 | 1.0 | 2.0 | 23 | 12.4 | 0/0 | 0 |
+| raw-bun | user | 103,179 | 1.32x | 0.00 | 1.0 | 2.0 | 20 | 11.7 | 0/0 | 0 |
+| raw-bun | echo64 | 99,637 | 1.78x | 0.00 | 1.0 | 2.0 | 26 | 17.6 | 0/0 | 0 |
+| raw-bun | echo1k | 91,947 | 1.52x | 0.00 | 1.0 | 2.0 | 22 | 100.5 | 0/0 | 0 |
+| raw-bun | deep | 105,643 | 1.21x | 0.00 | 1.0 | 2.0 | 27 | 12.0 | 0/0 | 0 |
+| raw-bun | files | 107,776 | 1.21x | 0.00 | 1.0 | 2.0 | 20 | 11.3 | 0/0 | 0 |
+| raw-bun | missing | 105,984 | 1.19x | 0.00 | 1.0 | 2.0 | 24 | 11.8 | 0/0 | 1915886 |
+| raw-bun | mixed | 87,701 | 1.01x | 0.00 | 2.0 | 3.0 | 251 | 10.0 | 0/0 | 0 |
+| raw-node | json | 71,339 | 1.00x | 0.00 | 3.0 | 4.0 | 20 | 11.7 | 0/0 | 0 |
+| raw-node | user | 78,016 | 1.00x | 0.00 | 2.0 | 3.0 | 26 | 12.4 | 0/0 | 0 |
+| raw-node | echo64 | 56,011 | 1.00x | 0.00 | 3.0 | 4.0 | 21 | 11.4 | 0/0 | 0 |
+| raw-node | echo1k | 60,525 | 1.00x | 0.00 | 3.0 | 4.0 | 20 | 67.8 | 0/0 | 0 |
+| raw-node | deep | 87,019 | 1.00x | 0.00 | 1.0 | 2.0 | 20 | 13.8 | 0/0 | 0 |
+| raw-node | files | 89,312 | 1.00x | 0.00 | 1.0 | 2.0 | 19 | 13.4 | 0/0 | 0 |
+| raw-node | missing | 89,333 | 1.00x | 0.00 | 1.0 | 2.0 | 25 | 14.0 | 0/0 | 1605624 |
+| raw-node | mixed | 86,816 | 1.00x | 0.00 | 1.0 | 2.0 | 221 | 13.7 | 0/0 | 0 |
+| raw-scriptc | json | 90,965 | 1.28x | 0.00 | 2.0 | 2.0 | 26 | 14.9 | 0/0 | 0 |
+| raw-scriptc | user | 94,315 | 1.21x | 0.00 | 1.0 | 2.0 | 21 | 14.9 | 0/0 | 0 |
+| raw-scriptc | echo64 | 95,403 | 1.70x | 0.00 | 1.0 | 2.0 | 21 | 19.4 | 0/0 | 0 |
+| raw-scriptc | echo1k | 89,035 | 1.47x | 0.00 | 1.0 | 2.0 | 20 | 99.8 | 0/0 | 0 |
+| raw-scriptc | deep | 93,344 | 1.07x | 0.00 | 1.0 | 2.0 | 24 | 14.8 | 0/0 | 0 |
+| raw-scriptc | files | 96,523 | 1.08x | 0.00 | 1.0 | 2.0 | 23 | 14.5 | 0/0 | 0 |
+| raw-scriptc | missing | 95,605 | 1.07x | 0.00 | 1.0 | 2.0 | 23 | 15.0 | 0/0 | 1725366 |
+| raw-scriptc | mixed | 90,645 | 1.04x | 0.00 | 1.0 | 3.0 | 224 | 14.4 | 0/0 | 0 |
+
+## wrk2 cross-validation (-t4 -c64 -d10 -R 80% of autocannon median, -L spectrum; latency in ms)
+
+| subject | cell | target rps | achieved | ac rps | p50 | p95 | p99 | max | non2xx |
+|---------|------|-----------|----------|--------|-----|-----|-----|-----|--------|
+
+| subject | cold start ms (median of 10) | RSS after 100k reqs | binary size |
+|---------|------------------------------|---------------------|-------------|
+| go-chi | — | — | — |
+| rust-axum | — | — | — |
+| c-mongoose | — | — | — |
+| chttp-bun | 35 | 58 MB | — |
+| chttp-node | 91 | 116 MB | — |
+| express-bun | 70 | 90 MB | — |
+| express-node | 87 | 121 MB | — |
+| fastify-bun | 122 | 77 MB | — |
+| fastify-node | 139 | 103 MB | — |
+| fmw-bun | 40 | 59 MB | — |
+| fmw-node | 58 | 88 MB | — |
+| h3-bun | 25 | 43 MB | — |
+| h3-node | 69 | 119 MB | — |
+| hono-bun | 14 | 40 MB | — |
+| hono-node | 65 | 115 MB | — |
+| raw-bun | 10 | 30 MB | — |
+| raw-node | 78 | 106 MB | — |
+| raw-scriptc | 3 | 3 MB | 0.4 MB |

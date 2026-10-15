@@ -29,6 +29,8 @@ SUBJECTS=(
   "hono-bun|bun apps/hono-bun.ts|full|"
   "fmw-node|node apps/fmw.mjs|full|"
   "fmw-bun|bun apps/fmw.mjs|full|"
+  "fastify-node|node apps/fastify.mjs|full|"
+  "fastify-bun|bun apps/fastify.mjs|full|"
   "express-node|node apps/express.mjs|full|"
   "express-bun|bun apps/express.mjs|full|"
   "go-chi|./ceilings/bin/go-chi|ceil|ceilings/bin/go-chi"
