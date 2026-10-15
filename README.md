@@ -62,6 +62,8 @@ c.req.queries("tag"); // string[], all values for a repeated key
 c.req.queryAll(); // Record<string, string>
 c.req.header("x-foo");
 c.req.body(); // string
+c.req.file("f"); // UploadedFile | null — { multipart } routes only
+c.req.field("f"); // string | null — { multipart } routes only
 c.req.method;
 c.req.path;
 c.req.raw;

@@ -87,6 +87,10 @@
      "path": "/websocket"
     },
     {
+     "title": "Multipart uploads",
+     "path": "/multipart"
+    },
+    {
      "title": "Validation",
      "path": "/validation"
     },
