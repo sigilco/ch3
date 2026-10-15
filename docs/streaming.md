@@ -65,7 +65,7 @@ streamSSE(c, (s) => {
 });
 ```
 
-This is a rate window, not true queue depth. On scriptc 0.3.2+, the cap is augmented by real backpressure via a compiled `Writable` wrapper; see `docs/native.md`.
+This is a rate window, not true queue depth. On scriptc 0.3.2+, the cap is augmented by real backpressure via a compiled `Writable` wrapper; see `docs/native.md`. Real backpressure only engages when the wrapper compiles as program code (the app or sources vendored into it): inside a statically compiled npm package the `Writable` pump is dead on 0.3.2, so `@chttp/stream` detects that and writes to `res` directly, leaving the window cap as the only policy.
 
 ## Compiling and testing
 
