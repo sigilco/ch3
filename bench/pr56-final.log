@@ -1,0 +1,68 @@
+=== env ===
+Linux devin-box 6.8.0-1061-aws #64~22.04.1-Ubuntu SMP Thu Jul 16 14:38:59 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+v24.19.0
+1.4.3
+0.3.3
+
+=== git ===
+46b47b14467872dd27ae8e54d88ab7f84b5e5be4
+bench/pr56-final
+
+=== gates ===
+ok   bench/apps/chttp-fetch.ts  compile statically 829 (100%)
+ok   bench/apps/fetch-surface.ts  compile statically 837 (100%)
+ok   bench/apps/chttp-html.ts  compile statically 910 (100%)
+ok   bench/apps/chttp-stream.ts  compile statically 939 (100%)
+ok   bench/apps/chttp-val.ts  compile statically 1492 (100%)
+ok   packages/static/gate.ts  compile statically 1324 (100%)
+
+=== builds ===
+/tmp/chhttp
+/tmp/chhttp-fast
+/tmp/fetch-surface
+/home/ubuntu/.worktrees/chttp-pr56-final/bench/bin/raw-scriptc
+-rwxr-xr-x 1 ubuntu ubuntu 2508824 Oct 15 21:52 /tmp/chhttp
+-rwxr-xr-x 1 ubuntu ubuntu 2568880 Oct 15 21:52 /tmp/chhttp-fast
+-rwxr-xr-x 1 ubuntu ubuntu 2502536 Oct 15 21:52 /tmp/fetch-surface
+-rwxr-xr-x 1 ubuntu ubuntu  457744 Oct 15 21:52 bench/bin/raw-scriptc
+
+=== smoke: chhttp ELF ===
+-- GET /json
+{"hello":"world"} [200]
+-- GET /user/42
+{"id":"42"} [200]
+-- POST /echo
+{"k":1} [200]
+-- GET /missing
+Not Found [404]
+-- GET /echo (method miss)
+HTTP/1.1 405 Method Not Allowed
+allow: POST
+Method Not Allowed
+
+=== smoke: chhttp-fast ELF ===
+-- GET /json -> 200
+-- GET /user/42 -> 200
+-- GET /missing -> 404
+-- POST /echo -> 200
+-- GET /echo (method miss)
+HTTP/1.1 405 Method Not Allowed
+allow: POST
+Method Not Allowed
+
+
+=== smoke: fetch-surface ELF ===
+-- GET /json -> 200
+-- GET /user/42 -> 200
+-- GET /vars -> 200
+-- GET /cookies -> 200
+-- GET /missing -> 404
+-- GET /cookies headers
+HTTP/1.1 200 OK
+x-power: gate
+set-cookie: b=2
+-- POST /echo body -> 0000000
+-- GET /echo (method miss)
+HTTP/1.1 405 Method Not Allowed
+allow: POST
+Method Not Allowed

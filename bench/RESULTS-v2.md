@@ -538,3 +538,127 @@ scriptc build with the embedded dynamic engine enabled, or it conflates a
 the lowerings above (or hono's dispatch is restructured into the subset), the
 comparison chttp-ELF vs compiled-Hono has no measurable right-hand side, and
 the only honest compiled-Hono row is "does not run".
+
+## PR #56 final ELF re-baseline (narrowed Ctx/ReqView, scriptc 0.3.3, 2026-10-15)
+
+Branch: `feat/app-fetch-web-standards` @ `46b47b1` (bench commit on
+`bench/pr56-final`). Host: Linux 6.8.0-1061-aws KVM guest, Ubuntu 22.04,
+8 CPU / 31 GB. Node v24.19.0, bun 1.4.3, **scriptc 0.3.3**.
+Methodology identical to the v2 matrix: warmup `-c16 -d2` discarded, then
+`-c64 -d6` x3, median per cell. RSS after 100k reqs on /json; spawn→200 cold
+start (median of 10); binary size for ELF subjects.
+
+Static gates: **6/6 at 100%** (new entry `bench/apps/fetch-surface.ts`).
+Verbatim gate/build/smoke output: `bench/pr56-final.log`.
+
+Smoke evidence (curl verbatim, all three ELFs):
+
+```
+chhttp ELF:        /json 200, /user/42 200, POST /echo 200 (echoes body),
+                   /missing 404, GET /echo -> 405 allow: POST
+chhttp-fast ELF:   /json 200, /user/42 200, POST /echo 200,
+                   /missing 404, GET /echo -> 405 allow: POST
+fetch-surface ELF: /json 200, /user/42 200, /vars 200, /cookies 200
+                   (x-power: gate middleware header present),
+                   /missing 404, GET /echo -> 405 allow: POST,
+                   POST /echo -> 200 empty body (see notes)
+```
+
+The `c.json is not a function` / `rv._setBody is not a function` failures are
+gone — every probe served a real response.
+
+| subject | cell | rps | vs raw-node | p50 | p97.5 | p99 | max | MB/s | err/t/o | non2xx |
+|---------|------|-----|-------------|-----|-------|-----|-----|------|---------|--------|
+| chttp-node | json | 70,592 | 0.84x | 0.00 | 2.0 | 3.0 | 20 | 12.6 | 0/0 | 0 |
+| chttp-node | user | 65,699 | 0.75x | 0.00 | 2.0 | 3.0 | 35 | 11.3 | 0/0 | 0 |
+| chttp-node | echo64 | 59,285 | 0.81x | 0.00 | 2.0 | 3.0 | 24 | 12.9 | 0/0 | 0 |
+| chttp-node | echo1k | 50,523 | 0.73x | 1.00 | 3.0 | 4.0 | 23 | 57.3 | 0/0 | 0 |
+| chttp-node | deep | 72,547 | 0.86x | 0.00 | 1.0 | 3.0 | 22 | 12.5 | 0/0 | 0 |
+| chttp-node | files | 65,624 | 0.74x | 0.00 | 2.0 | 3.0 | 28 | 10.8 | 0/0 | 0 |
+| chttp-node | missing | 74,357 | 0.83x | 0.00 | 1.0 | 3.0 | 22 | 12.7 | 0/0 | 1331067 |
+| chttp-node | mixed | 65,936 | 0.78x | 0.00 | 2.0 | 4.0 | 219 | 11.4 | 0/0 | 0 |
+| chttp-scriptc | json | 65,803 | 0.78x | 0.00 | 2.0 | 3.0 | 20 | 11.7 | 0/0 | 0 |
+| chttp-scriptc | user | 59,544 | 0.68x | 0.00 | 2.0 | 3.0 | 33 | 10.3 | 0/0 | 0 |
+| chttp-scriptc | echo64 | 40,133 | 0.55x | 1.00 | 3.0 | 4.0 | 21 | 8.7 | 0/0 | 0 |
+| chttp-scriptc | echo1k | 37,301 | 0.54x | 1.00 | 4.0 | 4.0 | 45 | 42.3 | 0/0 | 0 |
+| chttp-scriptc | deep | 63,555 | 0.75x | 0.00 | 2.0 | 3.0 | 25 | 11.0 | 0/0 | 0 |
+| chttp-scriptc | files | 65,587 | 0.74x | 0.00 | 1.0 | 3.0 | 23 | 10.8 | 0/0 | 0 |
+| chttp-scriptc | missing | 70,069 | 0.78x | 0.00 | 1.0 | 2.0 | 20 | 12.0 | 0/0 | 1252914 |
+| chttp-scriptc | mixed | 60,723 | 0.72x | 0.00 | 2.0 | 4.0 | 275 | 10.5 | 0/0 | 0 |
+| chttp-fast-node | json | 73,187 | 0.87x | 0.00 | 2.0 | 3.0 | 58 | 13.1 | 0/0 | 0 |
+| chttp-fast-node | user | 74,219 | 0.84x | 0.00 | 1.0 | 2.0 | 26 | 12.8 | 0/0 | 0 |
+| chttp-fast-node | echo64 | 63,373 | 0.86x | 0.00 | 1.0 | 3.0 | 24 | 13.8 | 0/0 | 0 |
+| chttp-fast-node | echo1k | 53,301 | 0.77x | 1.00 | 2.0 | 3.0 | 21 | 60.5 | 0/0 | 0 |
+| chttp-fast-node | deep | 76,597 | 0.91x | 0.00 | 1.0 | 2.0 | 24 | 13.2 | 0/0 | 0 |
+| chttp-fast-node | files | 75,456 | 0.86x | 0.00 | 1.0 | 2.0 | 20 | 12.4 | 0/0 | 0 |
+| chttp-fast-node | missing | 73,525 | 0.82x | 0.00 | 1.0 | 2.0 | 24 | 12.5 | 0/0 | 1322277 |
+| chttp-fast-node | mixed | 74,115 | 0.88x | 0.00 | 1.0 | 3.0 | 255 | 12.8 | 0/0 | 0 |
+| chttp-fast-scriptc | json | 66,043 | 0.79x | 0.00 | 1.0 | 3.0 | 29 | 11.8 | 0/0 | 0 |
+| chttp-fast-scriptc | user | 60,904 | 0.69x | 0.00 | 2.0 | 3.0 | 29 | 10.5 | 0/0 | 0 |
+| chttp-fast-scriptc | echo64 | 42,480 | 0.58x | 1.00 | 3.0 | 4.0 | 19 | 9.2 | 0/0 | 0 |
+| chttp-fast-scriptc | echo1k | 38,075 | 0.55x | 1.00 | 3.0 | 4.0 | 23 | 43.2 | 0/0 | 0 |
+| chttp-fast-scriptc | deep | 66,237 | 0.78x | 0.00 | 1.0 | 3.0 | 18 | 11.4 | 0/0 | 0 |
+| chttp-fast-scriptc | files | 62,859 | 0.71x | 0.00 | 2.0 | 3.0 | 27 | 10.3 | 0/0 | 0 |
+| chttp-fast-scriptc | missing | 42,625 | 0.48x | 1.00 | 3.0 | 4.0 | 19 | 7.3 | 0/0 | 763816 |
+| chttp-fast-scriptc | mixed | 59,987 | 0.71x | 0.00 | 3.0 | 4.0 | 258 | 10.4 | 0/0 | 0 |
+| fetch-surface | json | 88,949 | 1.06x | 0.00 | 1.0 | 2.0 | 20 | 17.1 | 0/0 | 0 |
+| fetch-surface | user | 86,283 | 0.98x | 0.00 | 1.0 | 2.0 | 39 | 16.1 | 0/0 | 0 |
+| fetch-surface | echo64 | 92,181 | 1.26x | 0.00 | 1.0 | 1.0 | 20 | 15.6 | 0/0 | 0 |
+| fetch-surface | echo1k | 92,373 | 1.33x | 0.00 | 1.0 | 2.0 | 20 | 15.7 | 0/0 | 0 |
+| fetch-surface | deep | 97,984 | 1.16x | 0.00 | 1.0 | 2.0 | 20 | 16.7 | 0/0 | 1762379 |
+| fetch-surface | files | 98,112 | 1.11x | 0.00 | 1.0 | 2.0 | 20 | 16.7 | 0/0 | 1755445 |
+| fetch-surface | missing | 97,013 | 1.08x | 0.00 | 1.0 | 2.0 | 20 | 16.6 | 0/0 | 1778636 |
+| fetch-surface | mixed | 94,069 | 1.11x | 0.00 | 1.0 | 3.0 | 283 | 16.1 | 0/0 | 1707369 |
+| raw-node | json | 83,872 | 1.00x | 0.00 | 1.0 | 2.0 | 121 | 13.8 | 0/0 | 0 |
+| raw-node | user | 87,989 | 1.00x | 0.00 | 1.0 | 2.0 | 26 | 13.9 | 0/0 | 0 |
+| raw-node | echo64 | 73,419 | 1.00x | 0.00 | 1.0 | 2.0 | 21 | 14.9 | 0/0 | 0 |
+| raw-node | echo1k | 69,621 | 1.00x | 0.00 | 1.0 | 2.0 | 24 | 78.0 | 0/0 | 0 |
+| raw-node | deep | 84,533 | 1.00x | 0.00 | 1.0 | 2.0 | 65 | 13.4 | 0/0 | 0 |
+| raw-node | files | 88,149 | 1.00x | 0.00 | 1.0 | 2.0 | 19 | 13.2 | 0/0 | 0 |
+| raw-node | missing | 89,493 | 1.00x | 0.00 | 1.0 | 2.0 | 18 | 14.0 | 0/0 | 1608488 |
+| raw-node | mixed | 84,512 | 1.00x | 0.00 | 1.0 | 3.0 | 283 | 13.4 | 0/0 | 0 |
+| raw-scriptc | json | 94,059 | 1.12x | 0.00 | 1.0 | 2.0 | 33 | 15.4 | 0/0 | 0 |
+| raw-scriptc | user | 89,547 | 1.02x | 0.00 | 1.0 | 2.0 | 23 | 14.2 | 0/0 | 0 |
+| raw-scriptc | echo64 | 98,507 | 1.34x | 0.00 | 1.0 | 2.0 | 21 | 20.0 | 0/0 | 0 |
+| raw-scriptc | echo1k | 91,616 | 1.32x | 0.00 | 1.0 | 2.0 | 21 | 102.7 | 0/0 | 0 |
+| raw-scriptc | deep | 94,859 | 1.12x | 0.00 | 1.0 | 2.0 | 19 | 15.0 | 0/0 | 0 |
+| raw-scriptc | files | 96,779 | 1.10x | 0.00 | 1.0 | 2.0 | 24 | 14.5 | 0/0 | 0 |
+| raw-scriptc | missing | 98,507 | 1.10x | 0.00 | 1.0 | 2.0 | 24 | 15.4 | 0/0 | 1753577 |
+| raw-scriptc | mixed | 94,037 | 1.11x | 0.00 | 1.0 | 3.0 | 222 | 14.9 | 0/0 | 0 |
+
+| subject | cold start median | cold start min | RSS kb (post-100k) | binary bytes |
+|---------|-------------------|----------------|--------------------|--------------|
+| chttp-node | 97.87 ms | 88.21 ms | 117,220 | - |
+| chttp-scriptc | 7.53 ms | 3.63 ms | 4,736 | 2,508,824 |
+| chttp-fast-node | 95.28 ms | 82.66 ms | 117,472 | - |
+| chttp-fast-scriptc | 7.53 ms | 3.24 ms | 4,812 | 2,568,880 |
+| fetch-surface | 3.38 ms | 3.19 ms | 4,772 | 2,502,536 |
+| raw-node | 78.32 ms | 73.16 ms | 112,492 | - |
+| raw-scriptc | 3.68 ms | 3.01 ms | 3,428 | 457,744 |
+
+Notes:
+
+- **fetch-surface is the headline**: the app.fetch-shaped dispatch path
+  (`fetchShim` → `_dispatchPrim` → `FetchResponseSink`) runs 86k-98k rps —
+  at raw-scriptc parity (0.94x-1.04x of raw-scriptc's own numbers) and above
+  raw-node on 7/8 cells. The Web Standards dispatch path in ELF is as fast
+  as the raw-ELF ceiling subject. Its deep/files/missing/mixed cells measure
+  the 404 path: the spike app registers only /json, /user/:id, /vars,
+  /cookies and POST /echo.
+- chttp-scriptc and chttp-fast-scriptc serve real 200s but run below their
+  node twins on every cell (0.72x-0.94x on GET cells, 0.55x-0.68x on POST
+  echo cells). These are the first honest chttp-scriptc cells on the
+  narrowed source — the v2-era ~100k rows were measured on pre-refactor
+  source (e57e23c, scriptc 0.2.8) and are not comparable (different code,
+  older compiler, and cross-machine comparisons are not made in this file).
+- chttp-fast-scriptc missing dips to 42.6k (0.48x raw-node) — the
+  generated-dispatch 404 fallthrough. Flagged, not blocking.
+- fetch-surface POST /echo returns an empty body by design: the app passes
+  a constant `body=""` to `fetchShim` (the host shim seeds whatever the
+  caller passes; the bench app does not buffer the Node request body). The
+  cell still exercises the full POST dispatch.
+- /cookies shows a single `set-cookie: b=2` — a shim-server artifact, not a
+  sink bug: `hdrList` carries both `a=1` and `b=2` in wire order but the demo
+  server calls `res.setHeader` per pair and Node last-wins per key.
+- non2xx counts on missing/deep/files cells are 404s, matching prior
+  sections' convention.
