@@ -2,8 +2,8 @@
 // Source: routes.chttp.ts
 export const ROUTE_CONTRACT_VERSION = 3;
 // 11 route(s) lowered, 0 left to the runtime path.
-// warning: unplugin-chttp: /home/ubuntu/.worktrees/chttp-multipart/fixtures/vite-app/src/routes.chttp.ts:41 get() with a non-literal path — this route stays runtime-only
-// warning: unplugin-chttp: /home/ubuntu/.worktrees/chttp-multipart/fixtures/vite-app/src/routes.chttp.ts:44 multipart route — stays runtime-only (internal dispatch parses)
+// warning: unplugin-chttp: /home/ubuntu/repos/chttp/fixtures/vite-app/src/routes.chttp.ts:41 get() with a non-literal path — this route stays runtime-only
+// warning: unplugin-chttp: /home/ubuntu/repos/chttp/fixtures/vite-app/src/routes.chttp.ts:44 multipart route — stays runtime-only (internal dispatch parses)
 
 import type { IncomingMessage, ServerResponse } from "node:http"
 

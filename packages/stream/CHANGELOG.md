@@ -1,5 +1,12 @@
 # @chttp/stream
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies:
+  - @chttp/router@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

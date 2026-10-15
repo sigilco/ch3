@@ -11,6 +11,13 @@
   dir: packages/router
   intents:
     - add-backpressure
+"@chttp/router@0.3.0":
+  dir: packages/router
+  intents:
+    - add-app-fetch
+    - fix-elf-963-narrowing
+    - fix-sc9001
+    - short-pigs-push
 "@chttp/static@0.2.0":
   dir: packages/static
   intents:
@@ -27,6 +34,10 @@
   dir: packages/unplugin
   intents:
     - bright-carrots-rest
+"@chttp/unplugin@0.3.0":
+  dir: packages/unplugin
+  intents:
+    - short-pigs-push
 "@chttp/val@0.2.0":
   dir: packages/val
   intents:
