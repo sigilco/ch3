@@ -25,3 +25,7 @@ for (const f of readdirSync(join(out, "ws"))) {
   const p = join(out, "ws", f);
   writeFileSync(p, readFileSync(p, "utf8").replaceAll('"@chttp/router"', '"../router/index.ts"'));
 }
+
+// The FFI manifest lands next to where the build script places the compiled
+// ffi_native.o, so its relative `libraries` entry resolves.
+cpSync(join(root, "ffi.json"), join(out, "ffi.json"));

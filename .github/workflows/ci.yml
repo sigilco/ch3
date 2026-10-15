@@ -23,6 +23,7 @@ jobs:
       - run: pnpm -r build
       - run: pnpm -r test
       - run: pnpm smoke:pack
+      - run: pnpm smoke:ws:ffi
 
   scriptc-coverage:
     runs-on: ubuntu-latest
