@@ -28,10 +28,11 @@ const m = new Map();
 
 ## Shape of the code
 
-- One core file, `packages/router/src/index.ts`: router, context, node adapter.
+- One core file, `packages/router/src/index.ts`: router, context, dispatch, the Node-shaped `app.handler()` adapter, and the Web Standards-shaped `app.fetch()`.
+- A second core file, `packages/router/src/sink.ts`: the `ResponseSink` abstraction plus `NodeResponseSink` (writes to `ServerResponse`) and `FetchResponseSink` (captures into a Web `Response`). `Ctx` holds a `ResponseSink`; both surfaces route through the same chain.
 - Route data is plain records. Handlers live in `App._fns`, nodes carry indices.
 - Matching uses an explicit frame stack, no recursion.
-- Response helpers call `res.end()` at statement level.
+- Response helpers call the sink at statement level. `app.fetch()` finalizes the sink to a `Response` in the chained promise; `app.handler()` finalizes by writing to `res.end()`.
 
 ## Where to read more
 
