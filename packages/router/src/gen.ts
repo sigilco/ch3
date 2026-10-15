@@ -12,7 +12,7 @@ export type DispatchFn = (req: IncomingMessage, res: ServerResponse) => boolean;
 // Contract version (contracts/route-contract.md, Contract versioning). Bumped
 // when the emit contract changes shape. Emitters stamp the same number
 // into generated modules and App.withDispatch refuses a mismatch.
-export const ROUTE_CONTRACT_VERSION = 2;
+export const ROUTE_CONTRACT_VERSION = 3;
 
 export class GenDispatch {
   // Stamp carried by every dispatch instance. GenDispatch subclasses that

@@ -460,36 +460,38 @@ test("non-ascii body gets byte-accurate content-length", () => {
 });
 
 test("withDispatch validates the route contract version stamp", () => {
-  return import("../dist/esm/index.js").then(({ GenDispatch, createRouter }) => {
-    const app = createRouter();
-    // mismatched stamp → clear error naming both versions
-    class Bad extends GenDispatch {
-      constructor() {
-        super();
-        this.ROUTE_CONTRACT_VERSION = 999;
+  return import("../dist/esm/index.js").then(
+    ({ GenDispatch, ROUTE_CONTRACT_VERSION, createRouter }) => {
+      const app = createRouter();
+      // mismatched stamp → clear error naming both versions
+      class Bad extends GenDispatch {
+        constructor() {
+          super();
+          this.ROUTE_CONTRACT_VERSION = 999;
+        }
       }
-    }
-    assert.throws(
-      () => createRouter().withDispatch(new Bad()),
-      /contract version mismatch.*v999.*v2/,
-    );
-    // matching stamp → accepted
-    class Ok extends GenDispatch {
-      constructor() {
-        super();
-        this.ROUTE_CONTRACT_VERSION = 2;
+      assert.throws(
+        () => createRouter().withDispatch(new Bad()),
+        new RegExp("contract version mismatch.*v999.*v" + String(ROUTE_CONTRACT_VERSION)),
+      );
+      // matching stamp → accepted
+      class Ok extends GenDispatch {
+        constructor() {
+          super();
+          this.ROUTE_CONTRACT_VERSION = ROUTE_CONTRACT_VERSION;
+        }
       }
-    }
-    app.withDispatch(new Ok());
-    assert.equal(app.handler() instanceof Function, true);
-    // missing stamp (duck-typed pre-versioning dispatch) → accepted
-    const legacy = {
-      dispatch() {
-        return false;
-      },
-    };
-    createRouter().withDispatch(legacy);
-  });
+      app.withDispatch(new Ok());
+      assert.equal(app.handler() instanceof Function, true);
+      // missing stamp (duck-typed pre-versioning dispatch) → accepted
+      const legacy = {
+        dispatch() {
+          return false;
+        },
+      };
+      createRouter().withDispatch(legacy);
+    },
+  );
 });
 
 test("withDispatch generated module takes precedence and can decline", () => {

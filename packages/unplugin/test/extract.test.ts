@@ -177,6 +177,32 @@ app.get('/b', (c) => c.text('b'))
     assert.ok(m.warnings.some((w) => w.includes("non-literal path")));
   });
 
+  it("declared multipart stays runtime-only (declared-multipart rule)", () => {
+    const m = extractModule(
+      "routes.chttp.ts",
+      `
+import { createRouter } from '@chttp/router'
+export const app = createRouter()
+app.get('/a', (c) => c.text('a'))
+app.post('/upload', (c) => c.json({ t: c.req.field('title') }), {
+  multipart: { maxFileBytes: 1024 },
+})
+app.post('/upload2', (c) => c.text('x'), { multipart: {} })
+app.get('/b', (c) => c.text('b'))
+`,
+    );
+    assert.deepEqual(
+      m.routes.map((r) => r.path),
+      ["/a", "/b"],
+    );
+    // indices consumed: /a is 0, /upload 1, /upload2 2, /b is 3
+    assert.deepEqual(
+      m.routes.map((r) => r.handlerIdx),
+      [0, 3],
+    );
+    assert.ok(m.warnings.some((w) => w.includes("multipart")));
+  });
+
   it("conditional registration marks later routes uncertain", () => {
     const m = extractModule(
       "routes.chttp.ts",

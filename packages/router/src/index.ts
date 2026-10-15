@@ -26,9 +26,21 @@ import type { DispatchFn } from "./gen.ts";
 import { UpgradeDispatch } from "./upgrade.ts";
 import type { Socket } from "node:net";
 import { ResponseSink, NodeResponseSink, FetchResponseSink } from "./sink.ts";
+import {
+  MultipartParser,
+  MultipartStorage,
+  MemoryStorage,
+  DiskStorage,
+  multipartBoundary,
+  MP_ERR_LIMIT,
+} from "./multipart.ts";
+import type { MultipartFileSink, UploadedFile, DispositionParams } from "./multipart.ts";
 
 export { GenDispatch };
 export { ResponseSink, NodeResponseSink, FetchResponseSink };
+export { MultipartParser, MultipartStorage, MemoryStorage, DiskStorage, multipartBoundary };
+export { memoryStorage, diskStorage } from "./multipart.ts";
+export type { MultipartFileSink, UploadedFile, DispositionParams };
 export type { DispatchFn };
 export { ROUTE_CONTRACT_VERSION };
 export { UpgradeDispatch };
@@ -122,6 +134,11 @@ export class ReqViewCore {
   _pi: number[];
   _sp: number;
   _body: string;
+  // Parsed multipart content — populated only for routes that declared
+  // `multipart` in RouteOpts (dispatch fills via _setMultipart after the
+  // streaming parse completes). Shared immutable empties until then.
+  _mpFiles: UploadedFile[];
+  _mpFields: string[];
 
   constructor(
     raw: IncomingMessage | null,
@@ -173,6 +190,8 @@ export class ReqViewCore {
     this._pi = EMPTY_N;
     this._sp = -1;
     this._body = "";
+    this._mpFiles = [];
+    this._mpFields = [];
     this.path = String(path);
   }
 
@@ -301,6 +320,65 @@ export class ReqViewCore {
 
   _setBody(s: string): void {
     this._body = String(s);
+  }
+
+  // Last file part with this field name; null when absent (or when the
+  // route did not declare `multipart`). Last-wins matches Hono's
+  // parseBody single-value semantics — use files() for every part.
+  file(name: string): UploadedFile | null {
+    const n = String(name);
+    const f = this._mpFiles;
+    let out: UploadedFile | null = null;
+    for (let i = 0; i < f.length; i++) {
+      if (f[i].field === n) {
+        out = f[i];
+      }
+    }
+    return out;
+  }
+
+  // Every file part with this field name, in arrival order.
+  files(name: string): UploadedFile[] {
+    const n = String(name);
+    const f = this._mpFiles;
+    const out: UploadedFile[] = [];
+    for (let i = 0; i < f.length; i++) {
+      if (f[i].field === n) {
+        out.push(f[i]);
+      }
+    }
+    return out;
+  }
+
+  // Last text field with this name; null when absent.
+  field(name: string): string | null {
+    const n = String(name);
+    const fp = this._mpFields;
+    let out: string | null = null;
+    for (let i = 0; i + 1 < fp.length; i += 2) {
+      if (fp[i] === n) {
+        out = String(fp[i + 1]);
+      }
+    }
+    return out;
+  }
+
+  // Every text field with this name, in arrival order.
+  fields(name: string): string[] {
+    const n = String(name);
+    const fp = this._mpFields;
+    const out: string[] = [];
+    for (let i = 0; i + 1 < fp.length; i += 2) {
+      if (fp[i] === n) {
+        out.push(String(fp[i + 1]));
+      }
+    }
+    return out;
+  }
+
+  _setMultipart(files: UploadedFile[], fields: string[]): void {
+    this._mpFiles = files;
+    this._mpFields = fields;
   }
 
   _parsed(): string[] {
@@ -509,11 +587,26 @@ export type Middleware = (c: CtxCore, next: Next) => unknown;
 // when the union mentions Ctx in a parameter position).
 export type OnErrorFn = (err: unknown, c: CtxCore) => void;
 
+// Multipart upload declaration (RouteOpts.multipart). Opt-in per route
+// like `body: true` — dispatch parses the body before the chain runs and
+// handlers read results synchronously through c.req.file()/field().
+// Limits are enforced during the streaming parse: crossing one aborts
+// with 413 and removes the partial temp file. 0 = no cap.
+export interface MultipartOpts {
+  storage?: MultipartStorage;
+  maxFileBytes?: number;
+  maxFiles?: number;
+  maxFieldBytes?: number;
+}
+
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
-// for routes that asked for it (contracts/route-contract.md).
+// for routes that asked for it (contracts/route-contract.md). `multipart`
+// declares a form-data upload; the two are mutually exclusive (multipart
+// owns the stream).
 export interface RouteOpts {
   body?: boolean;
+  multipart?: MultipartOpts;
 }
 
 function bodyFlag(opts: RouteOpts | undefined): number {
@@ -524,6 +617,185 @@ function bodyFlag(opts: RouteOpts | undefined): number {
     return 1;
   }
   return 0;
+}
+
+// Resolved multipart declaration for one route entry — a class (not a
+// record) so the per-entry config lives on App._mp like _fns/_mws.
+class MpCfg {
+  on: number;
+  storage: MultipartStorage | null;
+  maxFB: number;
+  maxNF: number;
+  maxFldB: number;
+
+  constructor() {
+    this.on = 0;
+    this.storage = null;
+    this.maxFB = 0;
+    this.maxNF = 0;
+    this.maxFldB = 0;
+  }
+}
+
+// Shared default: memory storage, no caps.
+const MP_SHARED_MEM = new MemoryStorage();
+
+function optNum(v: number | undefined): number {
+  if (v === undefined || v === null) {
+    return 0;
+  }
+  return Number(v);
+}
+
+function resolveMp(opts: RouteOpts | undefined): MpCfg {
+  const out = new MpCfg();
+  if (opts === undefined || opts === null) {
+    return out;
+  }
+  const m = opts.multipart;
+  if (m === undefined || m === null) {
+    return out;
+  }
+  if (opts.body === true) {
+    throw new Error(
+      "chttp: body and multipart are mutually exclusive — multipart owns the request body",
+    );
+  }
+  out.on = 1;
+  if (m.storage === undefined || m.storage === null) {
+    out.storage = MP_SHARED_MEM;
+  } else {
+    out.storage = m.storage;
+  }
+  out.maxFB = optNum(m.maxFileBytes);
+  out.maxNF = optNum(m.maxFiles);
+  out.maxFldB = optNum(m.maxFieldBytes);
+  return out;
+}
+
+// True for methods that may carry a request body — same list the
+// declared-body rule uses.
+function bodyMethod(m: string): boolean {
+  return m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE";
+}
+
+// Terminal answer for a rejected multipart body: write the status, then
+// destroy the request socket once the response has flushed. 'finish' is
+// the deferred-destroy point (destroying before end() flushes drops the
+// response on the floor).
+function abortMultipart(
+  sink: ResponseSink,
+  req: IncomingMessage,
+  status: number,
+  msg: string,
+): void {
+  const res = sink.nodeRes();
+  if (res !== null) {
+    res.on("finish", function (): void {
+      req.destroy();
+    });
+    sink.setHeader("connection", "close");
+  }
+  sink.setStatus(status);
+  sink.setHeader("content-type", "text/plain; charset=utf-8");
+  sink.setHeader("content-length", String(utf8len(msg)));
+  sink.writeBody(msg);
+}
+
+// Stream-parse a declared multipart request on the Node path: feed the
+// parser chunk-wise so limits abort mid-upload and disk storage streams
+// straight to its temp file, then install the results on the ReqView and
+// run the chain. Fetch-path requests go through _dispatchPrim's buffered
+// variant instead.
+function runMultipart(
+  req: IncomingMessage,
+  sink: ResponseSink,
+  c: CtxCore,
+  cfg: MpCfg,
+  chain: Handler,
+  oef: OnErrorFn | null,
+): void {
+  const ct = c.req.header("content-type");
+  const bnd = multipartBoundary(ct);
+  if (bnd === null) {
+    abortMultipart(sink, req, 400, "Expected multipart/form-data");
+    return;
+  }
+  const st = cfg.storage === null ? MP_SHARED_MEM : cfg.storage;
+  const parser = new MultipartParser(bnd, st, cfg.maxFB, cfg.maxNF, cfg.maxFldB);
+  let answered = false;
+  req.on("data", function (chunk: Buffer): void {
+    if (answered) {
+      return;
+    }
+    parser.feed(chunk);
+    if (parser.err !== 0) {
+      answered = true;
+      abortMultipart(
+        sink,
+        req,
+        parser.err === MP_ERR_LIMIT ? 413 : 400,
+        parser.err === MP_ERR_LIMIT ? "Payload Too Large" : "Malformed multipart body",
+      );
+    }
+  });
+  req.on("end", function (): void {
+    if (answered) {
+      return;
+    }
+    parser.finish();
+    if (parser.err !== 0) {
+      abortMultipart(
+        sink,
+        req,
+        parser.err === MP_ERR_LIMIT ? 413 : 400,
+        parser.err === MP_ERR_LIMIT ? "Payload Too Large" : "Malformed multipart body",
+      );
+      return;
+    }
+    const rv = c.req;
+    rv._setMultipart(parser.files, parser.fields);
+    runChain(chain, c, sink, oef);
+  });
+}
+
+// Buffered variant for the fetch path: the body already arrived as bytes
+// (arrayBuffer) or a string (fetchShim — utf8-encoded here; binary file
+// content does not survive the string shim, a documented fetchShim limit).
+function runMultipartPrim(c: CtxCore, cfg: MpCfg, body: string, bodyU8: Uint8Array | null): number {
+  const ct = c.req.header("content-type");
+  const bnd = multipartBoundary(ct);
+  if (bnd === null) {
+    return 400;
+  }
+  const st = cfg.storage === null ? MP_SHARED_MEM : cfg.storage;
+  const parser = new MultipartParser(bnd, st, cfg.maxFB, cfg.maxNF, cfg.maxFldB);
+  let bytes: Uint8Array;
+  if (bodyU8 !== null) {
+    bytes = bodyU8;
+  } else {
+    bytes = new TextEncoder().encode(body);
+  }
+  parser.feed(bytes);
+  if (parser.err === 0) {
+    parser.finish();
+  }
+  if (parser.err !== 0) {
+    return parser.err === MP_ERR_LIMIT ? 413 : 400;
+  }
+  const rv = c.req;
+  rv._setMultipart(parser.files, parser.fields);
+  return 0;
+}
+
+// Write a status + plain text answer through a sink and (on the Node
+// surface) close the connection — used by the prim path where there is no
+// IncomingMessage to destroy.
+function replyPlain(sink: ResponseSink, status: number, msg: string): void {
+  sink.setStatus(status);
+  sink.setHeader("content-type", "text/plain; charset=utf-8");
+  sink.setHeader("content-length", String(utf8len(msg)));
+  sink.writeBody(msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -1039,6 +1311,7 @@ function mountRoutes(sub: App, app: App, prefix: string, pre: Middleware[]): voi
           mergeMw(pre, subMw),
           pathMeta(path),
           sub._bodyF[hs[i]],
+          sub._mp[hs[i]],
         );
         addRoute(app._nodes, n.hm[i], path, idx);
       }
@@ -1077,6 +1350,10 @@ export class App {
   _pi: number[][];
   _sp: number[];
   _bodyF: number[];
+  // Per-entry resolved multipart config (parallel to _fns). mp.on === 1
+  // means the route declared `multipart` and dispatch parses the body
+  // through MultipartParser before the chain runs.
+  _mp: MpCfg[];
   // Generated-dispatch seam (contracts/route-contract.md): a plain function
   // field, not an interface-typed field — an interface with a method member
   // would fence eager program-code instantiation the same way a function
@@ -1107,6 +1384,7 @@ export class App {
     this._pi = [];
     this._sp = [];
     this._bodyF = [];
+    this._mp = [];
     this._gen = function (_r: IncomingMessage, _s: ServerResponse): boolean {
       return false;
     };
@@ -1122,39 +1400,39 @@ export class App {
   // — no type-safety is lost. `opts.body` declares body use; without it
   // c.req.body() returns '' (contracts/route-contract.md).
   get(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("GET", path, h, bodyFlag(opts));
+    return this._add("GET", path, h, opts);
   }
 
   post(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("POST", path, h, bodyFlag(opts));
+    return this._add("POST", path, h, opts);
   }
 
   put(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("PUT", path, h, bodyFlag(opts));
+    return this._add("PUT", path, h, opts);
   }
 
   delete(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("DELETE", path, h, bodyFlag(opts));
+    return this._add("DELETE", path, h, opts);
   }
 
   patch(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("PATCH", path, h, bodyFlag(opts));
+    return this._add("PATCH", path, h, opts);
   }
 
   head(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("HEAD", path, h, bodyFlag(opts));
+    return this._add("HEAD", path, h, opts);
   }
 
   options(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("OPTIONS", path, h, bodyFlag(opts));
+    return this._add("OPTIONS", path, h, opts);
   }
 
   all(path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add("*", path, h, bodyFlag(opts));
+    return this._add("*", path, h, opts);
   }
 
   on(method: string, path: string, h: Handler, opts?: RouteOpts): App {
-    return this._add(String(method).toUpperCase(), path, h, bodyFlag(opts));
+    return this._add(String(method).toUpperCase(), path, h, opts);
   }
 
   // Register a middleware (runs on every request).
@@ -1287,7 +1565,7 @@ export class App {
     return s;
   }
 
-  _regFn(h: Handler, mw: Middleware[], m: PathMeta, body: number): number {
+  _regFn(h: Handler, mw: Middleware[], m: PathMeta, body: number, mp: MpCfg): number {
     this._fns.push(h);
     this._mws.push(mw);
     this._chains.push(compose(mw, h));
@@ -1295,11 +1573,12 @@ export class App {
     this._pi.push(m.idxs);
     this._sp.push(m.splat);
     this._bodyF.push(body);
+    this._mp.push(mp);
     return this._fns.length - 1;
   }
 
-  _add(method: string, path: string, h: Handler, body: number): App {
-    const idx = this._regFn(h, copyMw(this._mw), pathMeta(path), body);
+  _add(method: string, path: string, h: Handler, opts?: RouteOpts): App {
+    const idx = this._regFn(h, copyMw(this._mw), pathMeta(path), bodyFlag(opts), resolveMp(opts));
     addRoute(this._nodes, method, path, idx);
     return this;
   }
@@ -1331,13 +1610,26 @@ export class App {
     return (async function (): Promise<Response> {
       // Buffer the body once so c.req.body() works identically to the
       // Node path. GET/HEAD never have a body.
-      const body = method === "GET" || method === "HEAD" ? "" : await req.text();
+      // Multipart-declared routes need byte-exact content: read the body
+      // as an ArrayBuffer (req.text() would mangle binary file bytes
+      // through utf8 decoding). Everything else keeps the string body.
+      const ctH = req.headers.get("content-type");
+      const isMp = ctH !== null && String(ctH).toLowerCase().indexOf("multipart/form-data") === 0;
+      let body = "";
+      let bodyU8: Uint8Array | null = null;
+      if (method !== "GET" && method !== "HEAD") {
+        if (isMp) {
+          bodyU8 = new Uint8Array(await req.arrayBuffer());
+        } else {
+          body = await req.text();
+        }
+      }
       // Generated dispatch is Node-shaped (contracts/route-contract.md) —
       // the contract has no Web Standards variant yet (follow-up A in the
       // plan). For the fetch path we skip generated dispatch entirely;
       // the unplugin-emitted routes would need a parallel contract. Today
       // no shipped example uses generated dispatch through app.fetch.
-      await app._dispatchPrim(method, url, headersFromRaw(req), body, sink);
+      await app._dispatchPrim(method, url, headersFromRaw(req), body, bodyU8, sink);
       return sink.toResponse();
     })();
   }
@@ -1374,7 +1666,7 @@ export class App {
     const sink = new FetchResponseSink();
     const m = String(method).toUpperCase();
     const seeded = m === "GET" || m === "HEAD" ? "" : String(body);
-    const p = app._dispatchPrim(String(method), String(url), headers, seeded, sink);
+    const p = app._dispatchPrim(String(method), String(url), headers, seeded, null, sink);
     p.then(function (): void {
       respond(sink.status, sink.hdrList, sink.chunks.join(""));
     });
@@ -1390,6 +1682,7 @@ export class App {
     url: string,
     webHeaders: Record<string, string> | null,
     body: string,
+    bodyU8: Uint8Array | null,
     sink: ResponseSink,
   ): Promise<void> {
     const app = this;
@@ -1445,6 +1738,25 @@ export class App {
     rv._setBody(body);
     const c = new CtxCore(rv, sink);
     return new Promise<void>(function (resolve): void {
+      // Multipart-declared routes parse the (already buffered) body
+      // before the chain — same per-route opt-in as the Node path. A
+      // rejected body answers 400/413 through the sink, no chain run.
+      if (idx >= 0 && bodyMethod(method)) {
+        const mp = app._mp[idx];
+        if (mp.on === 1) {
+          const rc = runMultipartPrim(c, mp, body, bodyU8);
+          if (rc === 413) {
+            replyPlain(sink, 413, "Payload Too Large");
+            resolve();
+            return;
+          }
+          if (rc !== 0) {
+            replyPlain(sink, 400, "Malformed multipart body");
+            resolve();
+            return;
+          }
+        }
+      }
       runChainPromise(chain, c, sink, oef, resolve);
     });
   }
@@ -1499,10 +1811,12 @@ export class App {
       rv._sp = this._sp[idx];
     }
     const c = new CtxCore(rv, sink);
-    if (
-      body === 1 &&
-      (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE")
-    ) {
+    const carrying = bodyMethod(method);
+    if (idx >= 0 && this._mp[idx].on === 1 && carrying) {
+      // Declared multipart upload: the parser owns the stream, the
+      // declared storage strategy owns the bytes.
+      runMultipart(req, sink, c, this._mp[idx], chain, oef);
+    } else if (body === 1 && carrying) {
       let buf = "";
       req.on("data", function (chunk: Buffer): void {
         buf = buf + chunk.toString();

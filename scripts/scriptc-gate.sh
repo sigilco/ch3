@@ -11,6 +11,7 @@ GATES=(
   bench/apps/chttp-html.ts
   bench/apps/chttp-stream.ts
   bench/apps/chttp-val.ts
+  bench/apps/chttp-multipart.ts
   packages/static/gate.ts
 )
 
