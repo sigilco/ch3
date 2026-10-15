@@ -18,4 +18,4 @@ app.get("/clock", (c) =>
 app.serve({ port: 3000 });
 ```
 
-See the [streaming guide](https://github.com/sigilco/chttp/blob/main/docs/streaming.md) for the full API and the 0.3.1 limits (no real backpressure, so slow consumers are closed by a pending-bytes cap).
+See the [streaming guide](https://github.com/sigilco/chttp/blob/main/docs/streaming.md) for the full API and the slow-consumer policy (a compiled `Writable` backpressure wrapper on scriptc 0.3.2+, plus a pending-bytes cap as the fail-safe).

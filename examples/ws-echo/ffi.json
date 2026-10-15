@@ -1,0 +1,24 @@
+{
+  "ffi_format": 2,
+  "functions": [
+    {
+      "name": "ffiFnv1a",
+      "symbol": "ffi_fnv1a",
+      "params": [
+        {
+          "callback": {
+            "id": "next",
+            "params": [],
+            "returns": "u8",
+            "lifetime": "call"
+          }
+        },
+        "u32",
+        "u32"
+      ],
+      "returns": "u32"
+    }
+  ],
+  "libraries": ["./ffi_native.o"],
+  "system_libraries": []
+}

@@ -416,7 +416,10 @@ test("many fragments reassemble into one intact message", async () => {
   }
   await c.waitFrames(1);
   assert.equal(c.frames()[0].payload.toString(), "echo:" + expect);
-  assert.deepEqual(h.events.filter((e) => e[0] === "message"), [["message", expect]]);
+  assert.deepEqual(
+    h.events.filter((e) => e[0] === "message"),
+    [["message", expect]],
+  );
   c.s.destroy();
   server.close();
 });
@@ -441,6 +444,49 @@ test("send backlog cap drops a slow consumer with 1008", async () => {
   const close = h.events.find((e) => e[0] === "close");
   assert.ok(close, "handler close fired");
   assert.equal(close[1], 1008);
+  server.close();
+});
+
+test("backpressure kicks in on slow consumer (binary case)", async () => {
+  const h = new Rec();
+  const { server, port } = await start(h);
+  const c = await handshake(port, "/echo");
+  const conn = h.conn;
+  conn._writer._maxBacklog = 4096;
+  c.s.pause(); // slow consumer: stop draining the client socket
+  const chunk = Buffer.alloc(256);
+  for (let i = 0; i < 1024 && conn.isOpen(); i++) {
+    conn.sendBinary(chunk);
+  }
+  // 256 KiB bursts past the Writable highWaterMark (64 KiB) into the explicit
+  // queue, which trips the 4 KiB backlog cap: same 1008 flood close.
+  const close = h.events.find((e) => e[0] === "close");
+  assert.ok(close, "handler close fired");
+  assert.equal(close[1], 1008);
+  assert.ok(!conn.isOpen());
+  c.s.destroy();
+  server.close();
+});
+
+test("drain callback resumes send after window reset", async () => {
+  const h = new Rec();
+  const { server, port } = await start(h);
+  const c = await handshake(port, "/echo");
+  const conn = h.conn;
+  conn._writer._maxBacklog = 1048576; // queue cap above the whole burst
+  const chunk = Buffer.alloc(256);
+  for (let i = 0; i < 1024; i++) {
+    conn.sendBinary(chunk);
+  }
+  // The 256 KiB burst trips highWaterMark but stays under the backlog cap:
+  // "drain" re-issues the queued frames and the connection stays open.
+  await c.waitFrames(1024);
+  assert.ok(conn.isOpen());
+  assert.equal(conn._writer._q.length, 0);
+  assert.equal(c.frames().length, 1024);
+  const close = h.events.find((e) => e[0] === "close");
+  assert.equal(close, undefined);
+  c.s.destroy();
   server.close();
 });
 

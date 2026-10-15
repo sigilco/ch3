@@ -9,10 +9,11 @@
 - Pass `this` through a `const self: WsConn = this` local when handing it to a user subclass method.
 - Use `s.charAt(i)` not `s[i]`; guard `T | undefined` explicitly; named imports only; `Socket` (not `Duplex`) for the upgrade socket.
 - Subclassing a package class from a user program only lowers when the whole graph is program code (see `docs/websocket.md`, "Compiling to a native binary"). `examples/ws-echo/scripts/vendor.mjs` is the supported layout.
+- The same boundary bites `WsWriter` itself: a subclassed `_write` does not pump when the class ships inside a statically compiled npm package (`write()` buffers forever). The writer probes the pump at construction and falls back to direct sink writes (`_direct`), leaving the per-window byte cap as the only slow-consumer policy there; see `bench/scriptc-evidence/ws-backpressure-package-mode-2026-10-15.txt`. In `_direct` mode the swallowed probe keeps `writableLength` at 1 forever — don't read it as a backpressure signal there.
 - No permessage-deflate. UTF-8 validity is checked by a decode/encode round trip. Autobahn conformance is not run yet (TODO in `docs/websocket.md`).
 
 ## Gates
 
 - `pnpm --filter @chttp/ws test`: framing unit tests (`test/frame.test.js`) and a raw `node:net` client against a real server (`test/ws.test.js`).
-- `scriptc coverage` on `examples/ws-echo/src/main.ts` after `pnpm --filter chttp-example-ws-echo vendor` must stay 100% static.
+- `scriptc coverage examples/ws-echo/src/main.ts --ffi .vendor/ffi.json` after `pnpm --filter chttp-example-ws-echo vendor` must stay 100% static. Without `--ffi` the manifest is not loaded and the `declare function`/`ffiFnv1a` call is silently skipped (still reports 100%, fewer statements).
 - ELF smoke: build the example, run it, drive it with the `ws` library from a scratch directory (never a project dependency).

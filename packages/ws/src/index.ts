@@ -8,6 +8,7 @@ import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
+import { Writable } from "node:stream";
 import { UpgradeDispatch } from "@chttp/router";
 import {
   OP_BINARY,
@@ -26,6 +27,124 @@ import {
 export { WsParser, encodeFrame, validCloseCode } from "./frame.js";
 
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+// Outbound send path for one connection: a compiled Writable subclass whose
+// _write forwards straight to the socket. cb is deferred one macrotask so
+// the Writable's own queue is what write(): boolean and "drain" observe —
+// the socket's own surface refuses all three (probe:
+// bench/scriptc-evidence/ws-backpressure-probe-2026-10-15.txt). Once the
+// internal buffer trips highWaterMark, further frames queue in _q (ordered,
+// byte-capped by _maxBacklog) and "drain" re-issues them.
+//
+// Sentinel chunk the writer probes itself with at construction; _write
+// swallows it, so it never reaches the socket.
+const WRITER_PROBE: Buffer = Buffer.from([0]);
+
+export class WsWriter extends Writable {
+  _sink: Socket;
+  _q: Buffer[] = [];
+  _qbytes: number = 0;
+  _maxBacklog: number;
+  _draining: boolean = false;
+  // Set once the connection is done: pending internal writes are dropped so
+  // a socket.end()/destroy() can never race a late _write into write-after-end.
+  _ended: boolean = false;
+  _closing: boolean = false;
+  _writes: number = 0;
+  // scriptc 0.3.2 does not wire a subclassed _write when the class lives in a
+  // statically compiled npm package: write() buffers but the pump never runs
+  // (probe: bench/scriptc-evidence/ws-backpressure-probe-2026-10-15.txt). The
+  // constructor writes a swallowed probe chunk; when no _write ran by the
+  // time write() returns the writer degrades to direct sink writes — the
+  // per-window byte cap on WsConn stays as the only slow-consumer policy.
+  _direct: boolean = false;
+
+  constructor(sink: Socket, maxBacklog: number) {
+    super();
+    this._sink = sink;
+    this._maxBacklog = maxBacklog;
+    const self: WsWriter = this;
+    this.on("drain", () => {
+      self._draining = false;
+      while (self._q.length > 0) {
+        const b = self._q[0];
+        const ok = self.write(b);
+        self._q.shift();
+        self._qbytes -= b.length;
+        if (!ok) {
+          self._draining = true;
+          return;
+        }
+      }
+      self.maybeEnd();
+    });
+    // Sink errors surface as stream errors; the connection's own close paths
+    // report the close code, so swallow here to avoid an unhandled 'error'.
+    this.on("error", () => {});
+    this.write(WRITER_PROBE);
+    if (this._writes === 0) {
+      this._direct = true;
+    }
+  }
+
+  _write(chunk: Buffer, _enc: string, cb: () => void): void {
+    this._writes += 1;
+    if (chunk === WRITER_PROBE) {
+      // Settle synchronously: the probe must leave writableLength at 0 so
+      // the first real write still reaches _write.
+      cb();
+      return;
+    }
+    if (this._ended) {
+      cb();
+      return;
+    }
+    const self: WsWriter = this;
+    this._sink.write(chunk);
+    setImmediate(() => {
+      cb();
+      self.maybeEnd();
+    });
+  }
+
+  // Returns false once the explicit backlog exceeds _maxBacklog; the
+  // connection's slow-consumer policy (1008 close) decides what that means.
+  sendFrame(frame: Buffer): boolean {
+    if (this._direct) {
+      this._sink.write(frame);
+      return true;
+    }
+    if (this._draining) {
+      this._q.push(frame);
+      this._qbytes += frame.length;
+      return this._qbytes <= this._maxBacklog;
+    }
+    if (this.write(frame)) {
+      return true;
+    }
+    this._draining = true;
+    return true;
+  }
+
+  // Ends the socket once both queues are empty, so a trailing close frame
+  // lands behind every queued data frame. Called by _sendClose; also fires
+  // once deferred since "drain" only fires when write() went false first.
+  close(): void {
+    this._closing = true;
+    const self: WsWriter = this;
+    setImmediate(() => {
+      self.maybeEnd();
+    });
+  }
+
+  maybeEnd(): void {
+    // In direct mode the internal buffer never drains (the swallowed probe
+    // sits in it forever), so only the explicit queue gates the end.
+    if (this._closing && this._q.length === 0 && (this._direct || this.writableLength === 0)) {
+      this._sink.end();
+    }
+  }
+}
 
 // Base class for handlers. Subclass and override what you need.
 export class WsHandler {
@@ -55,11 +174,14 @@ export class WsConn {
   _fchunks: Buffer[] = [];
   _fbytes: number = 0;
   // Cap on outbound bytes per one second window before a slow consumer is
-  // dropped. scriptc 0.3.1 cannot observe backpressure (writableLength, write()
-  // result and "drain" are refused), so this is a stand-in, as in @chttp/stream.
+  // dropped. scriptc < 0.3.2 could not observe backpressure (writableLength,
+  // write() result and "drain" were refused); on 0.3.2+ a compiled Writable
+  // wrapper observes the queue, and this cap stays as the secondary
+  // fail-safe, as in @chttp/stream.
   _maxBacklog: number = 4194304;
   _wbytes: number = 0;
   _wstart: number = 0;
+  _writer: WsWriter;
 
   constructor(
     socket: Socket,
@@ -76,6 +198,7 @@ export class WsConn {
     this.pvals = pvals;
     this._h = h;
     this._p = new WsParser(maxPayload, maxPending);
+    this._writer = new WsWriter(socket, this._maxBacklog);
   }
 
   // Param value by name, or "" when absent.
@@ -116,7 +239,8 @@ export class WsConn {
     this._state = 1;
     this._ccode = code;
     this._creason = reason;
-    this.socket.end();
+    // The writer's "finish" listener ends the socket once queued data and
+    // the close frame are flushed.
   }
 
   _write(opcode: number, data: Buffer): void {
@@ -132,11 +256,18 @@ export class WsConn {
     if (this._wbytes > this._maxBacklog) {
       // Slow consumer: treat a window flood as a backlog that never flushes, drop it (1008).
       this._state = 1;
+      this._writer._ended = true;
       this.socket.destroy();
       this._finish(1008, "");
       return;
     }
-    this.socket.write(encodeFrame(opcode, data));
+    if (!this._writer.sendFrame(encodeFrame(opcode, data))) {
+      // Queued backlog exceeded the cap: same flood close as the window cap.
+      this._state = 1;
+      this._writer._ended = true;
+      this.socket.destroy();
+      this._finish(1008, "");
+    }
   }
 
   _sendClose(code: number, reason: string): void {
@@ -155,7 +286,10 @@ export class WsConn {
     for (let i = 0; i < n; i++) {
       b[2 + i] = r[i];
     }
-    this.socket.write(encodeFrame(OP_CLOSE, b));
+    // The close frame goes through the writer so it lands behind any queued
+    // data; close() ends the socket once both queues drain.
+    this._writer.sendFrame(encodeFrame(OP_CLOSE, b));
+    this._writer.close();
   }
 
   // Fires handler.close exactly once.
@@ -175,6 +309,8 @@ export class WsConn {
   }
 
   _onSocketClose(): void {
+    // Abrupt end: the sink is gone, so pending writer chunks are dropped.
+    this._writer._ended = true;
     this._finish(this._ccode, this._creason);
   }
 
@@ -185,7 +321,11 @@ export class WsConn {
       this._h.open(self);
     } catch (e) {
       this._fail(1011);
-      this.socket.destroy();
+      // Deferred: the close frame and the socket end the writer schedules
+      // must land before the socket is torn down.
+      setImmediate(() => {
+        self.socket.destroy();
+      });
       return;
     }
     if (head.length > 0) {
@@ -218,7 +358,7 @@ export class WsConn {
     if (this._state === 0) {
       this._sendClose(code, "");
       this._state = 1;
-      this.socket.end();
+      // writer.close() ends the socket after the close frame flushes.
     }
     this._finish(code, "");
   }
@@ -287,7 +427,10 @@ export class WsConn {
       this._h.message(this, s);
     } catch (e) {
       this._fail(1011);
-      this.socket.destroy();
+      const self: WsConn = this;
+      setImmediate(() => {
+        self.socket.destroy();
+      });
     }
   }
 
@@ -297,7 +440,10 @@ export class WsConn {
       this._h.binary(this, data);
     } catch (e) {
       this._fail(1011);
-      this.socket.destroy();
+      const self: WsConn = this;
+      setImmediate(() => {
+        self.socket.destroy();
+      });
     }
   }
 
@@ -323,7 +469,7 @@ export class WsConn {
     }
     this._sendClose(echo, "");
     this._state = 1;
-    this.socket.end();
+    // writer.close() ends the socket after the close frame flushes.
     this._finish(code, reason);
   }
 }
@@ -443,6 +589,7 @@ export class WsRouter extends UpgradeDispatch {
       this.maxPending,
     );
     conn._maxBacklog = this.maxBacklog;
+    conn._writer._maxBacklog = this.maxBacklog;
     socket.on("data", function (d: Buffer): void {
       conn._onData(d);
     });

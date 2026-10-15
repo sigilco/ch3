@@ -6,7 +6,7 @@ A minimal async-first HTTP router for `node:http`. Handlers and middleware
 may be `async`; the router core ships no runtime dependencies.
 
 The package is authored inside the **scriptc compilable subset**
-([scriptc](https://github.com/sigilco/scriptc) — a TypeScript-subset to
+([scriptc](https://github.com/vercel-labs/scriptc) — a TypeScript-subset to
 native-ELF compiler): the same source lowers statically into a single
 binary via `scriptc build --npm-static @chttp/router` with zero deferred sites
 (100% static coverage).

@@ -1,6 +1,6 @@
 # chttp
 
-Minimal async-first HTTP router for `node:http`, zero dependencies, authored inside the [scriptc](https://github.com/sigilco/scriptc) compilable subset. The same source lowers to a native ELF directly, no plugin required.
+Minimal async-first HTTP router for `node:http`, zero dependencies, authored inside the [scriptc](https://github.com/vercel-labs/scriptc) compilable subset. The same source lowers to a native ELF directly, no plugin required.
 
 ```ts
 import { createRouter } from "@chttp/router";

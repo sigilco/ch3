@@ -3,6 +3,14 @@
 ## Unreleased
 
 <!-- release:start -->
+## 0.2.1
+
+### Fixes
+
+- **@chttp/router, @chttp/stream, @chttp/ws:** Real TCP backpressure on scriptc 0.3.2. `@chttp/ws` and `@chttp/stream` now route outbound data through a compiled `Writable` wrapper whose `_write` forwards to the socket/response, so `write(): boolean`, `"drain"` and `writableLength` observe the real queue; the per-window byte caps stay as the secondary fail-safe (ws flood still closes 1008). When the wrapper ships inside a statically compiled npm package — where 0.3.2 never pumps a subclassed `_write` — it detects the dead pump at construction and degrades to direct writes, leaving the window cap as the only policy. Requires scriptc >= 0.3.2.
+- **@chttp/ws:** ws-echo example adds a `/ffi/{text}` route demonstrating `scriptc --ffi` outbound FFI with a call-scoped callback; see `docs/native.md`.
+<!-- release:end -->
+
 ## 0.2.0
 
 The frontend release: WebSockets, SSE and streaming, HTML rendering and static asset serving join the router, each as its own package that stays 100% static under scriptc. The router gains `c.bytes`, and the upgrade listener is no longer attached by `serve()`, so wire `server.on('upgrade', ...)` yourself if you use `@chttp/ws`. `@chttp/unplugin` can now emit an OpenAPI document from `@chttp/val` schemas.
@@ -20,7 +28,6 @@ The frontend release: WebSockets, SSE and streaming, HTML rendering and static a
 ### Fixes
 
 - **@chttp/val:** Fix runtime import of type-only VSafeResult in parse.ts so the source loads as program code
-<!-- release:end -->
 
 ## 0.1.0
 
