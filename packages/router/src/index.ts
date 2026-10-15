@@ -25,6 +25,7 @@ import { GenDispatch, ROUTE_CONTRACT_VERSION } from "./gen.ts";
 import type { DispatchFn } from "./gen.ts";
 import { UpgradeDispatch } from "./upgrade.ts";
 import type { Socket } from "node:net";
+import { ResponseSink, NodeResponseSink, FetchResponseSink } from "./sink.ts";
 
 export { GenDispatch };
 export type { DispatchFn };
@@ -56,6 +57,12 @@ export class ReqView<P extends string = string> {
   _pi: number[];
   _sp: number;
   _body: string;
+  // The originating Web Request, captured when this request came in
+  // through app.fetch. null on the Node handler path. Subset: Request is a
+  // class so a nullable typed field lowers cleanly under scriptc 0.3.1;
+  // it's a real class field only when the fetch surface synthesizes the
+  // ReqView, so hot-path call sites still see raw as IncomingMessage.
+  _webRaw: Request | null;
 
   constructor(raw: IncomingMessage, qs: string, path: string) {
     this.raw = raw;
@@ -68,6 +75,7 @@ export class ReqView<P extends string = string> {
     this._sp = -1;
     this._body = "";
     this.path = String(path);
+    this._webRaw = null;
   }
 
   // param() takes `string`, not ParamKey<P>: conditional types never
@@ -227,30 +235,83 @@ export class ReqView<P extends string = string> {
 
 export class Ctx<P extends string = string> {
   req: ReqView<P>;
-  res: ServerResponse;
+  sink: ResponseSink;
   _status: number;
   // True once a body-carrying helper (_send/redirect) flushed the response.
   // runOnError reads it: an onError that already answered must not get a
   // second 500 write.
   sent: boolean;
+  // Request-scoped variables — JSON-stringified for subset compliance
+  // (Record<string, unknown> as a class field is SC1090). Users get/set
+  // via c.set/c.get, which JSON-serialize internally. Preserves object
+  // identity through round-trip.
+  _vars: string;
 
-  constructor(req: ReqView<P>, res: ServerResponse) {
+  // Backwards-compat: a direct reference to the underlying ServerResponse
+  // when the sink wraps one. null when the sink is a FetchResponseSink.
+  // Subset: ServerResponse is a class so the field type is concrete;
+  // assignment at the constructor branches keeps it typed.
+  _nodeRes: ServerResponse | null;
+
+  // Legacy accessor for downstream Node-shaped code (e.g. @chttp/static's
+  // c.res.end() 304 path, @chttp/stream's res.writeHead). null under the
+  // Fetch surface — callers must check.
+  get res(): ServerResponse | null {
+    return this._nodeRes;
+  }
+
+  constructor(req: ReqView<P>, sinkOrRes: ResponseSink | ServerResponse) {
     this.req = req;
-    this.res = res;
+    // Accept a real ServerResponse for backward compatibility with code that
+    // built Ctx instances before the sink split (test helpers, generated
+    // dispatch shims). Real app.handler() always wraps in NodeResponseSink
+    // first, so this branch only fires from user/test code.
+    if (typeof (sinkOrRes as ResponseSink).setStatus === "function") {
+      this.sink = sinkOrRes as ResponseSink;
+      this._nodeRes = null;
+    } else {
+      const r = sinkOrRes as ServerResponse;
+      this.sink = new NodeResponseSink(r);
+      this._nodeRes = r;
+    }
     this._status = 200;
     this.sent = false;
+    this._vars = "{}";
   }
 
   status(n: number): Ctx<P> {
     const code = Number(n);
     this._status = code;
-    this.res.statusCode = code;
+    this.sink.setStatus(code);
     return this;
   }
 
-  header(k: string, v: string): Ctx<P> {
-    this.res.setHeader(String(k), String(v));
+  header(k: string, v: string): Ctx<P>;
+  header(k: string, v: string, opts: { append?: boolean }): Ctx<P>;
+  header(k: string, v: string, opts?: { append?: boolean }): Ctx<P> {
+    if (opts !== undefined && opts !== null && opts.append === true) {
+      this.sink.appendHeader(String(k), String(v));
+    } else {
+      this.sink.setHeader(String(k), String(v));
+    }
     return this;
+  }
+
+  // Request-scoped vars. JSON-encoded for subset compliance — see _vars
+  // comment. Deep-equal semantics: a value written as Object reads back as
+  // an equal-but-not-identical object (same as the previous Map/Record
+  // pattern in user code).
+  set(key: string, value: unknown): void {
+    const k = String(key);
+    const cur = JSON.parse(this._vars) as Record<string, unknown>;
+    cur[k] = value;
+    this._vars = JSON.stringify(cur);
+  }
+
+  get<T = unknown>(key: string): T | undefined {
+    const k = String(key);
+    const cur = JSON.parse(this._vars) as Record<string, unknown>;
+    return cur[k] as T | undefined;
   }
 
   json(o: unknown): Ctx<P> {
@@ -275,8 +336,8 @@ export class Ctx<P extends string = string> {
   redirect(url: string, code?: number): Ctx<P> {
     const n = code === null || code === undefined ? 302 : Number(code);
     this.status(n);
-    this.res.setHeader("location", String(url));
-    this.res.end();
+    this.sink.setHeader("location", String(url));
+    this.sink.writeBody("");
     this.sent = true;
     return this;
   }
@@ -284,21 +345,19 @@ export class Ctx<P extends string = string> {
   // Binary body. A separate method (not a string | Buffer union on
   // _send): a mixed-arm union is SC2009 under scriptc. HEAD-safe: node
   // drops the body for HEAD while keeping content-length.
-  bytes(b: Buffer, ct: string): Ctx<P> {
-    this.res.statusCode = this._status;
-    this.res.setHeader("content-type", String(ct));
-    this.res.setHeader("content-length", String(b.length));
-    this.res.end(b);
+  bytes(b: Uint8Array, ct: string): Ctx<P> {
+    this.sink.setStatus(this._status);
+    this.sink.bodyBytes(b, String(ct));
     this.sent = true;
     return this;
   }
 
   _send(s: string, ct: string): Ctx<P> {
     const b = String(s);
-    this.res.statusCode = this._status;
-    this.res.setHeader("content-type", ct);
-    this.res.setHeader("content-length", String(utf8len(b)));
-    this.res.end(b);
+    this.sink.setStatus(this._status);
+    this.sink.setHeader("content-type", ct);
+    this.sink.setHeader("content-length", String(utf8len(b)));
+    this.sink.writeBody(b);
     this.sent = true;
     return this;
   }
@@ -333,6 +392,12 @@ export type ParamKey<P extends string> = string extends P
 export type Handler = (c: Ctx) => unknown;
 export type Next = () => unknown;
 export type Middleware = (c: Ctx, next: Next) => unknown;
+
+// Error-handler signature. Extracted as a named alias so the runChain /
+// runOnError functions and the App._oef field type share it without each
+// site declaring a fresh function-typed union (which scriptc won't lower
+// when the union mentions Ctx in a parameter position).
+export type OnErrorFn = (err: unknown, c: Ctx) => void;
 
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
@@ -577,18 +642,36 @@ function defaultNotFound(c: Ctx): void {
 // the same guard.
 // The internal dispatch inlines the equivalent flow so the hot path never
 // pays a closure it doesn't need.
-export function _guard(res: ServerResponse, c: Ctx, k: () => unknown): void {
+//
+// Accepts either a sink or a raw ServerResponse. The contract predates
+// the sink split (contracts/route-contract.md) and ships node-typed
+// generated dispatch; tests + downstream generated shims still pass `res`
+// directly. Internally, real app code passes a sink.
+export function _guard(sinkOrRes: ResponseSink | ServerResponse, c: Ctx, k: () => unknown): void {
+  const sink: ResponseSink =
+    typeof (sinkOrRes as ResponseSink).setStatus === "function"
+      ? (sinkOrRes as ResponseSink)
+      : new NodeResponseSink(sinkOrRes as ServerResponse);
   runChain(
     function (): unknown {
       return k();
     },
     c,
-    res,
+    sink,
     null,
   );
 }
 
-export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: () => unknown): void {
+export function _buffer(
+  req: IncomingMessage,
+  sinkOrRes: ResponseSink | ServerResponse,
+  c: Ctx,
+  k: () => unknown,
+): void {
+  const sink: ResponseSink =
+    typeof (sinkOrRes as ResponseSink).setStatus === "function"
+      ? (sinkOrRes as ResponseSink)
+      : new NodeResponseSink(sinkOrRes as ServerResponse);
   const rv = c.req;
   let buf = "";
   req.on("data", function (chunk: Buffer): void {
@@ -596,7 +679,7 @@ export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: ()
   });
   req.on("end", function (): void {
     rv._setBody(buf);
-    _guard(res, c, k);
+    _guard(sink, c, k);
   });
 }
 
@@ -606,8 +689,8 @@ export function _buffer(req: IncomingMessage, res: ServerResponse, c: Ctx, k: ()
 function allow405(
   node: RouteNode,
   req: IncomingMessage,
-  res: ServerResponse,
-  oef: ((err: unknown, c: Ctx) => void) | null,
+  sink: ResponseSink,
+  oef: OnErrorFn | null,
 ): void {
   const hm = node.hm;
   const seen: { [k: string]: number } = {};
@@ -642,23 +725,19 @@ function allow405(
       path = String(url.slice(0, qi));
       qs = String(url.slice(qi + 1));
     }
-    oef(new MethodNotAllowedError(out.join(",")), new Ctx(new ReqView(req, qs, path), res));
-    if (res.headersSent) {
+    oef(new MethodNotAllowedError(out.join(",")), new Ctx(new ReqView(req, qs, path), sink));
+    if (sink.isHeadersSent()) {
       return;
     }
   }
   try {
-    res.statusCode = 405;
-    res.setHeader("allow", out.join(", "));
-    res.setHeader("content-type", "text/plain; charset=utf-8");
-    res.setHeader("content-length", "18");
-    res.end("Method Not Allowed");
+    sink.setStatus(405);
+    sink.setHeader("allow", out.join(", "));
+    sink.setHeader("content-type", "text/plain; charset=utf-8");
+    sink.setHeader("content-length", "18");
+    sink.writeBody("Method Not Allowed");
   } catch (e) {
-    try {
-      res.destroy();
-    } catch (e2) {
-      // socket already gone
-    }
+    sink.destroy();
   }
 }
 
@@ -671,22 +750,18 @@ class MethodNotAllowedError extends Error {
   }
 }
 
-function send500(res: ServerResponse): void {
+function send500(sink: ResponseSink): void {
   try {
-    if (res.headersSent) {
-      res.destroy();
+    if (sink.isHeadersSent()) {
+      sink.destroy();
     } else {
-      res.statusCode = 500;
-      res.setHeader("content-type", "text/plain; charset=utf-8");
-      res.setHeader("content-length", "21");
-      res.end("Internal Server Error");
+      sink.setStatus(500);
+      sink.setHeader("content-type", "text/plain; charset=utf-8");
+      sink.setHeader("content-length", "21");
+      sink.writeBody("Internal Server Error");
     }
   } catch (e) {
-    try {
-      res.destroy();
-    } catch (e2) {
-      // socket already gone
-    }
+    sink.destroy();
   }
 }
 
@@ -844,7 +919,7 @@ export class App {
   _nf: Handler;
   _nfmw: Middleware[];
   // onError handler: (err, c) => void. null = unset (default send500 path).
-  _oef: ((err: unknown, c: Ctx) => void) | null;
+  _oef: OnErrorFn | null;
   // _chains[i] is _mws[i] + _fns[i] flattened into one Handler — dispatch
   // calls it directly; there is no runtime chain walker.
   _chains: Handler[];
@@ -950,7 +1025,7 @@ export class App {
   // Single catch-all around the whole chain. Honored by both dispatch
   // paths (immediate + buffered-body). Rethrow/throw inside the handler
   // falls back to the built-in 500 — onError must not loop.
-  onError(h: (err: unknown, c: Ctx) => void): App {
+  onError(h: OnErrorFn): App {
     this._oef = h;
     return this;
   }
@@ -1013,10 +1088,14 @@ export class App {
     };
   }
 
+  // Node-shaped listener: thin wrapper that wraps res in a NodeResponseSink
+  // and forwards into _dispatch. The dispatch primitive is sink-shaped
+  // (and shared with app.fetch); this method is the boundary that keeps
+  // node:http users on the same surface they had before the sink split.
   handler(): (req: IncomingMessage, res: ServerResponse) => void {
     const app = this;
     return function (req: IncomingMessage, res: ServerResponse): void {
-      app._dispatch(req, res);
+      app._dispatch(req, new NodeResponseSink(res));
     };
   }
 
@@ -1052,8 +1131,21 @@ export class App {
     return this;
   }
 
-  _dispatch(req: IncomingMessage, res: ServerResponse): void {
-    if (this._gen(req, res)) {
+  _dispatch(req: IncomingMessage, sink: ResponseSink): void {
+    // Generated dispatch (contracts/route-contract.md) takes the raw
+    // ServerResponse, not a sink — the contract is node-shaped. Pass
+    // through whatever the sink wraps when the sink is a NodeResponseSink
+    // (the only path generated handlers run on today). When called from
+    // app.fetch the sink is a FetchResponseSink and has no underlying
+    // ServerResponse; the contract has no Web Standards variant yet
+    // (follow-up A in the plan).
+    //
+    // Subset: the sink-resolver uses a typed field on the concrete
+    // NodeResponseSink class — no `as { res: ... }` casts (scriptc fences
+    // those as SC1090 opaque structural views).
+    const nrs = sink as NodeResponseSink;
+    const genRes: ServerResponse | null = nrs.res;
+    if (this._gen(req, genRes)) {
       return;
     }
     const oef = this._oef;
@@ -1079,7 +1171,7 @@ export class App {
       } else if (node.hf.length > 0) {
         // Path matched, method didn't: 405 + Allow from the node's method
         // table (computed only on this miss path — zero hot-path cost).
-        allow405(node, req, res, oef);
+        allow405(node, req, sink, oef);
         return;
       }
     }
@@ -1089,7 +1181,7 @@ export class App {
       rv._pi = this._pi[idx];
       rv._sp = this._sp[idx];
     }
-    const c = new Ctx(rv, res);
+    const c = new Ctx(rv, sink);
     if (
       body === 1 &&
       (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE")
@@ -1100,10 +1192,10 @@ export class App {
       });
       req.on("end", function (): void {
         rv._setBody(buf);
-        runChain(chain, c, res, oef);
+        runChain(chain, c, sink, oef);
       });
     } else {
-      runChain(chain, c, res, oef);
+      runChain(chain, c, sink, oef);
     }
   }
 }
@@ -1134,44 +1226,44 @@ function isSettled(r: unknown, c: Ctx): boolean {
 async function settleChain(
   r: unknown,
   c: Ctx,
-  res: ServerResponse,
-  oef: ((err: unknown, c: Ctx) => void) | null,
+  sink: ResponseSink,
+  oef: OnErrorFn | null,
 ): Promise<void> {
   try {
     await r;
   } catch (e) {
     if (oef !== null) {
-      runOnError(oef, e, res, c);
+      runOnError(oef, e, sink, c);
     } else {
-      send500(res);
+      send500(sink);
     }
     return;
   }
-  if (c.sent === false && res.headersSent === false) {
-    send500(res);
+  if (c.sent === false && sink.isHeadersSent() === false) {
+    send500(sink);
   }
 }
 
 function runChain(
   chain: Handler,
   c: Ctx,
-  res: ServerResponse,
-  oef: ((err: unknown, c: Ctx) => void) | null,
+  sink: ResponseSink,
+  oef: OnErrorFn | null,
 ): void {
   try {
     const r = chain(c);
     if (isSettled(r, c)) {
-      if (c.sent === false && res.headersSent === false) {
-        send500(res);
+      if (c.sent === false && sink.isHeadersSent() === false) {
+        send500(sink);
       }
     } else {
-      settleChain(r, c, res, oef);
+      settleChain(r, c, sink, oef);
     }
   } catch (e) {
     if (oef !== null) {
-      runOnError(oef, e, res, c);
+      runOnError(oef, e, sink, c);
     } else {
-      send500(res);
+      send500(sink);
     }
   }
 }
@@ -1184,27 +1276,23 @@ function runChain(
 // and with no handler registered the router stays quiet (no console noise;
 // the destroyed response is the error surface, same as send500's sent path).
 function runOnError(
-  oef: (err: unknown, c: Ctx) => void,
+  oef: OnErrorFn,
   e: unknown,
-  res: ServerResponse,
+  sink: ResponseSink,
   c: Ctx,
 ): void {
   try {
     oef(e, c);
-    if (!c.sent && !res.headersSent) {
-      send500(res);
+    if (!c.sent && !sink.isHeadersSent()) {
+      send500(sink);
     } else {
-      res.destroy();
+      sink.destroy();
     }
   } catch (e2) {
-    if (!res.headersSent) {
-      send500(res);
+    if (!sink.isHeadersSent()) {
+      send500(sink);
     } else {
-      try {
-        res.destroy();
-      } catch (e3) {
-        // socket already gone
-      }
+      sink.destroy();
     }
   }
 }
