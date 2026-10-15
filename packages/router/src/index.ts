@@ -350,7 +350,16 @@ export class Ctx<P extends string = string> {
     // built Ctx instances before the sink split (test helpers, generated
     // dispatch shims). Real app.handler() always wraps in NodeResponseSink
     // first, so the bare-ServerResponse branch is the legacy/test fallback.
-    if (typeof (sinkOrRes as ResponseSink).setStatus === "function") {
+    //
+    // Class-identity discrimination (not method-existence). A `typeof x.method
+    // === "function"` check is a "method-name demotion" that scriptc reads as
+    // a legitimate reason to demote the method into prototypeMethodAccesses;
+    // for generic classes (Ctx<P extends string = string>) the per-instance
+    // dyn bag then has no prototype fallback and the methods resolve to
+    // undefined at runtime (vercel-labs/scriptc#963). `instanceof` is a
+    // class-identity check, allowed on program classes, and does not
+    // trigger the demotion.
+    if (sinkOrRes instanceof ResponseSink) {
       const s = sinkOrRes as ResponseSink;
       this.sink = s;
       // If the sink is a NodeResponseSink, expose the underlying
@@ -738,8 +747,9 @@ function defaultNotFound(c: Ctx): void {
 // generated dispatch; tests + downstream generated shims still pass `res`
 // directly. Internally, real app code passes a sink.
 export function _guard(sinkOrRes: ResponseSink | ServerResponse, c: Ctx, k: () => unknown): void {
+  // See Ctx constructor for the `instanceof` rationale (vercel-labs/scriptc#963).
   const sink: ResponseSink =
-    typeof (sinkOrRes as ResponseSink).setStatus === "function"
+    sinkOrRes instanceof ResponseSink
       ? (sinkOrRes as ResponseSink)
       : new NodeResponseSink(sinkOrRes as ServerResponse);
   runChain(
@@ -758,8 +768,9 @@ export function _buffer(
   c: Ctx,
   k: () => unknown,
 ): void {
+  // See Ctx constructor for the `instanceof` rationale (vercel-labs/scriptc#963).
   const sink: ResponseSink =
-    typeof (sinkOrRes as ResponseSink).setStatus === "function"
+    sinkOrRes instanceof ResponseSink
       ? (sinkOrRes as ResponseSink)
       : new NodeResponseSink(sinkOrRes as ServerResponse);
   const rv = c.req;
