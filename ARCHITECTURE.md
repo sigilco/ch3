@@ -66,6 +66,10 @@ Match results are not memoized in a cache object. The memoization is structural.
 
 Bodies are opt-in per route: `app.post('/x', h, { body: true })`. Only then, and only for write methods (POST, PUT, PATCH, DELETE), does dispatch attach `data`/`end` listeners, buffer chunks via string concatenation, set the body on `ReqView`, and run the chain from the `end` callback. Without the flag, `c.req.body()` returns `''`.
 
+## Multipart uploads
+
+`multipart/form-data` follows the same declaration seam: `app.post('/x', h, { multipart: { ... } })`. chttp sits on raw `node:http` — there is no runtime `formData()` to delegate to, so `src/multipart.ts` owns the bytes: a byte-level parser (`MultipartParser`, explicit state machine, `_pend` carry so boundaries split across chunks still match) feeds a `MultipartStorage` strategy per file part — `memoryStorage()` buffers into `UploadedFile.bytes`, `diskStorage(dir)` streams `writeSync` calls into a temp file and reports `path` + `size`. Declarative limits (`maxFileBytes`, `maxFiles`, `maxFieldBytes`) are enforced during the parse; a breach answers 413 mid-upload, destroys the socket on `finish`, and unlinks the partial temp file — nothing is buffered twice and nothing is re-serialized. Results land on the `ReqView` before the chain runs, so `c.req.file()`/`field()`/`files()`/`fields()` stay synchronous. `body` and `multipart` on the same route throw at registration (multipart owns the stream). Generated dispatch declines these routes — the runtime is the only parser owner (contracts/route-contract.md, Declared-multipart rule).
+
 ## Error path
 
 Every chain invocation goes through `runChain`: one `try`/`catch` for the synchronous path, plus `await` settlement inside `settleChain` when the chain result is not already settled (`undefined`/`null`/`c` are; everything else, in practice promises, is not). Throws and rejections reach `runOnError` through the same code. A settled chain that never wrote a response gets the built-in 500 fallback.
