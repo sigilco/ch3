@@ -43,7 +43,7 @@ describe("emitGenModule", () => {
     );
     assert.match(
       g,
-      /import \{ GenDispatch, ReqView, Ctx, _guard, _buffer, dec \} from "@chttp\/router"/,
+      /import \{ GenDispatch, ReqView, Ctx, NodeResponseSink, _guard, _buffer, dec \} from "@chttp\/router"/,
     );
     assert.match(g, /import type \{ App \} from "@chttp\/router"/);
   });

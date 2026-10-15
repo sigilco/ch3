@@ -28,6 +28,7 @@ import type { Socket } from "node:net";
 import { ResponseSink, NodeResponseSink, FetchResponseSink } from "./sink.ts";
 
 export { GenDispatch };
+export { ResponseSink, NodeResponseSink, FetchResponseSink };
 export type { DispatchFn };
 export { ROUTE_CONTRACT_VERSION };
 export { UpgradeDispatch };
@@ -51,7 +52,7 @@ function copyHeaders(src: unknown): Record<string, string> {
   if (src === undefined || src === null) {
     return out;
   }
-  for (const k in (src as Record<string, unknown>)) {
+  for (const k in src as Record<string, unknown>) {
     if (Object.prototype.hasOwnProperty.call(src, k)) {
       const v = (src as Record<string, unknown>)[k];
       if (typeof v === "string") {
@@ -73,7 +74,7 @@ function copyHeadersDistinct(src: unknown): Record<string, string[]> {
   if (src === undefined || src === null) {
     return out;
   }
-  for (const k in (src as Record<string, unknown>)) {
+  for (const k in src as Record<string, unknown>) {
     if (Object.prototype.hasOwnProperty.call(src, k)) {
       const v = (src as Record<string, unknown>)[k];
       if (Array.isArray(v)) {
@@ -84,8 +85,8 @@ function copyHeadersDistinct(src: unknown): Record<string, string[]> {
   return out;
 }
 
-export class ReqView<P extends string = string> {
-  raw: IncomingMessage;
+export class ReqViewCore {
+  raw: IncomingMessage | null;
   // _headers is the materialized headers table the router reads. The
   // Node path copies from `raw.headers`; the app.fetch path copies from
   // the captured Web Request's Headers. Reading from a Record instead
@@ -122,39 +123,50 @@ export class ReqView<P extends string = string> {
   _sp: number;
   _body: string;
 
-  constructor(raw: IncomingMessage | NodeReqStub, qs: string, path: string, url?: string) {
-    // The cast lives in the constructor body (not the call site) so
-    // the scriptc union-to-IncomingMessage narrowing fence (SC2002)
-    // fires once per request instead of at every dispatch entry. The
-    // NodeReqStub arm carries the two fields the constructor reads
-    // (`method`, `headers`); a scriptc IncomingMessage lacks a
-    // native lowering for the cast target, but assigning a
-    // union-typed value through a `Record`/`unknown` indirection
-    // is allowed because the result-side layout is a class
-    // instance of a known compiled class.
-    const r = raw as IncomingMessage;
-    this.raw = r;
-    this.method = String(r.method || "");
-    // Copy the headers table. The raw object stays around for
-    // c.req.raw access (legacy); _headers is what header() actually
-    // reads. The copy is O(headers) once per request, same as the
-    // old code path, but it lets the fetch surface build the table
-    // from a Web Request without an IncomingMessage fake.
-    this._headers = copyHeaders(r.headers);
-    // Copy the headersDistinct table (repeated-value arm: set-cookie,
-    // cookie). Same shape as _headers but values are string[].
-    // Reading this.raw.headersDistinct on the class-typed union arm
-    // fences scriptc 0.3.x with SC9001, so the field is materialized
-    // at construction and read from a Record local in header().
-    this._headersDistinct = copyHeadersDistinct(r.headersDistinct);
+  constructor(
+    raw: IncomingMessage | null,
+    qs: string,
+    path: string,
+    url?: string,
+    method?: string,
+    headers?: Record<string, string>,
+    headersDistinct?: Record<string, string[]>,
+  ) {
+    // `raw === null` is the app.fetch arm: no IncomingMessage exists, so
+    // method/headers arrive through the stub args and `raw` stays null
+    // (the sanctioned `| null` union — a record arm in a union type is
+    // not representable under scriptc). `c.req.raw` is therefore null on
+    // the fetch path; Node callers always see the real IncomingMessage.
+    if (raw === null) {
+      this.raw = null;
+      this.method = String(method || "");
+      this._headers = headers === undefined ? {} : headers;
+      this._headersDistinct = headersDistinct === undefined ? {} : headersDistinct;
+      this.url = url === undefined ? path : String(url);
+    } else {
+      this.raw = raw;
+      this.method = String(raw.method || "");
+      // Copy the headers table. The raw object stays around for
+      // c.req.raw access (legacy); _headers is what header() actually
+      // reads. The copy is O(headers) once per request, same as the
+      // old code path, but it lets the fetch surface build the table
+      // from a Web Request without an IncomingMessage fake.
+      this._headers = copyHeaders(raw.headers);
+      // Copy the headersDistinct table (repeated-value arm: set-cookie,
+      // cookie). Same shape as _headers but values are string[].
+      // Reading this.raw.headersDistinct fences scriptc 0.3.x with
+      // SC9001, so the field is materialized at construction and read
+      // from a Record local in header().
+      this._headersDistinct = copyHeadersDistinct(raw.headersDistinct);
+      // `url` is the full path+query string the caller saw. On the
+      // Node path it equals `req.url` (path+query, no host); on the
+      // app.fetch path it equals the path+query portion of the Web
+      // Request URL. We accept it as an optional 4th arg so the Node
+      // dispatch can default to `raw.url` and the fetch path can
+      // pass the already-parsed value (avoids a second split).
+      this.url = url === undefined ? String(raw.url || path) : String(url);
+    }
     this._qs = String(qs);
-    // `url` is the full path+query string the caller saw. On the
-    // Node path it equals `req.url` (path+query, no host); on the
-    // app.fetch path it equals the path+query portion of the Web
-    // Request URL. We accept it as an optional 4th arg so the Node
-    // dispatch can default to `raw.url` and the fetch path can
-    // pass the already-parsed value (avoids a second split).
-    this.url = url === undefined ? String((r as { url?: unknown }).url || path) : String(url);
     this._qp = null;
     this._pm = null;
     this._pn = EMPTY_S;
@@ -317,8 +329,8 @@ export class ReqView<P extends string = string> {
   }
 }
 
-export class Ctx<P extends string = string> {
-  req: ReqView<P>;
+export class CtxCore {
+  req: ReqViewCore;
   sink: ResponseSink;
   _status: number;
   // True once a body-carrying helper (_send/redirect) flushed the response.
@@ -344,50 +356,34 @@ export class Ctx<P extends string = string> {
     return this._nodeRes;
   }
 
-  constructor(req: ReqView<P>, sinkOrRes: ResponseSink | ServerResponse) {
+  constructor(req: ReqViewCore, sink: ResponseSink) {
     this.req = req;
-    // Accept a real ServerResponse for backward compatibility with code that
-    // built Ctx instances before the sink split (test helpers, generated
-    // dispatch shims). Real app.handler() always wraps in NodeResponseSink
-    // first, so the bare-ServerResponse branch is the legacy/test fallback.
-    //
-    // Class-identity discrimination (not method-existence). A `typeof x.method
-    // === "function"` check is a "method-name demotion" that scriptc reads as
-    // a legitimate reason to demote the method into prototypeMethodAccesses;
-    // for generic classes (Ctx<P extends string = string>) the per-instance
-    // dyn bag then has no prototype fallback and the methods resolve to
-    // undefined at runtime (vercel-labs/scriptc#963). `instanceof` is a
-    // class-identity check, allowed on program classes, and does not
-    // trigger the demotion.
-    if (sinkOrRes instanceof ResponseSink) {
-      const s = sinkOrRes as ResponseSink;
-      this.sink = s;
-      // If the sink is a NodeResponseSink, expose the underlying
-      // ServerResponse to downstream Node-shaped code (@chttp/static's
-      // 304 path, @chttp/stream's res.writeHead, generated dispatch).
-      // A FetchResponseSink has no underlying ServerResponse.
-      const nrs = s as NodeResponseSink;
-      this._nodeRes = nrs.res ?? null;
-    } else {
-      const r = sinkOrRes as ServerResponse;
-      this.sink = new NodeResponseSink(r);
-      this._nodeRes = r;
-    }
+    // Sink-only ctor: generated dispatch and other ServerResponse callers
+    // wrap with `new NodeResponseSink(res)` at the call site. Discriminating
+    // a ResponseSink|ServerResponse union inside the ctor hits three
+    // scriptc fences at once — `instanceof` hangs on Node builtins, `as`
+    // casts are runtime assertions that throw, and `typeof x.method`
+    // demotes methods (vercel-labs/scriptc#963). sink.nodeRes() exposes
+    // the underlying ServerResponse for Node-shaped downstream code
+    // (@chttp/static's 304 path, @chttp/stream's res.writeHead,
+    // generated dispatch) without a cast.
+    this.sink = sink;
+    this._nodeRes = sink.nodeRes();
     this._status = 200;
     this.sent = false;
     this._vars = "{}";
   }
 
-  status(n: number): Ctx<P> {
+  status(n: number): CtxCore {
     const code = Number(n);
     this._status = code;
     this.sink.setStatus(code);
     return this;
   }
 
-  header(k: string, v: string): Ctx<P>;
-  header(k: string, v: string, opts: { append?: boolean }): Ctx<P>;
-  header(k: string, v: string, opts?: { append?: boolean }): Ctx<P> {
+  header(k: string, v: string): CtxCore;
+  header(k: string, v: string, opts: { append?: boolean }): CtxCore;
+  header(k: string, v: string, opts?: { append?: boolean }): CtxCore {
     if (opts !== undefined && opts !== null && opts.append === true) {
       this.sink.appendHeader(String(k), String(v));
     } else {
@@ -413,7 +409,7 @@ export class Ctx<P extends string = string> {
     return cur[k] as T | undefined;
   }
 
-  json(o: unknown): Ctx<P> {
+  json(o: unknown): CtxCore {
     const t = JSON.stringify(o);
     let s = "null";
     if (typeof t === "string") {
@@ -422,17 +418,17 @@ export class Ctx<P extends string = string> {
     return this._send(s, "application/json; charset=utf-8");
   }
 
-  text(s: string): Ctx<P> {
+  text(s: string): CtxCore {
     return this._send(String(s), "text/plain; charset=utf-8");
   }
 
-  html(s: string): Ctx<P> {
+  html(s: string): CtxCore {
     return this._send(String(s), "text/html; charset=utf-8");
   }
 
-  redirect(url: string): Ctx<P>;
-  redirect(url: string, code: number): Ctx<P>;
-  redirect(url: string, code?: number): Ctx<P> {
+  redirect(url: string): CtxCore;
+  redirect(url: string, code: number): CtxCore;
+  redirect(url: string, code?: number): CtxCore {
     const n = code === null || code === undefined ? 302 : Number(code);
     this.status(n);
     this.sink.setHeader("location", String(url));
@@ -444,14 +440,14 @@ export class Ctx<P extends string = string> {
   // Binary body. A separate method (not a string | Buffer union on
   // _send): a mixed-arm union is SC2009 under scriptc. HEAD-safe: node
   // drops the body for HEAD while keeping content-length.
-  bytes(b: Uint8Array, ct: string): Ctx<P> {
+  bytes(b: Uint8Array, ct: string): CtxCore {
     this.sink.setStatus(this._status);
     this.sink.bodyBytes(b, String(ct));
     this.sent = true;
     return this;
   }
 
-  _send(s: string, ct: string): Ctx<P> {
+  _send(s: string, ct: string): CtxCore {
     const b = String(s);
     this.sink.setStatus(this._status);
     this.sink.setHeader("content-type", ct);
@@ -461,6 +457,21 @@ export class Ctx<P extends string = string> {
     return this;
   }
 }
+
+// Public surface: `Ctx`/`ReqView` stay parameterized (`Ctx<'/user/:id'>`)
+// for source compatibility — they are interface aliases over the
+// non-generic Core classes. scriptc 0.3.x lowers a generic class into an
+// instance with fields but no method table (every method call throws
+// "X is not a function" — vercel-labs/scriptc#963 persists even with
+// instanceof discrimination; verified on the spike/scriptc-app-fetch
+// bench), so the runtime classes must be non-generic. The
+// interface+const merge keeps `new Ctx(...)`, `Ctx` type annotations,
+// and `Ctx<'/path'>` all working under tsc while the ELF path sees only
+// the concrete Core classes.
+export interface Ctx<P extends string = string> extends CtxCore {}
+export const Ctx = CtxCore;
+export interface ReqView<P extends string = string> extends ReqViewCore {}
+export const ReqView = ReqViewCore;
 
 // Param names inferred from a path literal: '/user/:id' -> 'id',
 // '/a/:x/b/:y' -> 'x' | 'y', '/w/*' -> '*'. Degrades to `string` when the
@@ -488,15 +499,15 @@ export type ParamKey<P extends string> = string extends P
 // that union: Promise arms mixed with non-Promise arms refuse to compile
 // (SC2009), `instanceof Promise` is refused (SC1090), and reading `.then`
 // as a value to duck-type it silently lowers to undefined.
-export type Handler = (c: Ctx) => unknown;
+export type Handler = (c: CtxCore) => unknown;
 export type Next = () => unknown;
-export type Middleware = (c: Ctx, next: Next) => unknown;
+export type Middleware = (c: CtxCore, next: Next) => unknown;
 
 // Error-handler signature. Extracted as a named alias so the runChain /
 // runOnError functions and the App._oef field type share it without each
 // site declaring a fresh function-typed union (which scriptc won't lower
 // when the union mentions Ctx in a parameter position).
-export type OnErrorFn = (err: unknown, c: Ctx) => void;
+export type OnErrorFn = (err: unknown, c: CtxCore) => void;
 
 // Route registration options. `body: true` declares body use — the
 // deterministic opt-in that lets dispatch buffer the request body only
@@ -728,7 +739,7 @@ function findEntry(node: RouteNode, method: string): number {
 // App
 // ---------------------------------------------------------------------------
 
-function defaultNotFound(c: Ctx): void {
+function defaultNotFound(c: CtxCore): void {
   c.status(404);
   c.text("Not Found");
 }
@@ -746,12 +757,8 @@ function defaultNotFound(c: Ctx): void {
 // the sink split (contracts/route-contract.md) and ships node-typed
 // generated dispatch; tests + downstream generated shims still pass `res`
 // directly. Internally, real app code passes a sink.
-export function _guard(sinkOrRes: ResponseSink | ServerResponse, c: Ctx, k: () => unknown): void {
-  // See Ctx constructor for the `instanceof` rationale (vercel-labs/scriptc#963).
-  const sink: ResponseSink =
-    sinkOrRes instanceof ResponseSink
-      ? (sinkOrRes as ResponseSink)
-      : new NodeResponseSink(sinkOrRes as ServerResponse);
+export function _guard(res: ServerResponse, c: CtxCore, k: () => unknown): void {
+  const sink: ResponseSink = new NodeResponseSink(res);
   runChain(
     function (): unknown {
       return k();
@@ -764,15 +771,11 @@ export function _guard(sinkOrRes: ResponseSink | ServerResponse, c: Ctx, k: () =
 
 export function _buffer(
   req: IncomingMessage,
-  sinkOrRes: ResponseSink | ServerResponse,
-  c: Ctx,
+  res: ServerResponse,
+  c: CtxCore,
   k: () => unknown,
 ): void {
-  // See Ctx constructor for the `instanceof` rationale (vercel-labs/scriptc#963).
-  const sink: ResponseSink =
-    sinkOrRes instanceof ResponseSink
-      ? (sinkOrRes as ResponseSink)
-      : new NodeResponseSink(sinkOrRes as ServerResponse);
+  const sink: ResponseSink = new NodeResponseSink(res);
   const rv = c.req;
   let buf = "";
   req.on("data", function (chunk: Buffer): void {
@@ -780,7 +783,14 @@ export function _buffer(
   });
   req.on("end", function (): void {
     rv._setBody(buf);
-    _guard(sink, c, k);
+    runChain(
+      function (): unknown {
+        return k();
+      },
+      c,
+      sink,
+      null,
+    );
   });
 }
 
@@ -826,7 +836,10 @@ function allow405(
       path = String(url.slice(0, qi));
       qs = String(url.slice(qi + 1));
     }
-    oef(new MethodNotAllowedError(out.join(",")), new Ctx(new ReqView(req, qs, path), sink));
+    oef(
+      new MethodNotAllowedError(out.join(",")),
+      new CtxCore(new ReqViewCore(req, qs, path), sink),
+    );
     if (sink.isHeadersSent()) {
       return;
     }
@@ -930,12 +943,7 @@ function matchUsePath(reqPath: string, filter: string): boolean {
 // fold is iterative (not recursive) so the scriptc program stays
 // within the no-recursion hot-path rule; depth is bounded by the
 // number of middlewares registered for the same prefix.
-function runPrefixed(
-  mws: Middleware[],
-  i: number,
-  c: Ctx,
-  outerNext: () => unknown,
-): unknown {
+function runPrefixed(mws: Middleware[], i: number, c: CtxCore, outerNext: () => unknown): unknown {
   if (i >= mws.length) {
     return outerNext();
   }
@@ -959,7 +967,7 @@ function compose(mw: Middleware[], h: Handler): Handler {
   for (let i = mw.length - 1; i >= 0; i--) {
     const fn = mw[i];
     const inner = chain;
-    chain = function (c: Ctx): unknown {
+    chain = function (c: CtxCore): unknown {
       return fn(c, function (): unknown {
         return inner(c);
       });
@@ -1381,8 +1389,14 @@ export class App {
     // null and the constructor copies from raw.headers (an empty
     // IncomingMessage fake is fine — the real headers are populated
     // upstream of this entry by app.handler).
-    const fr = makeNodeReqStub(String(method), webHeaders ?? {});
-    const rv = new ReqView(fr, qs, path, url);
+    const rv = new ReqViewCore(
+      null,
+      qs,
+      path,
+      url,
+      String(method),
+      webHeaders === null ? undefined : webHeaders,
+    );
     if (idx >= 0) {
       rv._pn = app._pn[idx];
       rv._pi = app._pi[idx];
@@ -1391,7 +1405,7 @@ export class App {
         rv._setBody(body);
       }
     }
-    const c = new Ctx(rv, sink);
+    const c = new CtxCore(rv, sink);
     return new Promise<void>(function (resolve): void {
       runChainPromise(chain, c, sink, oef, resolve);
     });
@@ -1409,9 +1423,8 @@ export class App {
     // Subset: the sink-resolver uses a typed field on the concrete
     // NodeResponseSink class — no `as { res: ... }` casts (scriptc fences
     // those as SC1090 opaque structural views).
-    const nrs = sink as NodeResponseSink;
-    const genRes: ServerResponse | null = nrs.res;
-    if (this._gen(req, genRes)) {
+    const genRes: ServerResponse | null = sink.nodeRes();
+    if (genRes !== null && this._gen(req, genRes)) {
       return;
     }
     const oef = this._oef;
@@ -1441,13 +1454,13 @@ export class App {
         return;
       }
     }
-    const rv = new ReqView(req, qs, path, url);
+    const rv = new ReqViewCore(req, qs, path, url);
     if (idx >= 0) {
       rv._pn = this._pn[idx];
       rv._pi = this._pi[idx];
       rv._sp = this._sp[idx];
     }
-    const c = new Ctx(rv, sink);
+    const c = new CtxCore(rv, sink);
     if (
       body === 1 &&
       (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE")
@@ -1480,7 +1493,7 @@ export class App {
 // discrimination the scriptc subset can express without refused or
 // miscompiled constructs. Identity, not a type read: `r === c` compares
 // reference, no cast on `r`.
-function isSettled(r: unknown, c: Ctx): boolean {
+function isSettled(r: unknown, c: CtxCore): boolean {
   return r === undefined || r === null || r === (c as unknown);
 }
 
@@ -1491,7 +1504,7 @@ function isSettled(r: unknown, c: Ctx): boolean {
 // returned promise can never reject.
 async function settleChain(
   r: unknown,
-  c: Ctx,
+  c: CtxCore,
   sink: ResponseSink,
   oef: OnErrorFn | null,
 ): Promise<void> {
@@ -1510,12 +1523,7 @@ async function settleChain(
   }
 }
 
-function runChain(
-  chain: Handler,
-  c: Ctx,
-  sink: ResponseSink,
-  oef: OnErrorFn | null,
-): void {
+function runChain(chain: Handler, c: CtxCore, sink: ResponseSink, oef: OnErrorFn | null): void {
   try {
     const r = chain(c);
     if (isSettled(r, c)) {
@@ -1541,12 +1549,7 @@ function runChain(
 // callback that rejects after streamSSE flushed headers must be observable),
 // and with no handler registered the router stays quiet (no console noise;
 // the destroyed response is the error surface, same as send500's sent path).
-function runOnError(
-  oef: OnErrorFn,
-  e: unknown,
-  sink: ResponseSink,
-  c: Ctx,
-): void {
+function runOnError(oef: OnErrorFn, e: unknown, sink: ResponseSink, c: CtxCore): void {
   try {
     oef(e, c);
     if (!c.sent && !sink.isHeadersSent()) {
@@ -1583,14 +1586,6 @@ export function createRouter(): App {
 // constructor's `this.method` initialization; c.req.method is set there
 // before the app.fetch wrapper discards the stub. Implemented as a
 // Record literal at the call site rather than a class because scriptc
-// fences double-cast values of class-typed locals (SC1090: "NodeReqStub
-// values where IncomingMessage is expected"); Record-typed values
-// lower cleanly through the same cast.
-type NodeReqStub = { method: string; headers: Record<string, string> };
-function makeNodeReqStub(method: string, headers: Record<string, string>): NodeReqStub {
-  return { method: String(method), headers: headers };
-}
-
 // Capture headers from a Web Request into a plain Record<string, string>.
 // Multi-value headers (set-cookie) are joined with ", " per RFC 7230 —
 // sufficient for the router's `header()` reader which only returns the
@@ -1616,7 +1611,7 @@ function headersFromRaw(req: unknown): Record<string, string> {
 // runOnError has run.
 function runChainPromise(
   chain: Handler,
-  c: Ctx,
+  c: CtxCore,
   sink: ResponseSink,
   oef: OnErrorFn | null,
   resolve: () => void,
@@ -1642,7 +1637,7 @@ function runChainPromise(
 
 function settleAndResolve(
   r: unknown,
-  c: Ctx,
+  c: CtxCore,
   sink: ResponseSink,
   oef: OnErrorFn | null,
 ): Promise<void> {
@@ -1713,9 +1708,8 @@ function allow405Promise(
       path = String(url.slice(0, qi));
       qs = String(url.slice(qi + 1));
     }
-    const fr = makeNodeReqStub(String(method), {});
-    const rv = new ReqView(fr, qs, path, url);
-    const c = new Ctx(rv, sink);
+    const rv = new ReqViewCore(null, qs, path, url, String(method));
+    const c = new CtxCore(rv, sink);
     oef(new MethodNotAllowedError(out.join(",")), c);
     if (sink.isHeadersSent()) {
       resolve();

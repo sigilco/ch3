@@ -57,7 +57,7 @@ Everything below is a **contract member** — it will not change shape in 0.x wi
 // Construction: the generated matcher already parses the URL for its own
 // matching — pass the pieces through, no double-parse.
 const rv = new ReqView(raw, qs, path)   // (req, query-string-w/o-?, path-w/o-?)
-const c  = new Ctx(rv, res)
+const c  = new Ctx(rv, new NodeResponseSink(res))
 
 // Params: after the generated matcher binds a route with params, seed the
 // lazy param store with decoded name/value pairs — flat array, pairs of 2.
@@ -85,7 +85,8 @@ _guard(res, c, function (): unknown { return handler(c) })
 | `ReqView`          | `new (raw, qs, path)`                                     | qs/path already split at `?`                                                    |
 | `ReqView._seedPm`  | `(pm: string[]) => void`                                  | flat decoded pairs incl `'*'`                                                   |
 | `ReqView._setBody` | `(s: string) => void`                                     | set by `_buffer` only                                                           |
-| `Ctx`              | `new (rv, res)` + `json/text/html/status/header/redirect` | unchanged authoring API                                                         |
+| `Ctx`              | `new (rv, sink)` + `json/text/html/status/header/redirect` | sink built via `new NodeResponseSink(res)`                                      |
+| `NodeResponseSink` | `new (res)`                                               | wraps a ServerResponse into the sink Ctx consumes                               |
 | `App.withDispatch` | `(d: GenDispatch) => App`                                 | last-wins, tried first per request                                              |
 | `_buffer`          | `(req, res, c, k: () => unknown) => void`                 | data/end + `_setBody` + guarded `k`                                             |
 | `_guard`           | `(res, c, k: () => unknown) => void`                      | `try { k() }`; result not settled → `await` it; throw/reject/unsent → `send500` |
@@ -124,10 +125,10 @@ The contract majors with the package: any change to a member listed in the stabl
 
 ## Contract versioning
 
-`ROUTE_CONTRACT_VERSION` (currently `1`) is a plain number exported from `chttp` (defined in `src/gen.ts`, re-exported by `src/index.ts`). It exists so a stale generated module can never silently serve requests against a runtime that expects a different emit shape:
+`ROUTE_CONTRACT_VERSION` (currently `2`) is a plain number exported from `chttp` (defined in `src/gen.ts`, re-exported by `src/index.ts`). It exists so a stale generated module can never silently serve requests against a runtime that expects a different emit shape:
 
 - **Lives in chttp.** The runtime is the source of truth; the constant is a plain `const` number, subset-clean.
-- **Stamped into gen files.** Emitters write the same number as a literal — `export const ROUTE_CONTRACT_VERSION = 1;` in the module header next to the Source comment, and `ROUTE_CONTRACT_VERSION = 1` as an instance field on the emitted `CompiledRoutes` class (assigned after `super()`, shadowing the `GenDispatch` default). The gen file stays standalone: no import of the version, just the literal.
+- **Stamped into gen files.** Emitters write the same number as a literal — `export const ROUTE_CONTRACT_VERSION = 2;` in the module header next to the Source comment, and `ROUTE_CONTRACT_VERSION = 2` as an instance field on the emitted `CompiledRoutes` class (assigned after `super()`, shadowing the `GenDispatch` default). The gen file stays standalone: no import of the version, just the literal.
 - **Validated at `withDispatch`.** If the dispatch object exposes a numeric `ROUTE_CONTRACT_VERSION` that differs from the runtime's, `app.withDispatch(d)` throws immediately, naming both versions. A missing stamp is accepted (dispatches that predate versioning).
 - **Bump semantics.** Any breaking change to this contract — member shapes, dispatch obligations, the emitted-module grammar — bumps the number. Bump `chttp`'s export and `@chttp/unplugin`'s mirrored constant (`packages/unplugin/src/contract.ts`, asserted equal by test) in the same commit; a regenerated module then carries the new stamp.
 
@@ -137,9 +138,9 @@ import { GenDispatch, ROUTE_CONTRACT_VERSION } from '@chttp/router'
 app.withDispatch(new CompiledRoutes(app)) // throws on stamp mismatch
 
 // emitted header (.chttp/routes.gen.ts)
-export const ROUTE_CONTRACT_VERSION = 1
+export const ROUTE_CONTRACT_VERSION = 2
 export class CompiledRoutes extends GenDispatch {
-  ROUTE_CONTRACT_VERSION = 1
+  ROUTE_CONTRACT_VERSION = 2
   // ...
 }
 ```

@@ -1,5 +1,0 @@
----
-"@chttp/router": patch
----
-
-Fix a runtime failure of the compiled ELF under scriptc 0.3.x (upstream: vercel-labs/scriptc#963). The `typeof (x as ResponseSink).setStatus === "function"` method-existence checks in the `Ctx` constructor, `_guard`, and `_buffer` read as method-as-value accesses, which demotes the sink method names into `prototypeMethodAccesses`; for generic classes (`Ctx<P extends string = string>`) the per-instance dyn bag then has no prototype fallback and every method resolves to `undefined` at runtime — 0.3.1/0.3.2 fail with `c.json is not a function`, 0.3.3 fails earlier with `rv._setBody is not a function`. All three sites now discriminate with `instanceof ResponseSink` (a program-class identity check, which does not trigger the demotion). Behavior is unchanged: a `ResponseSink` is used directly, a raw `ServerResponse` is wrapped in a `NodeResponseSink`; the contract surface in `contracts/route-contract.md` and the generated dispatch's `_guard(res, ...)` / `_buffer(req, res, ...)` keep working. Node-path verification: 295 pass / 2 skip / 0 fail across the workspace, tsc build clean.

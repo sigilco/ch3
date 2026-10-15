@@ -386,13 +386,17 @@ test("app.use('/api/*', mw) only runs for matching paths", () => {
 test("app.use(path, mw1, mw2) runs both in order when path matches", () => {
   const order = [];
   const app = createRouter();
-  app.use("/x/*", (c, next) => {
-    order.push("a");
-    next();
-  }, (c, next) => {
-    order.push("b");
-    next();
-  });
+  app.use(
+    "/x/*",
+    (c, next) => {
+      order.push("a");
+      next();
+    },
+    (c, next) => {
+      order.push("b");
+      next();
+    },
+  );
   app.get("/x/y", (c) => {
     order.push("h");
     c.text("ok");
@@ -467,13 +471,13 @@ test("withDispatch validates the route contract version stamp", () => {
     }
     assert.throws(
       () => createRouter().withDispatch(new Bad()),
-      /contract version mismatch.*v999.*v1/,
+      /contract version mismatch.*v999.*v2/,
     );
     // matching stamp → accepted
     class Ok extends GenDispatch {
       constructor() {
         super();
-        this.ROUTE_CONTRACT_VERSION = 1;
+        this.ROUTE_CONTRACT_VERSION = 2;
       }
     }
     app.withDispatch(new Ok());
@@ -521,7 +525,7 @@ test("generated dispatch can spawn ctx + seed params + buffer via helpers", () =
         const url = String(req.url || "/");
         if (url.indexOf("/u/") === 0) {
           const rv = new m.ReqView(req, "", url);
-          const c = new m.Ctx(rv, res);
+          const c = new m.Ctx(rv, new m.NodeResponseSink(res));
           rv._seedPm(["id", m.dec(url.slice(3))]);
           m._guard(res, c, function () {
             return c.json({ id: c.req.param("id") });
@@ -530,7 +534,7 @@ test("generated dispatch can spawn ctx + seed params + buffer via helpers", () =
         }
         if (url === "/b") {
           const rv = new m.ReqView(req, "", url);
-          const c = new m.Ctx(rv, res);
+          const c = new m.Ctx(rv, new m.NodeResponseSink(res));
           m._buffer(req, res, c, function () {
             c.text("b:" + c.req.body());
           });

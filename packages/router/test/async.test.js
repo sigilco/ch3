@@ -3,7 +3,14 @@
 // onError (or 500), and a settled-but-unsent chain falls back to 500.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createRouter, _guard, _buffer, Ctx, ReqView } from "../dist/esm/index.js";
+import {
+  createRouter,
+  _guard,
+  _buffer,
+  Ctx,
+  ReqView,
+  NodeResponseSink,
+} from "../dist/esm/index.js";
 
 function fakeRes() {
   const res = {
@@ -63,12 +70,12 @@ function fakeReq(method, url) {
 }
 
 function fakeCtx(res) {
-  return new Ctx(new ReqView(fakeReq("GET", "/x"), "", "/x"), res);
+  return new Ctx(new ReqView(fakeReq("GET", "/x"), "", "/x"), new NodeResponseSink(res));
 }
 
 function dispatch(app, method, url) {
   const res = fakeRes();
-  app._dispatch(fakeReq(method, url), res);
+  app._dispatch(fakeReq(method, url), new NodeResponseSink(res));
   return res;
 }
 
@@ -187,7 +194,7 @@ test("async handler on a body route", async () => {
       if (ev === "end") endCb = cb;
     },
   };
-  app._dispatch(req, res);
+  app._dispatch(req, new NodeResponseSink(res));
   endCb();
   await tick();
   await tick();
@@ -266,7 +273,7 @@ test("_buffer stores the body then runs an async k under the guard", async () =>
       if (ev === "end") endCb = cb;
     },
   };
-  const c = new Ctx(new ReqView(req, "", "/echo"), res);
+  const c = new Ctx(new ReqView(req, "", "/echo"), new NodeResponseSink(res));
   const seen = [];
   _buffer(req, res, c, async () => {
     await tick();
